@@ -1,0 +1,117 @@
+{
+  "_comment": "三套模拟账号配置 — 全策略参数差异，从T1入场到T3突破止损完整覆盖",
+
+  "strict": {
+    "label":                 "严格",
+    "description":           "高精度，少操作，每步都要求更强确认",
+
+    "t1_entry_score":        8.0,
+    "t1_rs_threshold":       2.0,
+    "max_positions":         4,
+    "risk_per_trade_pct":    0.01,
+    "max_position_pct":      0.12,
+
+    "t2a_price_above":       1.010,
+    "t2a_vol_min":           1.0,
+    "t2a_rsi_max":           72,
+    "t2a_qqq_min":           -0.1,
+
+    "t2b_pullback_min":      0.3,
+    "t2b_pullback_max":      1.5,
+    "t2b_vol_max":           0.65,
+    "t2b_vwap_floor":        1.000,
+    "t2b_rsi_min":           42,
+    "t2b_qqq_min":           -0.2,
+    "t2b_need_macd_pos":     true,
+
+    "t2_stop_mode":          "t1_cost",
+    "t2_stop_buffer_atr":    0.0,
+
+    "t3_vol_min":            1.40,
+    "t3_rsi_max":            78,
+    "t3_stop_mode":          "target1",
+
+    "block_vol_decline":     1.4,
+    "block_qqq_drop":        -0.4,
+    "block_rsi_floor":       38,
+    "block_vwap_pct":        0.98,
+
+    "swing_catalyst_min":    2
+  },
+
+  "base": {
+    "label":                 "基准",
+    "description":           "均衡参数，与方法论#11一致",
+
+    "t1_entry_score":        7.5,
+    "t1_rs_threshold":       1.5,
+    "max_positions":         6,
+    "risk_per_trade_pct":    0.01,
+    "max_position_pct":      0.15,
+
+    "t2a_price_above":       1.005,
+    "t2a_vol_min":           0.85,
+    "t2a_rsi_max":           78,
+    "t2a_qqq_min":           -0.2,
+
+    "t2b_pullback_min":      0.3,
+    "t2b_pullback_max":      2.5,
+    "t2b_vol_max":           0.72,
+    "t2b_vwap_floor":        0.995,
+    "t2b_rsi_min":           38,
+    "t2b_qqq_min":           -0.3,
+    "t2b_need_macd_pos":     true,
+
+    "t2_stop_mode":          "t1_cost",
+    "t2_stop_buffer_atr":    0.0,
+
+    "t3_vol_min":            1.25,
+    "t3_rsi_max":            82,
+    "t3_stop_mode":          "target1",
+
+    "block_vol_decline":     1.5,
+    "block_qqq_drop":        -0.5,
+    "block_rsi_floor":       35,
+    "block_vwap_pct":        0.97,
+
+    "swing_catalyst_min":    2
+  },
+
+  "loose": {
+    "label":                 "宽松",
+    "description":           "更多操作，给股票更多空间，测试宽松边界",
+
+    "t1_entry_score":        5.0,
+    "t1_rs_threshold":       0.8,
+    "max_positions":         6,
+    "risk_per_trade_pct":    0.01,
+    "max_position_pct":      0.15,
+
+    "t2a_price_above":       1.002,
+    "t2a_vol_min":           0.70,
+    "t2a_rsi_max":           82,
+    "t2a_qqq_min":           -0.3,
+
+    "t2b_pullback_min":      0.2,
+    "t2b_pullback_max":      3.5,
+    "t2b_vol_max":           0.80,
+    "t2b_vwap_floor":        0.990,
+    "t2b_rsi_min":           33,
+    "t2b_qqq_min":           -0.5,
+    "t2b_need_macd_pos":     false,
+
+    "t2_stop_mode":          "buffer",
+    "t2_stop_buffer_atr":    0.2,
+
+    "t3_vol_min":            1.10,
+    "t3_rsi_max":            85,
+    "t3_stop_mode":          "target1",
+
+    "block_vol_decline":     1.8,
+    "block_qqq_drop":        -0.8,
+    "block_rsi_floor":       30,
+    "block_vwap_pct":        0.95,
+
+    "swing_catalyst_min":    1
+  }
+}

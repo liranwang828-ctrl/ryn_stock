@@ -1,0 +1,17 @@
+{
+  "_comment": "模拟盘组合，由 agent team 自动管理，支持日内+波段混合模式",
+  "cash": 100000,
+  "initial_cash": 100000,
+  "positions": {},
+  "shadow_positions": {},
+  "created": "2026-05-13",
+  "settings": {
+    "max_positions": 6,
+    "entry_score_threshold": 7.5,
+    "entry_rs_threshold": 1.5,
+    "risk_per_trade_pct": 0.01,
+    "max_position_pct": 0.15,
+    "swing_catalyst_strength": 2,
+    "eod_close_intraday": true
+  }
+}

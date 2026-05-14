@@ -1,0 +1,719 @@
+{
+  "AMD": {
+    "full_name": "Advanced Micro Devices, Inc.",
+    "one_liner": "x86 CPU/GPU 设计公司（Fabless），正在从消费芯片转型为 AI 数据中心芯片提供商",
+    "business_model": "设计半导体芯片，委托台积电代工制造，B2B 销售为主",
+    "segments": [
+      {"name": "Data Center", "desc": "EPYC 服务器CPU + MI300X AI GPU，FY25 Q1营收$2.3B，同比+80%，当前核心增长引擎"},
+      {"name": "Client", "desc": "Ryzen 消费级/笔记本CPU，PC市场回暖受益，增长平稳"},
+      {"name": "Gaming", "desc": "GPU + 主机芯片（PS5/Xbox独家），处于主机周期末段，承压"},
+      {"name": "Embedded", "desc": "Xilinx遗产FPGA业务，工业/汽车市场，当前低迷"}
+    ],
+    "key_customers": ["微软Azure（MI300X大规模部署）", "Meta（AI训练集群）", "Oracle Cloud", "Sony PS5（专属）", "Microsoft Xbox（专属）"],
+    "supply_chain": {
+      "upstream": ["台积电（7nm/4nm制造）", "TSMC N3（未来节点）"],
+      "downstream": ["OEM服务器厂商", "消费电子品牌"]
+    },
+    "ecosystem": {
+      "partners": ["微软（Azure MI300X + Xbox）", "Meta（开放AI生态）", "Oracle"],
+      "indirect": ["通过微软Azure间接服务OpenAI训练需求"],
+      "competitors": ["NVDA（GPU主战场，CUDA生态护城河）", "Intel（CPU份额争夺）", "ARM（CPU架构授权威胁）", "谷歌TPU/AWS Trainium（自研芯片威胁）"]
+    },
+    "moat": ["x86 CPU 双寡头格局（AMD+Intel），高转换成本", "Zen架构持续迭代，性能/功耗比领先", "EPYC在HPC/云服务器的份额上升趋势"],
+    "moat_weakness": ["CUDA生态护城河使NVDA在AI训练中地位难以撼动", "ROCm软件生态仍落后于CUDA", "高端GPU市场NVDA H100/H200主导"],
+    "milestones": [
+      {"year": 2014, "event": "Lisa Su 出任 CEO，股价约$3，公司濒临破产"},
+      {"year": 2017, "event": "Ryzen CPU 发布，打破Intel垄断，股价开始腾飞"},
+      {"year": 2019, "event": "EPYC 2代（Rome）发布，正式进攻数据中心市场"},
+      {"year": 2020, "event": "PS5/Xbox Series X 均采用AMD定制芯片，锁定主机市场"},
+      {"year": 2021, "event": "以$49B收购Xilinx（FPGA），进入自适应计算市场"},
+      {"year": 2022, "event": "股价从顶部跌65%，PC市场崩溃+加密冬天"},
+      {"year": 2023, "event": "MI300X AI GPU 发布，向NVDA AI霸主地位发起挑战"},
+      {"year": 2024, "event": "微软Azure、Meta大规模部署MI300X，AI叙事确立"},
+      {"year": 2026, "event": "披露持有MRVL股份，战略布局半导体生态"}
+    ],
+    "narrative": "AMD 是半导体行业最成功的转型故事之一。Lisa Su 接任后用十年将一家濒临破产的公司变成市值7000亿美元的半导体巨头。当前最重要的叙事是 Data Center 的AI转型：MI300X GPU 是 NVDA 霸权的最强挑战者，微软 Azure 和 Meta 的大规模部署是关键验证信号。股价的核心驱动力从'CPU份额回升'演变为'AI算力入场券'，这个叙事的可持续性取决于MI300X是否能在软件生态上缩小与CUDA的差距。"
+  },
+  "NVDA": {
+    "full_name": "NVIDIA Corporation",
+    "one_liner": "全球AI算力基础设施霸主，GPU + CUDA生态构建的双重护城河",
+    "business_model": "Fabless GPU设计，软硬件一体（CUDA生态），B2B数据中心为主",
+    "segments": [
+      {"name": "Data Center", "desc": "H100/H200/B100 AI GPU + NVLink + InfiniBand，占营收70%+，同比增速300%+"},
+      {"name": "Gaming", "desc": "GeForce RTX系列，消费市场老二当家，AI PC概念加持"},
+      {"name": "Professional Visualization", "desc": "专业图形工作站，小但稳定"},
+      {"name": "Automotive", "desc": "DRIVE平台，自动驾驶长期赌注"}
+    ],
+    "key_customers": ["微软Azure", "Amazon AWS", "Google Cloud", "Meta", "Oracle", "特斯拉"],
+    "ecosystem": {
+      "moat_core": "CUDA软件生态 — 全球数百万开发者基于CUDA编程，迁移成本极高",
+      "partners": ["OpenAI（主要训练基础设施）", "微软（Azure H100集群）", "全球主要云厂商"],
+      "competitors": ["AMD MI300X", "Google TPU", "AWS Trainium", "Intel Gaudi"]
+    },
+    "milestones": [
+      {"year": 2006, "event": "CUDA发布，开创GPU通用计算时代"},
+      {"year": 2016, "event": "DGX-1 AI超级计算机，押注AI训练市场"},
+      {"year": 2022, "event": "ChatGPT引爆AI需求，H100供不应求"},
+      {"year": 2023, "event": "营收从$60B一年内冲向$130B，史无前例增速"},
+      {"year": 2024, "event": "Blackwell架构发布，下一代AI GPU"},
+      {"year": 2025, "event": "NIM微服务、AI Foundry，向软件/平台公司演进"}
+    ],
+    "narrative": "NVDA 是AI时代的'铁锹卖家'。CUDA生态护城河是其真正的壁垒，不是GPU硬件本身。ChatGPT的爆火将多年的AI基础设施需求在两年内集中释放。当前的问题是：在超高增速之后，增速必然回落，估值是否能支撑？以及自研芯片（谷歌TPU、AWS Trainium）是否会侵蚀市场份额。"
+  },
+  "MRVL": {
+    "full_name": "Marvell Technology, Inc.",
+    "one_liner": "定制AI芯片（ASIC）设计领导者，为超大规模云厂商提供专属算力解决方案",
+    "business_model": "Fabless半导体，定制ASIC + 光网络芯片，B2B云厂商客户",
+    "segments": [
+      {"name": "Data Center", "desc": "定制ASIC（谷歌TPU、亚马逊Trainium设计服务）+ 高速光模块芯片，核心增长引擎"},
+      {"name": "Carrier Infrastructure", "desc": "5G基站芯片，周期性"},
+      {"name": "Enterprise Networking", "desc": "交换机/路由器芯片"},
+      {"name": "Consumer/Automotive", "desc": "小且萎缩"}
+    ],
+    "key_customers": ["谷歌（定制TPU芯片设计）", "亚马逊AWS（Trainium芯片设计）", "微软（定制项目）"],
+    "ecosystem": {
+      "partners": ["台积电（先进制程代工）", "谷歌Cloud", "Amazon AWS"],
+      "competitors": ["Broadcom（定制ASIC竞争）", "Intel（Gaudi AI加速器）"]
+    },
+    "milestones": [
+      {"year": 2021, "event": "剥离存储控制器业务，聚焦数据中心"},
+      {"year": 2023, "event": "AMD披露持有MRVL股份，战略意义明确"},
+      {"year": 2024, "event": "定制ASIC业务爆发，800G光模块需求带动"},
+      {"year": 2025, "event": "数据中心营收占比超50%，转型成功"}
+    ],
+    "narrative": "MRVL是AI基础设施中被低估的'水电煤'供应商。不做通用GPU，专注为云巨头定制专属芯片。谷歌的TPU、亚马逊的Trainium后端都有MRVL的参与。AMD持股是验证信号：行业内部都认可其战略价值。"
+  },
+  "AAOI": {
+    "full_name": "Applied Optoelectronics, Inc.",
+    "one_liner": "AI数据中心光互联核心供应商，800G/1.6T高速光模块制造商",
+    "business_model": "垂直整合光模块制造，从激光器到收发器一体化生产",
+    "segments": [
+      {"name": "数据中心光模块", "desc": "400G/800G收发器，AI集群内部高速互联必需品"},
+      {"name": "有线电视/CATV", "desc": "传统业务，萎缩中"}
+    ],
+    "key_customers": ["微软Azure", "Amazon AWS", "谷歌Cloud"],
+    "ecosystem": {
+      "partners": ["台积电（部分芯片代工）"],
+      "competitors": ["Coherent（LITE）", "Fabrinet（FN）", "InnoLight", "Lumentum"]
+    },
+    "milestones": [
+      {"year": 2024, "event": "800G光模块需求爆发，受益AI数据中心扩建"},
+      {"year": 2025, "event": "AAOI宣布产能扩张，1.6T产品路线图"}
+    ],
+    "narrative": "AAOI是AI基础设施爆发的直接受益者。每建一个AI数据中心，GPU之间的高速互联就需要大量光模块。800G是当前主流，1.6T是下一个风口。风险是竞争激烈（Coherent、Lumentum、InnoLight），且产能扩张节奏是关键。"
+  },
+  "MSFT": {
+    "full_name": "Microsoft Corporation",
+    "one_liner": "云计算+AI平台双引擎，OpenAI最大股东，企业软件生态护城河最深",
+    "business_model": "SaaS订阅+云计算+AI平台，B2B企业客户为主",
+    "segments": [
+      {"name": "Productivity (Office+LinkedIn)", "desc": "Office 365/Teams/LinkedIn，订阅型，稳定现金流"},
+      {"name": "Intelligent Cloud (Azure)", "desc": "占营收30%+，AI基础设施主战场，增速18-22%"},
+      {"name": "More Personal Computing", "desc": "Windows+Surface+Xbox游戏，相对稳定"}
+    ],
+    "key_customers": ["企业级客户（全球数百万）", "政府机构", "OpenAI（合作伙伴）"],
+    "ecosystem": {
+      "partners": ["OpenAI（独家商业合作）", "AMD（MI300X Azure部署）", "NVDA（Azure H100集群）"],
+      "competitors": ["Google Cloud（GCP）", "Amazon AWS", "Salesforce（企业软件）"]
+    },
+    "milestones": [
+      {"year": 2014, "event": "Satya Nadella接任CEO，转型云计算战略"},
+      {"year": 2019, "event": "首次投资OpenAI $10亿"},
+      {"year": 2023, "event": "追加投资OpenAI至$100亿，Copilot系列发布"},
+      {"year": 2023, "event": "Azure OpenAI Service，将GPT能力商业化"},
+      {"year": 2024, "event": "GitHub Copilot付费用户突破180万，AI变现加速"}
+    ],
+    "narrative": "微软是最成功的AI商业化公司。通过OpenAI投资锁定最强AI模型，通过Azure提供算力，通过Office365/Copilot将AI能力变现给企业用户。这个飞轮一旦建立，护城河极深。当前最重要的问题是Azure增速是否能维持在20%以上。"
+  },
+  "PONY": {
+    "full_name": "Pony.ai Inc.",
+    "one_liner": "中国领先自动驾驶公司，聚焦Robotaxi商业化和L4级卡车自动驾驶",
+    "business_model": "自动驾驶技术公司，Robotaxi运营收入 + 技术授权 + 卡车自动驾驶解决方案",
+    "segments": [
+      {"name": "Robotaxi", "desc": "北京/广州/深圳/上海运营，商业化拼车服务"},
+      {"name": "Truck Autonomous Driving", "desc": "L4级卡车自动驾驶，与中国主要卡车制造商合作"},
+      {"name": "技术授权", "desc": "向传统车企输出自动驾驶技术"}
+    ],
+    "key_customers": ["丰田（战略投资方）", "中国物流公司", "广州市政府（试点合作）"],
+    "ecosystem": {
+      "partners": ["丰田汽车（战略投资+技术合作）", "中国头部车企"],
+      "competitors": ["文远知行（WeRide）", "百度Apollo", "Waymo（全球竞争）", "特斯拉FSD"]
+    },
+    "milestones": [
+      {"year": 2016, "event": "成立，James Peng和Lou Tiancheng创办"},
+      {"year": 2019, "event": "丰田战略投资，首次获得主流OEM背书"},
+      {"year": 2021, "event": "广州获得全球首批商业化Robotaxi牌照之一"},
+      {"year": 2024, "event": "在美国纽交所上市（NYSE: PONY）"},
+      {"year": 2025, "event": "北京扩大Robotaxi无人驾驶运营区域"}
+    ],
+    "narrative": "PONY是中国自动驾驶领域的领导者之一，但面临严峻的商业化变现压力。技术实力获丰田认可，但在中国监管环境下扩张速度受限。美股上市中概股身份带来额外估值折价风险。Robotaxi赛道长期看是正确方向，但短期盈利遥遥无期，是高风险高回报的技术赌注。"
+  },
+  "BABA": {
+    "full_name": "Alibaba Group Holding Limited",
+    "one_liner": "中国最大电商+云计算平台，正在经历监管冲击后的重组和估值重建",
+    "business_model": "平台电商抽佣+广告+云服务+物流，多元化中国科技巨头",
+    "segments": [
+      {"name": "Taobao/Tmall（中国零售）", "desc": "核心电商，GMV最大，但增速放缓"},
+      {"name": "阿里云", "desc": "中国最大云服务商，AI应用推动复苏"},
+      {"name": "国际零售（速卖通/Lazada）", "desc": "全球化布局，增速高但亏损"},
+      {"name": "菜鸟物流", "desc": "电商物流网络"},
+      {"name": "本地生活（饿了么）", "desc": "与美团竞争，长期亏损"}
+    ],
+    "key_customers": ["中国消费者（数亿）", "中小企业卖家", "企业云客户"],
+    "ecosystem": {
+      "partners": ["软银（大股东）", "蚂蚁集团（关联公司）"],
+      "competitors": ["京东（电商直接竞争）", "拼多多（下沉市场）", "华为云/腾讯云（云计算）", "TikTok/抖音电商（内容电商）"]
+    },
+    "milestones": [
+      {"year": 2014, "event": "纽交所IPO，当时史上最大规模IPO $250亿"},
+      {"year": 2020, "event": "蚂蚁集团IPO被叫停，马云'消失'，监管冲击开始"},
+      {"year": 2021, "event": "被罚款$182亿，股价腰斩"},
+      {"year": 2023, "event": "宣布拆分六大业务集团"},
+      {"year": 2024, "event": "蔡崇信接任主席，重新聚焦核心电商和AI"},
+      {"year": 2025, "event": "阿里云发布Qwen系列AI大模型，竞争力显著提升"}
+    ],
+    "narrative": "BABA是一个典型的'监管折价+基本面修复'的博弈。技术实力和用户规模毋庸置疑，但2020年后的监管打压留下永久性的政策风险溢价。当前叙事是'触底反弹+AI复苏'，但中美关系和ADR退市风险始终是头顶悬剑。属于高风险政策性博弈，不适合追求确定性的投资者。"
+  },
+  "IAU": {
+    "full_name": "iShares Gold Trust",
+    "one_liner": "黄金ETF，追踪伦敦金价，1/100盎司黄金/份额，是获取黄金敞口的最低成本工具之一",
+    "business_model": "被动型黄金ETF，持有实物黄金，费率0.25%/年，流动性高",
+    "segments": [
+      {"name": "实物黄金持仓", "desc": "100%持有实物黄金，存放于汇丰银行保险库"}
+    ],
+    "key_customers": ["零售投资者", "机构投资者（对冲通胀）", "全球央行（间接影响金价）"],
+    "ecosystem": {
+      "competitors": ["GLD（SPDR黄金ETF，费率0.40%更高）", "GLDM（小规模版GLD）", "PHYS（皇家加拿大造币厂实物黄金）", "实物黄金条/金币"],
+      "macro_drivers": ["美元走弱", "实际利率下行", "全球央行购金潮", "地缘政治风险", "通胀预期"]
+    },
+    "milestones": [
+      {"year": 2005, "event": "IAU成立，iShares推出低费率黄金ETF"},
+      {"year": 2008, "event": "金融危机，黄金避险需求飙升，持仓规模暴涨"},
+      {"year": 2020, "event": "新冠+美联储QE，黄金突破$2000/盎司历史高位"},
+      {"year": 2022, "event": "美联储激进加息，实际利率上升，黄金承压"},
+      {"year": 2024, "event": "全球央行购金创历史纪录，黄金突破$2500"},
+      {"year": 2025, "event": "黄金突破$3000，去美元化趋势加速"}
+    ],
+    "narrative": "黄金是对货币体系的不信任投票。当美联储货币政策失去可信度、美元霸权受到挑战、地缘政治风险上升时，黄金是终极避风港。当前叙事是：去美元化（全球央行减持美债增持黄金）+ 美国财政赤字货币化风险 + 实际利率见顶。IAU是获取这一敞口最低摩擦的工具。它不产生股息，纯粹是对黄金价格的被动暴露。"
+  },
+  "IREN": {
+    "full_name": "Iris Energy Limited",
+    "one_liner": "比特币挖矿公司（纳斯达克），使用可再生能源，正在向AI算力基础设施转型",
+    "business_model": "自建数据中心运营比特币矿机+出售剩余算力给AI推理客户，B2B+挖矿直接收益",
+    "segments": [
+      {"name": "比特币挖矿", "desc": "核心业务，可再生能源驱动，算力持续扩张"},
+      {"name": "AI数据中心", "desc": "利用现有数据中心基础设施提供AI推理算力，新增长引擎"}
+    ],
+    "key_customers": ["比特币网络（矿工收益）", "AI算力租用客户（新兴）"],
+    "ecosystem": {
+      "partners": ["NVIDIA（GPU采购）", "可再生能源供应商（水电/风电）"],
+      "competitors": ["MARA（Marathon Digital）", "CLSK（CleanSpark）", "CORZ（Core Scientific）"]
+    },
+    "milestones": [
+      {"year": 2021, "event": "纳斯达克上市，澳大利亚团队创办"},
+      {"year": 2023, "event": "比特币减半前扩张算力，绿色矿业定位"},
+      {"year": 2024, "event": "宣布AI数据中心转型计划，股价大涨"},
+      {"year": 2025, "event": "AI算力收入开始贡献，双轮驱动叙事形成"}
+    ],
+    "narrative": "IREN是比特币挖矿+AI算力的双重敞口押注。纯绿色能源使其ESG定位独特。比特币价格是短期催化剂，AI转型是长期价值重估的驱动力。风险：比特币价格高度波动，AI算力市场竞争激烈（需与专业数据中心竞争），以及资本开支压力。"
+  },
+  "OXY": {
+    "full_name": "Occidental Petroleum Corporation",
+    "one_liner": "美国大型综合石油公司，巴菲特持仓，二叠纪盆地核心产油商，同时押注碳捕集技术",
+    "business_model": "石油天然气勘探开采（E&P）为主，化工业务次之，碳管理（DAC）为未来布局",
+    "segments": [
+      {"name": "Oil & Gas (E&P)", "desc": "二叠纪盆地+中东，核心产油资产，现金流引擎"},
+      {"name": "化工（OxyChem）", "desc": "氯碱化工，稳定现金流，对冲油价波动"},
+      {"name": "碳管理（Carbon Management）", "desc": "直接空气捕集（DAC）技术，长期转型赌注，当前亏损"}
+    ],
+    "key_customers": ["全球原油精炼商", "化工下游客户", "碳信用购买方（未来）"],
+    "ecosystem": {
+      "partners": ["伯克希尔哈撒韦（大股东，巴菲特背书）", "BlackRock（机构持股）"],
+      "competitors": ["Chevron（CVX）", "ExxonMobil（XOM）", "ConocoPhillips（COP）"]
+    },
+    "milestones": [
+      {"year": 2019, "event": "以$38B收购Anadarko，大幅扩大二叠纪资产，同时背负重债"},
+      {"year": 2020, "event": "新冠油价暴跌，OXY股价跌至$10以下，巴菲特抄底"},
+      {"year": 2022, "event": "油价高涨，疯狂还债，巴菲特持续增持"},
+      {"year": 2023, "event": "巴菲特获批可持股至50%，战略意义确立"},
+      {"year": 2024, "event": "以$120亿收购CrownRock，进一步扩大二叠纪储量"}
+    ],
+    "narrative": "OXY是能源+巴菲特背书+碳捕集的三重叙事。巴菲特的大规模持股是最强的信用背书。核心逻辑是：二叠纪盆地是美国最优质的油田资产，成本曲线低，现金流厚。碳捕集是长期期权，当前估值中几乎没有价格。风险是油价下跌和Anadarko收购遗留的债务负担。"
+  },
+  "AAPL": {
+    "full_name": "Apple Inc.",
+    "one_liner": "全球市值最大科技公司，硬件+生态系统+服务的垂直整合护城河",
+    "business_model": "高端硬件（iPhone/Mac/iPad/Watch）+ 平台生态（App Store）+ 订阅服务，B2C为主",
+    "segments": [
+      {"name": "iPhone", "desc": "占营收约50%，核心利润中心，每年换机周期驱动"},
+      {"name": "Services", "desc": "App Store/Apple Music/iCloud/Apple TV+，高毛利，增速稳健"},
+      {"name": "Mac", "desc": "M系列芯片使MacBook重返强势，专业用户市场"},
+      {"name": "iPad", "desc": "教育+专业市场，稳定"},
+      {"name": "Wearables/Home/Accessories", "desc": "AirPods/Apple Watch，生态粘性产品"}
+    ],
+    "key_customers": ["全球iPhone用户（超10亿活跃设备）", "App Store开发者（数百万）"],
+    "ecosystem": {
+      "moat_core": "iOS生态护城河 — 用户数据+应用习惯+硬件软件一体化，切换成本极高",
+      "partners": ["台积电（芯片独家制造）", "富士康/鸿海（组装）"],
+      "competitors": ["Samsung（Android高端机）", "Google Pixel（Android旗舰）", "Microsoft（PC市场）"]
+    },
+    "milestones": [
+      {"year": 2007, "event": "iPhone发布，重新定义智能手机"},
+      {"year": 2020, "event": "Apple Silicon M1发布，Mac彻底摆脱Intel依赖"},
+      {"year": 2023, "event": "Apple Vision Pro发布，押注空间计算"},
+      {"year": 2024, "event": "Apple Intelligence发布，AI功能整合进iOS"},
+      {"year": 2025, "event": "印度制造比例提升，分散台湾供应链风险"}
+    ],
+    "narrative": "AAPL是全球最强的消费科技品牌和生态系统公司。它的护城河不是某一个产品，而是iPhone用户被iOS生态锁定之后产生的持续服务收入。当前最大的问题：Services增长能否弥补iPhone增速放缓？Apple Intelligence是否能带来新的换机周期？以及中国市场的地缘政治风险。"
+  },
+  "RKLB": {
+    "full_name": "Rocket Lab USA, Inc.",
+    "one_liner": "小型卫星发射领导者（Electron火箭），正在开发中型火箭Neutron进入更大发射市场",
+    "business_model": "火箭发射服务+航天系统（卫星组件/整星制造），B2B政府和商业客户",
+    "segments": [
+      {"name": "Launch Services", "desc": "Electron小型火箭，每次发射约$8M，发射频率领先SpaceX之外所有对手"},
+      {"name": "Space Systems", "desc": "卫星组件、太阳能电池板、飞行计算机等，增速高"}
+    ],
+    "key_customers": ["NASA（多个合同）", "美国国防部（NSSL任务）", "Planet Labs", "BlackSky"],
+    "ecosystem": {
+      "partners": ["NASA（月球任务合作）", "美国空军（发射服务）"],
+      "competitors": ["SpaceX Falcon 9（中大型）", "ABL Space", "Firefly Aerospace", "Virgin Orbit（已破产）"]
+    },
+    "milestones": [
+      {"year": 2017, "event": "Electron火箭首飞成功，成为SpaceX之外首个商业轨道火箭公司"},
+      {"year": 2021, "event": "通过SPAC上市（RKLB）"},
+      {"year": 2023, "event": "Space Systems业务营收超发射业务，转型成功"},
+      {"year": 2024, "event": "Neutron中型火箭研发进入关键阶段"},
+      {"year": 2025, "event": "月球任务CAPSTONE成功，NASA深度信任"}
+    ],
+    "narrative": "RKLB是'纯洁版'商业航天公司——没有Elon Musk的政治争议，有NASA的实质合同，有可量化的发射频率指标。当前阶段是：Electron发射业务稳定盈利 + Space Systems高速增长 + Neutron中期期权。估值看的是Neutron能否在2026-2027年首飞，打开更大市场。高风险高回报的技术成长股。"
+  },
+  "LITE": {
+    "full_name": "Coherent Corp.",
+    "one_liner": "光网络+激光器+电子光学综合供应商，AI数据中心高速光互联的核心受益者",
+    "business_model": "光电子组件和系统制造，B2B通信和工业客户",
+    "segments": [
+      {"name": "Networking", "desc": "数据中心400G/800G光收发模块，AI浪潮最大受益"},
+      {"name": "Lasers", "desc": "工业激光器，汽车/制造应用"},
+      {"name": "Industrial", "desc": "半导体设备激光，平稳"}
+    ],
+    "key_customers": ["主要云计算公司（AWS/Azure/Google）", "电信运营商"],
+    "ecosystem": {
+      "partners": ["II-VI（前身，已合并）"],
+      "competitors": ["AAOI（Applied Optoelectronics）", "Fabrinet（FN）", "Lumentum", "InnoLight"]
+    },
+    "milestones": [
+      {"year": 2022, "event": "II-VI收购JDSU旗下Coherent，成为光电子巨头"},
+      {"year": 2023, "event": "更名Coherent Corp（LITE），整合完成"},
+      {"year": 2024, "event": "800G光模块需求爆发，营收大幅超预期"}
+    ],
+    "narrative": "LITE（Coherent）是光网络基础设施的全面布局标的。AI数据中心的高速互联需求直接驱动800G收发模块需求暴增。相比AAOI，Coherent规模更大、产品线更全，但整合风险也更高。是AI基础设施供应链中的'基础材料层'投资。"
+  },
+  "INTC": {
+    "full_name": "Intel Corporation",
+    "one_liner": "昔日半导体霸主，正在经历最艰难的转型：从设计+制造一体到追赶台积电制程工艺",
+    "business_model": "集成设计制造（IDM），CPU+GPU设计+自有晶圆厂制造，尝试代工业务（IFS）",
+    "segments": [
+      {"name": "Client Computing (PC CPU)", "desc": "Core系列消费CPU，仍是最大营收来源但份额持续被AMD蚕食"},
+      {"name": "Data Center & AI", "desc": "Xeon服务器CPU + Gaudi AI加速器，份额大幅下滑"},
+      {"name": "Network & Edge", "desc": "网络芯片，稳定但小"},
+      {"name": "Intel Foundry Services (IFS)", "desc": "对外代工业务，战略重点但目前亏损"}
+    ],
+    "key_customers": ["Dell/HP/Lenovo（PC OEM）", "云计算公司（逐渐转向AMD/ARM）"],
+    "ecosystem": {
+      "partners": ["美国政府（CHIPS法案补贴）", "Amazon AWS（IFS客户）"],
+      "competitors": ["AMD（CPU全面竞争）", "NVDA（GPU/AI）", "台积电（代工直接竞争）", "ARM（架构授权替代）"]
+    },
+    "milestones": [
+      {"year": 2004, "event": "放弃Itanium，错过64位浪潮后被AMD追上"},
+      {"year": 2021, "event": "Pat Gelsinger回归，宣布IDM 2.0战略"},
+      {"year": 2021, "event": "CHIPS法案通过，获得数十亿美元美国工厂补贴"},
+      {"year": 2023, "event": "Intel 18A制程宣布，试图重夺工艺领先"},
+      {"year": 2024, "event": "Gaudi AI加速器市场份额不及预期，Core Ultra功耗问题"},
+      {"year": 2024, "event": "宣布大规模裁员（15000+），业务重组"}
+    ],
+    "narrative": "INTC是科技界最难的'逆转剧情'。制程工艺落后台积电5年+，CPU市场份额被AMD持续蚕食，AI市场被NVDA统治。Pat Gelsinger的IDM 2.0是正确方向但代价极高。CHIPS法案补贴是救生圈。关键问题：Intel 18A能否在2025年量产并达到承诺良率？这是整个投资论据的核心假设。"
+  },
+  "SNDK": {
+    "full_name": "SanDisk Corporation (Western Digital NAND分拆)",
+    "one_liner": "全球最大NAND闪存品牌之一，从WD分拆后独立上市，专注消费+企业存储",
+    "business_model": "NAND闪存设计制造，消费级存储（U盘/SD卡/SSD）+ 企业级SSD",
+    "segments": [
+      {"name": "消费级NAND", "desc": "SanDisk品牌U盘/SD卡/移动SSD，全球市场领先"},
+      {"name": "企业级SSD", "desc": "数据中心存储，AI训练数据存储需求受益"}
+    ],
+    "key_customers": ["亚马逊/微软/谷歌（企业SSD）", "消费电子零售商"],
+    "ecosystem": {
+      "partners": ["铠侠（Kioxia，NAND合作制造）"],
+      "competitors": ["Samsung（NAND最大份额）", "SK Hynix", "Micron（MU）"]
+    },
+    "milestones": [
+      {"year": 2016, "event": "Western Digital以$190亿收购SanDisk"},
+      {"year": 2023, "event": "WD宣布将HDD和NAND业务分拆"},
+      {"year": 2024, "event": "SanDisk独立上市，聚焦NAND业务"}
+    ],
+    "narrative": "SNDK是NAND周期股。NAND存储是高度周期性行业，供需失衡导致价格大幅波动。AI训练和推理对存储容量的需求是新的结构性增量。关键指标：NAND价格走势（与MU高度相关）、企业SSD占比提升。"
+  },
+  "MU": {
+    "full_name": "Micron Technology, Inc.",
+    "one_liner": "美国唯一DRAM和NAND垂直整合制造商，AI基础设施对HBM内存的需求是最大催化剂",
+    "business_model": "内存半导体（DRAM+NAND）设计和制造，IDM模式，B2B为主",
+    "segments": [
+      {"name": "DRAM", "desc": "DDR5/HBM3E高带宽内存，AI GPU配套需求爆发，核心增长引擎"},
+      {"name": "NAND", "desc": "数据中心SSD + 消费存储，周期性"},
+      {"name": "HBM (High Bandwidth Memory)", "desc": "AI GPU专属内存，供不应求，高毛利"}
+    ],
+    "key_customers": ["NVIDIA（HBM3E for H100/H200）", "AMD（HBM for MI300X）", "主要云厂商"],
+    "ecosystem": {
+      "partners": ["台积电（部分先进制程）"],
+      "competitors": ["Samsung（DRAM全球第一）", "SK Hynix（HBM领先）", "铠侠（NAND）"]
+    },
+    "milestones": [
+      {"year": 2022, "event": "内存价格崩溃，MU股价腰斩"},
+      {"year": 2023, "event": "AI驱动HBM需求，MU开始HBM3E量产"},
+      {"year": 2024, "event": "HBM3E产能扩张，NVIDIA订单大幅增长"},
+      {"year": 2025, "event": "HBM4开发，下一代AI内存竞争"}
+    ],
+    "narrative": "MU是AI基础设施中最重要的'材料'供应商之一。AI训练需要大量HBM内存，MU是美国唯一的DRAM制造商。当前最大的叙事是：HBM供不应求导致价格和毛利率大幅提升，打破了传统内存周期的周期性。风险：SK Hynix的HBM份额领先，Samsung产能扩张可能压价。"
+  },
+  "QCOM": {
+    "full_name": "Qualcomm Incorporated",
+    "one_liner": "无线通信芯片霸主，正在向PC/汽车/AI推理边缘计算多元化扩张",
+    "business_model": "Fabless半导体+专利授权（QTL），手机芯片+专利双收入，护城河极深",
+    "segments": [
+      {"name": "QCT (芯片业务)", "desc": "Snapdragon手机芯片、骁龙X PC芯片、汽车芯片"},
+      {"name": "QTL (授权业务)", "desc": "5G/4G基础专利授权，几乎对所有手机厂商收取专利费，高毛利"},
+      {"name": "IoT/Automotive", "desc": "汽车数字座舱+驾驶辅助，长期增长点"}
+    ],
+    "key_customers": ["苹果（iPhone调制解调器）", "三星", "小米/OPPO/vivo"],
+    "ecosystem": {
+      "partners": ["台积电（先进制程代工）"],
+      "competitors": ["MediaTek（手机芯片份额竞争）", "Apple（自研调制解调器威胁）", "AMD（PC芯片新竞争）"]
+    },
+    "milestones": [
+      {"year": 2019, "event": "苹果和解，每部iPhone支付约$7.50专利费，五年协议"},
+      {"year": 2022, "event": "推出骁龙X Elite PC芯片，对标Apple M系列"},
+      {"year": 2024, "event": "苹果自研调制解调器进展威胁QTL收入"},
+      {"year": 2025, "event": "汽车芯片营收快速增长，多家车厂采用Snapdragon Digital Chassis"}
+    ],
+    "narrative": "QCOM的核心矛盾：QTL专利业务是印钞机但面临苹果自研威胁，QCT芯片业务在骁龙X Elite上有突破但PC市场份额还小。汽车是新增长曲线。整体是一个防御性+适度成长的半导体股，P/E合理，分红稳定，不是爆炸性增长标的。"
+  },
+  "META": {
+    "full_name": "Meta Platforms, Inc.",
+    "one_liner": "全球最大社交媒体帝国，广告货币化+AI基础设施双重押注，元宇宙赌注悬而未决",
+    "business_model": "广告平台（Facebook/Instagram/WhatsApp），免费内容+精准广告变现，B2B广告主",
+    "segments": [
+      {"name": "Family of Apps (FoA)", "desc": "Facebook/Instagram/WhatsApp/Messenger，占营收97%+，广告驱动"},
+      {"name": "Reality Labs (VR)", "desc": "Meta Quest VR头显+元宇宙，持续亏损（$150亿/年+），长期赌注"}
+    ],
+    "key_customers": ["全球广告主（品牌+中小企业）", "3B+月活用户（内容消费者）"],
+    "ecosystem": {
+      "partners": ["AMD（AI训练集群）", "NVIDIA（GPU基础设施）"],
+      "competitors": ["TikTok/ByteDance（Reels直接竞争）", "YouTube/Google（视频广告）", "Snap（年轻用户竞争）", "X（Twitter）"]
+    },
+    "milestones": [
+      {"year": 2012, "event": "IPO + 以$10亿收购Instagram"},
+      {"year": 2014, "event": "以$20亿收购Oculus，押注VR"},
+      {"year": 2021, "event": "更名Meta，宣布元宇宙战略，Reality Labs烧钱开始"},
+      {"year": 2022, "event": "股价从$380跌至$90，'效率年'宣布，大规模裁员"},
+      {"year": 2023, "event": "盈利大幅反弹，AI推荐算法优化广告效率"},
+      {"year": 2024, "event": "Llama开源AI系列，AI基础设施大规模投入"},
+      {"year": 2025, "event": "Ray-Ban AI眼镜爆款，非VR设备突破"}
+    ],
+    "narrative": "META是'效率年'后最成功的大型科技股反转案例。核心广告业务仍然强劲，AI推荐算法持续提升变现效率。最大的悬念是Reality Labs：扎克伯格为元宇宙烧掉了数百亿，Ray-Ban眼镜是第一个真正的商业验证。AI赌注（Llama开源生态）是正确战略方向。"
+  },
+  "TSLA": {
+    "full_name": "Tesla, Inc.",
+    "one_liner": "电动汽车+能源+AI机器人综合公司，FSD自动驾驶和Optimus机器人是长期期权",
+    "business_model": "电动汽车直销（D2C）+ 能源存储（Megapack）+ 软件（FSD订阅）",
+    "segments": [
+      {"name": "Automotive", "desc": "Model 3/Y/S/X/Cybertruck，全球交付，价格战压缩毛利"},
+      {"name": "Energy", "desc": "Megapack储能+Powerwall家用，高增速高毛利"},
+      {"name": "Services & Others", "desc": "FSD/FSD订阅/超充/车辆保险"},
+      {"name": "AI & Robotics (未来)", "desc": "Optimus人形机器人，Dojo超算，长期期权"}
+    ],
+    "key_customers": ["全球消费者（D2C）", "公用事业公司（Megapack）"],
+    "ecosystem": {
+      "partners": ["Panasonic（电池合作）", "台积电（FSD芯片）"],
+      "competitors": ["BYD（全球EV量最大）", "Rivian/Lucid（美国EV新势力）", "传统OEM（Ford/GM EV部门）"]
+    },
+    "milestones": [
+      {"year": 2010, "event": "纳斯达克IPO，首辆Roadster"},
+      {"year": 2017, "event": "Model 3量产，打破大众市场门槛"},
+      {"year": 2020, "event": "进入S&P500，市值超越所有传统车企"},
+      {"year": 2021, "event": "股价历史峰值，Musk成为世界首富"},
+      {"year": 2023, "event": "价格战开始，毛利率从25%+跌至17%"},
+      {"year": 2024, "event": "Optimus机器人展示，Cybertruck量产"},
+      {"year": 2025, "event": "Musk政治化（DOGE）导致欧洲销量下滑"}
+    ],
+    "narrative": "TSLA是史上最有争议的股票之一。多头认为它是AI+机器人公司（FSD+Optimus），空头认为它是估值虚高的汽车公司。真相可能在中间：EV业务面临BYD价格战压力，但能源/Megapack业务是真实高增长，FSD是可选项期权。Elon Musk的政治化是2025年新增的品牌风险。"
+  },
+  "RGTI": {
+    "full_name": "Rigetti Computing, Inc.",
+    "one_liner": "量子计算硬件公司，超导量子比特路线，早期商业化阶段",
+    "business_model": "量子计算即服务（QCaaS），政府合同+研究机构订阅",
+    "segments": [
+      {"name": "量子计算服务", "desc": "通过AWS/Azure提供量子计算访问，政府机构合同"},
+      {"name": "量子硬件研发", "desc": "超导量子芯片制造，不断提升qubit数量"}
+    ],
+    "key_customers": ["美国DOE/DARPA（政府研究）", "量子研究机构", "AWS Braket平台合作"],
+    "ecosystem": {
+      "partners": ["AWS（云平台合作）"],
+      "competitors": ["IonQ（IONQ，离子阱路线）", "D-Wave（QBTS）", "IBM Quantum（最大玩家）", "Google Quantum AI"]
+    },
+    "milestones": [
+      {"year": 2017, "event": "成立，Chad Rigetti（前IBM量子研究员）创办"},
+      {"year": 2022, "event": "通过SPAC上市"},
+      {"year": 2024, "event": "84-qubit Ankaa-3芯片，错误率改善"},
+      {"year": 2025, "event": "量子纠错进展，但与IBM Google差距仍大"}
+    ],
+    "narrative": "RGTI是量子计算赛道的高风险早期投注。量子霸权时代的实际应用仍是5-10年后的事，当前营收极小，完全靠叙事和政府补贴支撑估值。相比IBM/谷歌等大公司的量子业务，RGTI的优势是'纯洁性'（纯量子计算公司），风险是资金耗尽风险。"
+  },
+  "OKLO": {
+    "full_name": "Oklo Inc.",
+    "one_liner": "下一代小型核裂变反应堆（SMR）公司，AI数据中心碳中性电力解决方案",
+    "business_model": "设计+运营小型模块化反应堆，向企业客户销售电力（PPA合同），早期开发阶段",
+    "segments": [
+      {"name": "Aurora SMR反应堆", "desc": "液态金属快堆设计，100MW+规模，目标2027年部署"},
+      {"name": "核废料再利用", "desc": "使用现有核废料作燃料的独特技术路线"}
+    ],
+    "key_customers": ["美国空军（试点合同）", "数据中心运营商（PPA谈判中）", "OpenAI（潜在客户）"],
+    "ecosystem": {
+      "partners": ["Sam Altman（OpenAI CEO，Oklo董事长）", "Peter Thiel（支持者）"],
+      "competitors": ["NuScale（已失败）", "TerraPower（比尔盖茨）", "X-energy", "Commonwealth Fusion（聚变路线）"]
+    },
+    "milestones": [
+      {"year": 2013, "event": "MIT校友创办Oklo"},
+      {"year": 2020, "event": "NRC批准Aurora反应堆选址申请（爱达荷国家实验室）"},
+      {"year": 2022, "event": "NRC拒绝许可申请，需要补充安全数据"},
+      {"year": 2024, "event": "通过Sam Altman的SPAC上市"},
+      {"year": 2025, "event": "重新提交NRC许可申请，AI数据中心电力需求使其估值暴涨"}
+    ],
+    "narrative": "OKLO是AI数据中心对清洁基础负载电力的需求所催生的核能复兴叙事的代表。SMR相比大型核电站建设周期短、选址灵活。Sam Altman的背书是最大的信用背书。风险极高：无营收、无许可证、技术未验证，是纯期权型投注。"
+  },
+  "FLNC": {
+    "full_name": "Fluence Energy, Inc.",
+    "one_liner": "全球领先储能系统供应商（Siemens+AES合资），AI数据中心和可再生能源电网的配套基础设施",
+    "business_model": "储能系统集成+软件平台，B2B公用事业和大型企业客户",
+    "segments": [
+      {"name": "储能系统", "desc": "电网级锂离子电池储能，Gridstack产品线，核心收入"},
+      {"name": "软件平台（Mosaic）", "desc": "储能资产运营优化软件，SaaS模式，高毛利增长点"}
+    ],
+    "key_customers": ["公用事业公司", "独立发电商（IPP）", "可再生能源开发商"],
+    "ecosystem": {
+      "partners": ["Siemens（合资方）", "AES（合资方+主要客户）", "宁德时代（电池供应）"],
+      "competitors": ["Tesla Megapack（最大竞争对手）", "LG Energy Solution", "BYD储能"]
+    },
+    "milestones": [
+      {"year": 2018, "event": "Siemens和AES成立Fluence合资公司"},
+      {"year": 2021, "event": "纳斯达克IPO"},
+      {"year": 2023, "event": "IRA法案储能补贴加速市场增长"},
+      {"year": 2024, "event": "Mosaic软件平台增长加速，毛利率改善"}
+    ],
+    "narrative": "FLNC是清洁能源基础设施的'皮克斯铁锹'卖家。每建一个太阳能/风能场，就需要储能来平滑间歇性。AI数据中心的24/7稳定电力需求也推动电网储能需求。Tesla Megapack是最大竞争对手，但FLNC规模更大且产品线更灵活。软件平台是未来估值重估的关键。"
+  },
+  "TTD": {
+    "full_name": "The Trade Desk, Inc.",
+    "one_liner": "全球最大独立程序化广告平台（DSP），AI驱动的广告购买自动化领导者",
+    "business_model": "程序化广告交易平台，收取媒体支出的约20%佣金，B2B广告代理商和品牌客户",
+    "segments": [
+      {"name": "程序化广告DSP", "desc": "Connected TV（CTV）/展示广告/视频广告，统一买方平台"},
+      {"name": "UID 2.0", "desc": "替代第三方Cookie的身份识别标准，行业主导权争夺"}
+    ],
+    "key_customers": ["全球广告代理商（WPP/Publicis/IPG）", "品牌广告主"],
+    "ecosystem": {
+      "partners": ["迪士尼（Disney+广告层）", "Netflix（广告层合作）", "Walmart Connect"],
+      "competitors": ["Google DV360（最大对手）", "Amazon DSP（封闭生态）", "AppNexus（Xandr）"]
+    },
+    "milestones": [
+      {"year": 2009, "event": "Jeff Green创办TTD"},
+      {"year": 2016, "event": "纳斯达克IPO，程序化广告迎来黄金时代"},
+      {"year": 2021, "event": "CTV广告爆发，Disney+/Hulu流量加持"},
+      {"year": 2023, "event": "UID 2.0推进，成为无Cookie广告行业标准"},
+      {"year": 2024, "event": "AI广告代理Kokai发布，自动化广告策略"}
+    ],
+    "narrative": "TTD是数字广告生态中最强的独立玩家——不拥有媒体内容，只做买方平台，和谷歌/亚马逊不存在直接利益冲突。CTV（流媒体广告）的爆发是最大的增长驱动力，因为线性电视广告预算正在向流媒体迁移。UID 2.0是护城河加强的信号：TTD在重写行业规则。"
+  },
+  "CRWV": {
+    "full_name": "CoreWeave, Inc.",
+    "one_liner": "AI超级算力云平台，专注GPU集群租赁，NVDA的最大云合作伙伴",
+    "business_model": "GPU即服务（GPUaaS），大规模H100/H200集群出租给AI公司，B2B长期合同",
+    "segments": [
+      {"name": "GPU Cloud（AI算力）", "desc": "H100/H200集群租赁，AI训练和推理主要收入"},
+      {"name": "专属数据中心", "desc": "自建AI优化数据中心，比通用云成本更低"}
+    ],
+    "key_customers": ["微软（最大单一客户，占营收60%+）", "OpenAI（ChatGPT训练）", "Cohere", "Stability AI"],
+    "ecosystem": {
+      "partners": ["NVIDIA（战略投资方）", "微软（长期PPA合同）"],
+      "competitors": ["AWS（GPU实例）", "Google Cloud（TPU+GPU）", "Azure（GPU集群）", "Lambda Labs", "Crusoe"]
+    },
+    "milestones": [
+      {"year": 2017, "event": "成立，最初是以太坊挖矿"},
+      {"year": 2022, "event": "转型AI GPU云，NVIDIA战略投资"},
+      {"year": 2023, "event": "微软签订长期AI算力合同（$100亿+级别）"},
+      {"year": 2025, "event": "IPO，估值约$23B，AI云计算首个独角兽上市"}
+    ],
+    "narrative": "CRWV是AI算力浪潮最直接的受益者之一，没有之一。微软对其的依赖程度惊人（60%营收集中度），NVIDIA的战略投资意味着GPU供应优先保障。风险是：超高客户集中度（微软），以及大型云厂商自建GPU集群会逐步减少外包。"
+  },
+  "HOOD": {
+    "full_name": "Robinhood Markets, Inc.",
+    "one_liner": "美国散户证券交易平台，加密货币+股票+期权，Gen Z金融入口争夺者",
+    "business_model": "PFOF（订单流付款）+ 保证金贷款 + 金卡会员订阅 + 加密交易，B2C散户",
+    "segments": [
+      {"name": "交易（PFOF）", "desc": "股票/期权/加密交易，通过做市商收取订单流付款"},
+      {"name": "净利息收入", "desc": "保证金贷款+现金管理账户，利率敏感"},
+      {"name": "Robinhood Gold", "desc": "$5/月订阅，IRA账户+高息存款+专业数据"}
+    ],
+    "key_customers": ["美国年轻散户投资者（18-35岁）"],
+    "ecosystem": {
+      "partners": ["Citadel（做市商）", "Virtu（做市商）"],
+      "competitors": ["Fidelity", "Schwab（SCHW）", "Interactive Brokers（IBKR）", "Coinbase（加密）", "SoFi（SOFI）"]
+    },
+    "milestones": [
+      {"year": 2013, "event": "Vlad Tenev创办，'零佣金'颠覆券商"},
+      {"year": 2021, "event": "GameStop事件，限制GME交易，引发用户信任危机"},
+      {"year": 2021, "event": "纳斯达克IPO，$38发行价当日破发"},
+      {"year": 2023, "event": "加密牛市+期权交易推动营收反弹"},
+      {"year": 2024, "event": "推出Robinhood Gold卡，进入信用卡市场"}
+    ],
+    "narrative": "HOOD是'民主化金融'的旗帜，但商业模式饱受争议（PFOF监管风险）。核心优势是对年轻用户的获客效率极高。加密牛市是最大的短期催化剂，每次比特币牛市都带动HOOD交易量爆发。监管风险（SEC对PFOF的态度）是长期悬剑。"
+  },
+  "BBAI": {
+    "full_name": "BigBear.ai Holdings, Inc.",
+    "one_liner": "美国国防+情报领域AI分析公司，专注AI驱动的决策支持和预测分析",
+    "business_model": "政府合同（DoD/情报机构），AI分析平台SaaS，B2B政府为主",
+    "segments": [
+      {"name": "国防分析", "desc": "军事后勤/态势感知AI，美国陆军/海军合同"},
+      {"name": "情报分析", "desc": "多源数据融合分析，情报机构订阅"}
+    ],
+    "key_customers": ["美国国防部（DoD）", "情报社区（IC）", "美国边境安全"],
+    "ecosystem": {
+      "partners": ["美国军方（核心客户）"],
+      "competitors": ["Palantir（PLTR，最强竞争对手）", "C3.ai（AI）", "Sounding（SOUN）"]
+    },
+    "milestones": [
+      {"year": 2021, "event": "通过SPAC上市"},
+      {"year": 2023, "event": "多个DoD合同续签，但竞争激烈"},
+      {"year": 2024, "event": "AI防御叙事受益，股价大幅波动"}
+    ],
+    "narrative": "BBAI是Palantir的'小弟'版本，同样做政府AI分析但规模小很多。在AI防御概念火热时受益于板块情绪，但基本面（营收规模、盈利能力）远不如Palantir。高度政策依赖，合同集中度高，是高风险的政府AI小盘股。"
+  },
+  "GOOGL": {
+    "full_name": "Alphabet Inc.",
+    "one_liner": "全球最大搜索引擎+广告平台，云计算第三+YouTube第一视频+DeepMind AI研究",
+    "business_model": "广告（搜索+YouTube）+ 云计算（GCP）+ 其他赌注（Waymo/生命科学）",
+    "segments": [
+      {"name": "Google Search & Other", "desc": "搜索广告，占营收57%，AI搜索是最大威胁也是最大机遇"},
+      {"name": "YouTube Ads", "desc": "视频广告，全球第一流媒体平台"},
+      {"name": "Google Cloud (GCP)", "desc": "云计算第三名，增速25%+，AI（Gemini/TPU）是差异化"},
+      {"name": "Google Subscriptions", "desc": "Google One/YouTube Premium，订阅增长"},
+      {"name": "Other Bets", "desc": "Waymo自动驾驶/DeepMind/生命科学，长期期权"}
+    ],
+    "key_customers": ["全球广告主", "企业云客户", "YouTube内容创作者生态"],
+    "ecosystem": {
+      "partners": ["Anthropic（AI研究投资）", "Samsung（Android默认搜索）"],
+      "competitors": ["Microsoft Bing+ChatGPT（搜索威胁）", "AWS（云计算）", "Meta（社交广告）"]
+    },
+    "milestones": [
+      {"year": 1998, "event": "成立，PageRank算法奠定搜索霸主地位"},
+      {"year": 2006, "event": "以$16.5亿收购YouTube"},
+      {"year": 2015, "event": "重组为Alphabet，集中管理多元赌注"},
+      {"year": 2023, "event": "ChatGPT冲击，Bard/Gemini反击，'AI威胁搜索'叙事"},
+      {"year": 2024, "event": "司法部反垄断裁决——Google搜索垄断确立"},
+      {"year": 2025, "event": "Gemini 2.0发布，TPU v5配合Google Cloud AI复苏"}
+    ],
+    "narrative": "GOOGL是搜索时代的绝对霸主，但AI时代面临根本性的商业模式挑战：如果AI直接回答问题，用户还需要点击链接吗？搜索广告还能增长吗？这个问题的答案决定GOOGL未来5年的估值。短期看AI Overview（AI搜索摘要）并未显著减少点击，反而提升了用户粘性。DeepMind的技术实力是护城河之一。"
+  },
+  "AMZN": {
+    "full_name": "Amazon.com, Inc.",
+    "one_liner": "全球最大云计算平台（AWS）+ 电商帝国 + AI推理基础设施领导者",
+    "business_model": "AWS云服务（高毛利）+ 电商平台（低毛利但现金流）+ 广告（高毛利增速高）",
+    "segments": [
+      {"name": "AWS（云计算）", "desc": "全球第一云，占营收17%但占营业利润70%+，AI推理主战场"},
+      {"name": "North America Retail", "desc": "电商+Prime会员+第三方卖家服务"},
+      {"name": "International Retail", "desc": "海外电商，仍在亏损走向盈利"},
+      {"name": "Advertising", "desc": "Amazon广告，增速25%+，第三大数字广告平台"}
+    ],
+    "key_customers": ["全球企业云客户", "第三方卖家（数百万）", "Prime会员（2亿+）"],
+    "ecosystem": {
+      "partners": ["Anthropic（Claude AI，$40亿投资）", "NVIDIA（AWS GPU集群）"],
+      "competitors": ["Microsoft Azure（云计算直接竞争）", "Google Cloud（云计算）", "Walmart（电商）"]
+    },
+    "milestones": [
+      {"year": 1994, "event": "Bezos创办Amazon.com在线书店"},
+      {"year": 2006, "event": "AWS发布，云计算时代开启"},
+      {"year": 2018, "event": "市值突破万亿"},
+      {"year": 2023, "event": "Anthropic战略投资，AI布局确立"},
+      {"year": 2024, "event": "自研Trainium AI芯片量产，减少NVIDIA依赖"},
+      {"year": 2025, "event": "AWS Bedrock平台成为企业AI基础设施首选"}
+    ],
+    "narrative": "AMZN的核心是：AWS是利润引擎，电商是现金流工厂，广告是高增速新业务。AI时代的关键问题：AWS能否保持云第一地位（当前微软增速更快）？Anthropic/Bedrock能否建立AI护城河？自研Trainium芯片能否减少对NVDA的依赖和成本？"
+  },
+  "FN": {
+    "full_name": "Fabrinet",
+    "one_liner": "高精密光电子+光网络产品合同制造商，AI数据中心光模块供应链的核心外包工厂",
+    "business_model": "合同制造（EMS），为光网络和工业激光公司代工，B2B客户高集中度",
+    "segments": [
+      {"name": "光网络（Optical Communications）", "desc": "数据中心/电信光模块代工，占营收70%+，AI浪潮核心受益"},
+      {"name": "工业激光", "desc": "IPG Photonics等工业激光器代工"},
+      {"name": "医疗设备", "desc": "精密医疗器械制造"}
+    ],
+    "key_customers": ["Coherent (LITE)", "II-VI", "Lumentum", "Ciena"],
+    "ecosystem": {
+      "partners": ["主要泰国工厂（低成本制造优势）"],
+      "competitors": ["Celestica", "Sanmina", "中国光模块制造商（潜在竞争）"]
+    },
+    "milestones": [
+      {"year": 2000, "event": "成立于泰国，专注光网络精密制造"},
+      {"year": 2010, "event": "纽交所IPO"},
+      {"year": 2024, "event": "800G光模块需求爆发，Coherent/Lumentum订单大增"},
+      {"year": 2025, "event": "泰国工厂扩张，1.6T光模块产能布局"}
+    ],
+    "narrative": "FN是光网络供应链的'代工厂'，不自主设计产品，只做精密制造。这使它不需要研发风险，但也使它依赖客户订单（Coherent/Lumentum集中度高）。AI数据中心的800G/1.6T光模块需求爆发是直接利好。泰国制造基地使其不受中美贸易战的直接冲击。"
+  },
+  "MXL": {
+    "full_name": "MaxLinear, Inc.",
+    "one_liner": "高速数据互联芯片设计公司，主攻宽带/有线+数据中心网络互联半导体",
+    "business_model": "Fabless半导体，混合信号芯片设计，B2B OEM/ODM客户",
+    "segments": [
+      {"name": "宽带接入", "desc": "有线调制解调器/DSL/GPON芯片，历史核心业务，周期性"},
+      {"name": "Infrastructure/Data Center", "desc": "400G/800G PAM4以太网芯片，AI互联受益"},
+      {"name": "工业/物联网", "desc": "工业通信芯片"}
+    ],
+    "key_customers": ["有线网络运营商供应商", "数据中心交换机厂商"],
+    "ecosystem": {
+      "partners": ["台积电（代工）"],
+      "competitors": ["Marvell（MRVL）", "Broadcom（AVGO）", "Semtech"]
+    },
+    "milestones": [
+      {"year": 2007, "event": "成立，混合信号芯片Fabless"},
+      {"year": 2021, "event": "以$3.8亿收购Intel NSG（传输芯片）"},
+      {"year": 2023, "event": "宽带市场库存调整，营收大幅下滑"},
+      {"year": 2024, "event": "数据中心PAM4芯片需求复苏"}
+    ],
+    "narrative": "MXL是小型Fabless半导体公司，核心宽带业务周期性强，数据中心业务是增长引擎。相比MRVL/AVGO体量小很多，更加波动，是更高风险更高回报的赌注。宽带库存调整是近年最大的负面事件，复苏节奏是关键观察点。"
+  },
+  "MMM": {
+    "full_name": "3M Company",
+    "one_liner": "工业多元化制造巨头（分拆后），从PFAS法律诉讼+军用耳塞诉讼中重建",
+    "business_model": "B2B工业制造，粘合剂/研磨材料/安全设备/医疗耗材，全球多元化",
+    "segments": [
+      {"name": "Safety & Industrial", "desc": "工业安全设备，个人防护，核心业务"},
+      {"name": "Transportation & Electronics", "desc": "汽车/电子材料，半导体制造材料"},
+      {"name": "Health Care (已分拆)", "desc": "医疗设备分拆为Solventum，2024年完成"}
+    ],
+    "key_customers": ["全球工业制造商", "政府/军事（耳塞）", "医疗机构（历史）"],
+    "ecosystem": {
+      "partners": ["全球分销网络（数十万产品SKU）"],
+      "competitors": ["Honeywell（HON）", "GE Aerospace（GE）", "Emerson（EMR）"]
+    },
+    "milestones": [
+      {"year": 1902, "event": "成立（明尼苏达矿业制造公司）"},
+      {"year": 2019, "event": "军用耳塞诉讼（Combat Arms）开始，面临数十亿赔偿"},
+      {"year": 2023, "event": "以$6B和解军用耳塞诉讼"},
+      {"year": 2024, "event": "PFAS（永久化学品）和解$10.3B，医疗业务Solventum分拆"},
+      {"year": 2025, "event": "法律诉讼基本清算，重建投资者信心"}
+    ],
+    "narrative": "MMM是一个'困境反转'故事：核心业务稳健（数万种工业产品，市场分散，护城河深），但PFAS和军用耳塞诉讼压制了多年的估值。随着主要诉讼和解，法律不确定性降低，股价有望重新定价。分红历史超过100年（股息贵族），对价值投资者有吸引力。"
+  }
+}

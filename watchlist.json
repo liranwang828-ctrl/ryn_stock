@@ -1,0 +1,35 @@
+{
+  "watchlist": ["AAOI", "RKLB", "NVDA", "MSFT", "OXY", "INTC", "AMD", "MRVL", "FN", "SNDK", "IREN"],
+  "alerts": {
+    "price_change_pct": 3,
+    "volume_ratio": 2.0,
+    "rsi14_high": 75,
+    "rsi14_low": 25
+  },
+  "schedule": {
+    "pre_market_utc": "05:30",
+    "post_market_utc": "21:00"
+  },
+  "data_sources": {
+    "primary": "yfinance",
+    "secondary": "alphavantage",
+    "community": ["reddit", "stocktwits"]
+  },
+  "macro_config": {
+    "fed_hiking":               false,
+    "fed_easing":               false,
+    "fed_pause":                true,
+    "fed_cut_this_month":       false,
+    "treasury10y_monthly_delta": 0.05,
+    "yield_curve_inverted":     false,
+    "curve_inverted_months":    0
+  },
+  "geopolitical": {
+    "last_updated":             "2026-05-12",
+    "us_china_trade_risk":      "high",
+    "chip_export_restriction":  true,
+    "middle_east_tension":      "medium",
+    "tariff_environment":       "uncertain",
+    "notes": "特朗普对伊朗警告；中美贸易谈判不确定；芯片出口管制持续；半导体板块10日大涨部分为交易关税缓和预期，叙事脆弱"
+  }
+}

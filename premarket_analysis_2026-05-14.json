@@ -1,0 +1,163 @@
+{
+  "date": "2026-05-14",
+  "generated_at": "2026-05-14T15:45:49.820730+00:00",
+  "macro": {
+    "spy_pre": 0,
+    "nq_futures": 0.8853685219264398,
+    "env": "中性"
+  },
+  "stocks": {
+    "MRVL": {
+      "symbol": "MRVL",
+      "prev_close": 177.95,
+      "pre_price": 186.32,
+      "gap_pct": 4.7,
+      "pre_vol_ratio": 0.0,
+      "news_type": "sector_driven",
+      "catalyst_strength": 1,
+      "matched_keywords": [
+        "AI"
+      ],
+      "top_headline": "What Is Happening With Marvell Technology Stock? - Trefis",
+      "all_headlines": [
+        "What Is Happening With Marvell Technology Stock? - Trefis",
+        "Everyone’s Talking About Micron. Smart Money Is Watching This Stock Instead - 24",
+        "Why Marvell Technology Stock Is Up Today - The Motley Fool"
+      ],
+      "news_sources": [
+        "Trefis",
+        "24/7 Wall St.",
+        "The Motley Fool"
+      ],
+      "sector_ref": "SOXX",
+      "sector_gap": 0.56,
+      "spy_pre": 0,
+      "futures_nq": 0.89,
+      "atr": 9.92,
+      "pred_scene": "B",
+      "confidence": "中",
+      "reasoning": "高开+4.7%板块弱+催化剂弱→可能回踩VWAP",
+      "scene_name": "VWAP回踩",
+      "scene_icon": "🔵",
+      "actual_open": null,
+      "opening_hi": 192.15,
+      "opening_lo": 177.33,
+      "vwap_current": 186.06,
+      "watch_zone": "$184.2-$187.92（VWAP±1%，实时更新）",
+      "entry_confirm": "[H场景] 缩量 + 3连阳 + RS继续强于板块  （VWAP实际=$186.07，区间$177.33-$192.15）",
+      "sizing": "正常×1.5",
+      "stop_basis": "VWAP$186.07 - ATR$3.28",
+      "macro_at_open": null,
+      "actual_scene": "H",
+      "pred_vs_actual": "⚠️预测B→实际H",
+      "obs_minutes": 140,
+      "obs_complete": true,
+      "month_context": {
+        "perf_1m": 39.7,
+        "perf_3m": 137.1,
+        "rs_1m": 39.7,
+        "hi_1m": 192.15,
+        "lo_1m": 128.42,
+        "ma20": 162.92,
+        "ma50": 126.22,
+        "above_ma20": true,
+        "above_ma50": true,
+        "tech_stage": "上升趋势",
+        "catalyst_timeline": [
+          {
+            "date": "",
+            "title": "What Is Happening With Marvell Technology Stock? - Trefis",
+            "source": "Trefis"
+          },
+          {
+            "date": "",
+            "title": "Everyone’s Talking About Micron. Smart Money Is Watching This Stock Instead - 24/7 Wall St.",
+            "source": "24/7 Wall St."
+          },
+          {
+            "date": "",
+            "title": "Why Marvell Technology Stock Is Up Today - The Motley Fool",
+            "source": "The Motley Fool"
+          },
+          {
+            "date": "",
+            "title": "Marvell's Next AI Wave Is Not Chips (NASDAQ:MRVL) - Seeking Alpha",
+            "source": "Seeking Alpha"
+          },
+          {
+            "date": "",
+            "title": "Marvell Technology Inc Stock (MRVL) Moved Up by 5.95% on May 14: What Signal Does It Send? - Trading",
+            "source": "TradingKey"
+          }
+        ],
+        "vol_trend": "平稳"
+      }
+    }
+  },
+  "scenario_templates": {
+    "A": {
+      "name": "强势突破",
+      "icon": "🟢",
+      "watch": "放量突破日内/昨日高点",
+      "confirm": "量比>1.3x + 突破K线收盘站上压力位",
+      "sizing": "正常×1.5",
+      "stop": "突破K线低点 - ATR×0.3"
+    },
+    "B": {
+      "name": "VWAP回踩",
+      "icon": "🔵",
+      "watch": "回踩至VWAP ±1%",
+      "confirm": "缩量(<0.8x均量) + 3连阳 + 5分钟涨>0.3%",
+      "sizing": "正常",
+      "stop": "回踩低点 - ATR×0.5"
+    },
+    "C": {
+      "name": "横盘蓄力",
+      "icon": "🟡",
+      "watch": "区间上沿突破",
+      "confirm": "量比>1.5x + 收盘站上上沿",
+      "sizing": "正常",
+      "stop": "区间中值"
+    },
+    "D": {
+      "name": "冲高回落",
+      "icon": "🟠",
+      "watch": "从日高回落>3%后止跌区（日低±2%）",
+      "confirm": "量缩(<0.8x) + 3连阳 + 下影出现",
+      "sizing": "半仓",
+      "stop": "止跌低点 - ATR×0.5"
+    },
+    "E": {
+      "name": "弱势反弹",
+      "icon": "⚪",
+      "watch": "日低区间 ±1%",
+      "confirm": "下影出现 + 3连阳 + 量不继续放大",
+      "sizing": "1/4仓",
+      "stop": "日低下方 ATR×0.3"
+    },
+    "F": {
+      "name": "跳水下跌",
+      "icon": "🔴",
+      "watch": "不操作",
+      "confirm": "等止跌信号出现再重新评估",
+      "sizing": "0",
+      "stop": "—"
+    },
+    "G": {
+      "name": "板块强股弱",
+      "icon": "🟣",
+      "watch": "当个股RS vs 板块转正",
+      "confirm": "RS>0 + 3连阳 + 板块ETF继续强",
+      "sizing": "半仓",
+      "stop": "VWAP - ATR×0.3"
+    },
+    "H": {
+      "name": "独立领涨",
+      "icon": "💎",
+      "watch": "回踩VWAP或5分钟MA",
+      "confirm": "缩量 + 3连阳 + RS继续强于板块",
+      "sizing": "正常×1.5",
+      "stop": "VWAP - ATR×0.3"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "AAPL": {
+    "pattern": "C",
+    "conf": "低",
+    "macro": "NEUTRAL",
+    "chg": -0.38,
+    "sector_chg": null,
+    "action": "不操作，等方向",
+    "sizing": "不操作",
+    "rs_streak": 0,
+    "strong_trend": false
+  },
+  "NVDA": {
+    "pattern": "B",
+    "conf": "中",
+    "macro": "NEUTRAL",
+    "chg": 3.41,
+    "sector_chg": null,
+    "action": "VWAP小仓，等量能恢复",
+    "sizing": "半仓",
+    "rs_streak": 1,
+    "strong_trend": false
+  },
+  "MSFT": {
+    "pattern": "C",
+    "conf": "低",
+    "macro": "NEUTRAL",
+    "chg": 0.88,
+    "sector_chg": null,
+    "action": "不操作，等方向",
+    "sizing": "不操作",
+    "rs_streak": 0,
+    "strong_trend": false
+  }
+}

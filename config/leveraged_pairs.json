@@ -1,0 +1,6 @@
+{
+  "_comment": "底层标的 → 杠杆ETF映射，工具自动读取。补充时告诉Claude即可。",
+  "AAOI": {"sym": "AAOX", "leverage": 2, "direction": "long"},
+  "SNDK": {"sym": "SNXX", "leverage": 2, "direction": "long"},
+  "NBIS": {"sym": "NBIL", "leverage": 2, "direction": "long"}
+}

@@ -1,0 +1,52 @@
+{
+  "persona": "howard_marks",
+  "description": "情绪钟摆框架的问题序列，永久性亏损风险触发一票否决",
+  "confidence_base": 60,
+  "natural_adversaries": ["stan_druckenmiller", "george_soros"],
+  "sequence": [
+    {
+      "id": "q1",
+      "question": "现在大家对这只股票是过度乐观还是过度悲观？",
+      "why": "情绪位置是我分析的出发点，没有这个判断就没有逆向操作的基础",
+      "data_required": ["analyst_rating", "short_pct", "community_sentiment"],
+      "fail_action": "early_stop",
+      "fail_output": {
+        "signal": "neutral",
+        "core_argument": "无法判断情绪位置，不足以形成逆向判断",
+        "invalidation": "情绪数据明确后重新评估"
+      }
+    },
+    {
+      "id": "q2",
+      "question": "谁已经为这个论点建好仓了？",
+      "why": "如果共识已经形成并建仓完毕，我的买入只是在为他们提供流动性",
+      "data_required": ["institutional_holdings", "rs_trend"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q3",
+      "question": "如果我错了，最差的情况是什么？（永久性亏损风险）",
+      "why": "真正的风险是永久性损失，不是短期波动；债务+低流动性是最大的警告",
+      "data_required": ["debt_ratio", "cash_runway", "beta"],
+      "fail_action": "veto",
+      "veto_reason": "下行风险不可接受，可能造成永久性损失"
+    },
+    {
+      "id": "q4",
+      "question": "这个资产我是在为乐观付钱还是为悲观付钱？",
+      "why": "第二层思维的核心：不是它好不好，而是价格反映的是乐观还是悲观预期",
+      "data_required": ["pe_ratio", "ps_ratio", "historical_percentile"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q5",
+      "question": "我比市场多知道什么？如果没有答案，为什么我能做得比市场好？",
+      "why": "如果没有信息优势或框架优势，入场就是在和市场赌博",
+      "data_required": ["news_freshness", "catalyst_type"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    }
+  ]
+}

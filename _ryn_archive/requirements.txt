@@ -1,0 +1,27 @@
+# Agent Team v2.0 — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Core
+numpy>=1.24.0
+pandas>=2.0.0
+pyyaml>=6.0
+
+# Data Sources
+yfinance>=0.2.30
+requests>=2.28.0
+
+# Sentiment / NLP
+nltk>=3.8
+# transformers>=4.30.0    # Optional: FinBERT financial sentiment (uncomment to enable)
+# torch>=2.0.0            # Optional: Required for FinBERT
+
+# Database (optional — enable cloud DB support)
+# sqlalchemy>=2.0.0
+# pymysql>=1.0.0
+# psycopg2-binary>=2.9.0
+
+# Advanced (optional)
+# scipy>=1.10.0       # For advanced statistics
+# matplotlib>=3.7.0   # For chart rendering
+# rich>=13.0.0        # For enhanced terminal dashboard
+# tabulate>=0.9.0     # For table formatting

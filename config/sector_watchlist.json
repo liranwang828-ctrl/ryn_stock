@@ -1,0 +1,234 @@
+{
+  "_comment": "全关注板块列表 v2 — 细分 + 板块叠加标注",
+  "_overlap_note": "overlap字段标注该股同时属于哪些其他板块，分析时需考虑多重驱动",
+
+  "sectors": {
+
+    "GPU算力": {
+      "etf": "SOXX",
+      "stocks": ["NVDA","AMD"],
+      "theme": "AI训练/推理核心硬件，CUDA生态护城河",
+      "overlap": {"NVDA":["机器人","自动驾驶"],"AMD":["CPU服务器","光模块生态"]}
+    },
+
+    "CPU/服务器芯片": {
+      "etf": "SOXX",
+      "stocks": ["AMD","INTC","ARM"],
+      "theme": "服务器CPU市场份额竞争，数据中心基础",
+      "overlap": {"AMD":["GPU算力"],"INTC":["定制ASIC","半导体设备"]}
+    },
+
+    "定制ASIC/TPU": {
+      "etf": null,
+      "stocks": ["MRVL","AVGO","INTC"],
+      "theme": "云厂商定制专属AI芯片：谷歌TPU/亚马逊Trainium/微软Maia",
+      "key_customers": {"MRVL":["Google","Amazon"],"AVGO":["Google","Meta"]},
+      "overlap": {"MRVL":["光模块","AI网络"],"AVGO":["AI网络","存储控制器"]}
+    },
+
+    "AI网络/互联": {
+      "etf": null,
+      "stocks": ["MRVL","ANET","CSCO","INFN"],
+      "theme": "GPU集群内部高速互联，InfiniBand/以太网竞争",
+      "overlap": {"MRVL":["定制ASIC","光模块"],"ANET":["数据中心网络"]}
+    },
+
+    "光模块/光互联": {
+      "etf": "LITE",
+      "stocks": ["AAOI","LITE","FN","CIEN","COHR"],
+      "theme": "800G/1.6T光收发器，AI数据中心GPU之间必需品",
+      "catalyst": "每个新AI数据中心订单都是直接需求"
+    },
+
+    "半导体设备": {
+      "etf": "SOXX",
+      "stocks": ["AMAT","LRCX","KLAC","ASML","ONTO"],
+      "theme": "芯片制造设备，AI建设的上游，护城河极深",
+      "note": "周期性但有AI资本支出持续驱动"
+    },
+
+    "AI封装/HBM": {
+      "etf": null,
+      "stocks": ["AMKR","ASX","MU"],
+      "theme": "先进封装CoWoS/SoIC，HBM高带宽内存，NVDA H100的关键瓶颈",
+      "overlap": {"MU":["存储芯片"]}
+    },
+
+    "存储芯片": {
+      "etf": null,
+      "stocks": ["MU","SNDK","WDC"],
+      "theme": "AI训练数据存储，HBM需求vs传统DRAM周期",
+      "overlap": {"MU":["AI封装/HBM"]}
+    },
+
+    "AI云平台": {
+      "etf": "IGV",
+      "stocks": ["MSFT","GOOGL","AMZN","META"],
+      "theme": "AI基础设施+应用变现，OpenAI/Gemini/Claude竞赛",
+      "overlap": {
+        "MSFT":["网络安全","AI软件SaaS"],
+        "GOOGL":["自动驾驶","量子计算"],
+        "META":["AI硬件(Ray-Ban)","社交AI"]
+      }
+    },
+
+    "AI软件SaaS": {
+      "etf": "IGV",
+      "stocks": ["CRM","NOW","SNOW","PLTR","MDB","ADBE"],
+      "theme": "AI功能嵌入企业软件，Copilot/Einstein付费转化率",
+      "overlap": {"SNOW":["数据基础设施"],"PLTR":["国防AI"]}
+    },
+
+    "数据基础设施": {
+      "etf": null,
+      "stocks": ["SNOW","MDB","DDOG","ESTC"],
+      "theme": "AI时代的数据湖/向量数据库/可观测性，AI应用底座"
+    },
+
+    "网络安全": {
+      "etf": "HACK",
+      "stocks": ["CRWD","PANW","OKTA","ZS","FTNT","S","CYBR"],
+      "theme": "每次大型安全事件→企业加速采购，AI生成攻击加剧需求",
+      "subcategory": {
+        "身份安全": ["OKTA","CYBR"],
+        "云安全/零信任": ["ZS","PANW"],
+        "终端安全": ["CRWD","S","FTNT"]
+      }
+    },
+
+    "机器人/人形机器人": {
+      "etf": "BOTZ",
+      "stocks": ["TSLA","NVDA","ABB","FANUC","IRBT"],
+      "theme": "Optimus/工业自动化，AI+机械手臂",
+      "overlap": {"TSLA":["自动驾驶","储能"],"NVDA":["GPU算力"]}
+    },
+
+    "自动驾驶/Robotaxi": {
+      "etf": null,
+      "stocks": ["TSLA","GOOGL","UBER","PONY","MOBILEYE"],
+      "theme": "Robotaxi商业化竞赛，监管节点是催化剂",
+      "overlap": {"TSLA":["机器人","储能"],"GOOGL":["AI云平台"]}
+    },
+
+    "算力/比特币挖矿": {
+      "etf": "MARA",
+      "stocks": ["IREN","MARA","CLSK","CORZ","HUT"],
+      "theme": "BTC价格+电力成本+AI算力租赁三重驱动",
+      "overlap": {"IREN":["清洁能源/储能"]}
+    },
+
+    "太空/卫星": {
+      "etf": "ITA",
+      "stocks": ["RKLB","ASTS","LUNR","RDW","SPCE"],
+      "theme": "低轨卫星互联网/太空商业化，政府合同驱动"
+    },
+
+    "国防/航天": {
+      "etf": "ITA",
+      "stocks": ["LMT","RTX","NOC","GD","PLTR"],
+      "theme": "地缘政治→国防预算上升，AI赋能武器系统",
+      "overlap": {"PLTR":["AI软件SaaS","数据基础设施"]}
+    },
+
+    "量子计算": {
+      "etf": "QTUM",
+      "stocks": ["IONQ","RGTI","QBTS","QUBT"],
+      "theme": "纯概念投机，10年商业化窗口，消息驱动",
+      "overlap": {"GOOGL":["AI云平台"]}
+    },
+
+    "核能/小堆SMR": {
+      "etf": null,
+      "stocks": ["OKLO","CCJ","NNE","SMR","LEU"],
+      "theme": "AI数据中心电力需求，SMR商业化进程"
+    },
+
+    "清洁能源/储能": {
+      "etf": "ICLN",
+      "stocks": ["FLNC","FSLR","ENPH","TSLA","AES"],
+      "theme": "AI数据中心绿电需求，储能配套",
+      "overlap": {"TSLA":["自动驾驶","机器人"]}
+    },
+
+    "电网/电力基础设施": {
+      "etf": null,
+      "stocks": ["ETR","NEE","AES","PWR","POWL"],
+      "theme": "AI/数据中心耗电量激增→电网升级投资，低关注度高确定性"
+    },
+
+    "数据中心REIT": {
+      "etf": null,
+      "stocks": ["EQIX","DLR","AMT","SBAC"],
+      "theme": "AI基础设施实物载体，租金持续上涨"
+    },
+
+    "光量子/量子通信": {
+      "etf": null,
+      "stocks": ["CIEN","INFN","LITE"],
+      "theme": "量子密钥分发/光纤安全通信",
+      "overlap": {"CIEN":["光模块"],"LITE":["光模块"]}
+    },
+
+    "航空": {
+      "etf": "JETS",
+      "stocks": ["DAL","UAL","AAL","LUV"],
+      "theme": "出行需求复苏，油价敏感，中美航线恢复催化"
+    },
+
+    "消费AI/智能硬件": {
+      "etf": null,
+      "stocks": ["AAPL","META","SNAP","SOUN"],
+      "theme": "Apple Intelligence/AI眼镜/语音AI，消费端AI落地",
+      "overlap": {"AAPL":["半导体(自研M/A芯片)"],"META":["AI云平台"]}
+    },
+
+    "传统能源": {
+      "etf": "XLE",
+      "stocks": ["OXY","XOM","CVX","COP"],
+      "theme": "原油价格+地缘政治，非AI主线"
+    },
+
+    "天然气/LNG": {
+      "etf": "UNG",
+      "stocks": ["EQT","AR","LNG","TELL"],
+      "theme": "欧洲能源独立，美国LNG出口创纪录"
+    },
+
+    "金融/Fintech": {
+      "etf": "XLF",
+      "stocks": ["GS","JPM","HOOD","COIN","SQ"],
+      "theme": "利率敏感+AI风控+加密合规",
+      "overlap": {"COIN":["算力/比特币"]}
+    },
+
+    "中概股(仅跟踪持仓)": {
+      "etf": null,
+      "stocks": ["BABA","PONY"],
+      "theme": "不推荐，仅监控已有持仓",
+      "excluded": true
+    }
+  },
+
+  "sector_overlap_map": {
+    "_note": "以下公司同时属于多个板块，分析时需叠加考虑多个驱动因素",
+    "NVDA":  ["GPU算力","机器人","自动驾驶"],
+    "AMD":   ["GPU算力","CPU服务器"],
+    "MRVL":  ["定制ASIC","光模块","AI网络"],
+    "AVGO":  ["定制ASIC","AI网络","存储控制器"],
+    "INTC":  ["CPU服务器","定制ASIC","半导体设备"],
+    "TSLA":  ["自动驾驶","机器人","清洁能源/储能"],
+    "GOOGL": ["AI云平台","自动驾驶","量子计算"],
+    "MSFT":  ["AI云平台","AI软件SaaS","网络安全"],
+    "META":  ["AI云平台","消费AI/智能硬件"],
+    "PLTR":  ["AI软件SaaS","国防/航天","数据基础设施"],
+    "IREN":  ["算力/比特币挖矿","清洁能源/储能"],
+    "LITE":  ["光模块","光量子/量子通信"],
+    "CIEN":  ["光模块","AI网络","光量子"],
+    "MU":    ["存储芯片","AI封装/HBM"],
+    "SNOW":  ["AI软件SaaS","数据基础设施"],
+    "AAPL":  ["消费AI/智能硬件","半导体(自研)"],
+    "COIN":  ["金融/Fintech","算力/比特币"],
+    "AES":   ["清洁能源/储能","电网/电力"],
+    "RKLB":  ["太空/卫星","国防/航天"]
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "sym": "AMD",
+  "date": "2026-05-14",
+  "profile": {
+    "full_name": "Advanced Micro Devices, Inc.",
+    "one_liner": "x86 CPU/GPU 设计公司（Fabless），正在从消费芯片转型为 AI 数据中心芯片提供商",
+    "business_model": "设计半导体芯片，委托台积电代工制造，B2B 销售为主",
+    "segments": [
+      {
+        "name": "Data Center",
+        "desc": "EPYC 服务器CPU + MI300X AI GPU，FY25 Q1营收$2.3B，同比+80%，当前核心增长引擎"
+      },
+      {
+        "name": "Client",
+        "desc": "Ryzen 消费级/笔记本CPU，PC市场回暖受益，增长平稳"
+      },
+      {
+        "name": "Gaming",
+        "desc": "GPU + 主机芯片（PS5/Xbox独家），处于主机周期末段，承压"
+      },
+      {
+        "name": "Embedded",
+        "desc": "Xilinx遗产FPGA业务，工业/汽车市场，当前低迷"
+      }
+    ],
+    "key_customers": [
+      "微软Azure（MI300X大规模部署）",
+      "Meta（AI训练集群）",
+      "Oracle Cloud",
+      "Sony PS5（专属）",
+      "Microsoft Xbox（专属）"
+    ],
+    "supply_chain": {
+      "upstream": [
+        "台积电（7nm/4nm制造）",
+        "TSMC N3（未来节点）"
+      ],
+      "downstream": [
+        "OEM服务器厂商",
+        "消费电子品牌"
+      ]
+    },
+    "ecosystem": {
+      "partners": [
+        "微软（Azure MI300X + Xbox）",
+        "Meta（开放AI生态）",
+        "Oracle"
+      ],
+      "indirect": [
+        "通过微软Azure间接服务OpenAI训练需求"
+      ],
+      "competitors": [
+        "NVDA（GPU主战场，CUDA生态护城河）",
+        "Intel（CPU份额争夺）",
+        "ARM（CPU架构授权威胁）",
+        "谷歌TPU/AWS Trainium（自研芯片威胁）"
+      ]
+    },
+    "moat": [
+      "x86 CPU 双寡头格局（AMD+Intel），高转换成本",
+      "Zen架构持续迭代，性能/功耗比领先",
+      "EPYC在HPC/云服务器的份额上升趋势"
+    ],
+    "moat_weakness": [
+      "CUDA生态护城河使NVDA在AI训练中地位难以撼动",
+      "ROCm软件生态仍落后于CUDA",
+      "高端GPU市场NVDA H100/H200主导"
+    ],
+    "milestones": [
+      {
+        "year": 2014,
+        "event": "Lisa Su 出任 CEO，股价约$3，公司濒临破产"
+      },
+      {
+        "year": 2017,
+        "event": "Ryzen CPU 发布，打破Intel垄断，股价开始腾飞"
+      },
+      {
+        "year": 2019,
+        "event": "EPYC 2代（Rome）发布，正式进攻数据中心市场"
+      },
+      {
+        "year": 2020,
+        "event": "PS5/Xbox Series X 均采用AMD定制芯片，锁定主机市场"
+      },
+      {
+        "year": 2021,
+        "event": "以$49B收购Xilinx（FPGA），进入自适应计算市场"
+      },
+      {
+        "year": 2022,
+        "event": "股价从顶部跌65%，PC市场崩溃+加密冬天"
+      },
+      {
+        "year": 2023,
+        "event": "MI300X AI GPU 发布，向NVDA AI霸主地位发起挑战"
+      },
+      {
+        "year": 2024,
+        "event": "微软Azure、Meta大规模部署MI300X，AI叙事确立"
+      },
+      {
+        "year": 2026,
+        "event": "披露持有MRVL股份，战略布局半导体生态"
+      }
+    ],
+    "narrative": "AMD 是半导体行业最成功的转型故事之一。Lisa Su 接任后用十年将一家濒临破产的公司变成市值7000亿美元的半导体巨头。当前最重要的叙事是 Data Center 的AI转型：MI300X GPU 是 NVDA 霸权的最强挑战者，微软 Azure 和 Meta 的大规模部署是关键验证信号。股价的核心驱动力从'CPU份额回升'演变为'AI算力入场券'，这个叙事的可持续性取决于MI300X是否能在软件生态上缩小与CUDA的差距。"
+  },
+  "financials": {
+    "marketCap": 726432546816,
+    "currentPrice": 445.5,
+    "regularMarketPrice": 445.5,
+    "trailingPE": 149.49664,
+    "forwardPE": 34.51471,
+    "priceToSalesTrailing12Months": 19.395327,
+    "grossMargins": 0.5306,
+    "operatingMargins": 0.14396,
+    "profitMargins": 0.13374,
+    "revenueGrowth": 0.378,
+    "earningsGrowth": 0.912,
+    "totalRevenue": 37454000128,
+    "freeCashflow": 7173374976,
+    "totalCash": 12346999808,
+    "totalDebt": 3871000064,
+    "debtToEquity": 6.005,
+    "beta": 2.399,
+    "shortPercentOfFloat": 0.0223,
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "longName": "Advanced Micro Devices, Inc.",
+    "shortName": "Advanced Micro Devices, Inc.",
+    "country": "United States"
+  },
+  "price_events": [
+    {
+      "date": "2025-10-12",
+      "price_change_pct": 30.5,
+      "headline": "This Analyst Was Right About Advanced Micro Devices (AMD)",
+      "source": "Yahoo Finance"
+    },
+    {
+      "date": "2016-11-20",
+      "price_change_pct": 30.19,
+      "headline": "5 Top Stocks Under $10",
+      "source": "Fox Business"
+    },
+    {
+      "date": "2026-05-10",
+      "price_change_pct": 26.25,
+      "headline": "AMD Stock Quote Price and Forecast",
+      "source": "CNN"
+    },
+    {
+      "date": "2020-07-26",
+      "price_change_pct": 26.09,
+      "headline": "Advanced Micro Devices Earnings: What Happened",
+      "source": "Investopedia"
+    },
+    {
+      "date": "2018-10-28",
+      "price_change_pct": -25.49,
+      "headline": "AMD Chief Lisa Su Says the Trade War Is an Opportunity",
+      "source": "Barron's"
+    },
+    {
+      "date": "2026-04-26",
+      "price_change_pct": 24.94,
+      "headline": "Is Advanced Micro Devices, Inc. (AMD) A Good Stock To Buy Now?",
+      "source": "Yahoo Finance"
+    },
+    {
+      "date": "2017-06-25",
+      "price_change_pct": 23.86,
+      "headline": "AMD EPYC™ Datacenter Processor Launches with Record-Setting Performance, Optimized Platforms, and Global Server Ecosystem Support",
+      "source": "AMD"
+    },
+    {
+      "date": "2017-05-07",
+      "price_change_pct": -23.38,
+      "headline": "（未找到对应新闻）",
+      "source": "N/A"
+    },
+    {
+      "date": "2016-06-19",
+      "price_change_pct": 21.76,
+      "headline": "（未找到对应新闻）",
+      "source": "N/A"
+    },
+    {
+      "date": "2016-09-11",
+      "price_change_pct": -21.44,
+      "headline": "AMD Officially Launches Bristol Ridge Processors And Zen-Ready AM4 Platform",
+      "source": "PC Perspective"
+    }
+  ],
+  "technical": {
+    "stage": "Stage 2（上升趋势）",
+    "ma200": 221.60459983825683,
+    "price_percentile": 94.90516975677788,
+    "max_drawdown": -65.44994295506879
+  },
+  "institutional": {
+    "top_holders": [
+      {
+        "holder": "Blackrock Inc.",
+        "shares": 147528808,
+        "pct_out": 0
+      },
+      {
+        "holder": "Vanguard Capital Management LLC",
+        "shares": 105940266,
+        "pct_out": 0
+      },
+      {
+        "holder": "State Street Corporation",
+        "shares": 74919276,
+        "pct_out": 0
+      }
+    ]
+  },
+  "news": [
+    {
+      "date": "2026-05-13",
+      "title": "How High Can AMD’s Stock Price Rise?",
+      "source": "TipRanks"
+    },
+    {
+      "date": "2026-05-11",
+      "title": "AMD: $600 Target Appears Too Low (NASDAQ:AMD)",
+      "source": "Seeking Alpha"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "AMD Stock Gains As Trump Taps Nvidia CEO For China Trip",
+      "source": "Yahoo Finance"
+    },
+    {
+      "date": "2026-05-11",
+      "title": "AMD: Has the Easy Money Already Been Made?",
+      "source": "Morningstar"
+    },
+    {
+      "date": "2026-05-12",
+      "title": "AI Stocks Nvidia, AMD, Broadcom Nab Price-Target Hikes",
+      "source": "Investor's Business Daily"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "Forget Intel: Here Is the Chip Stock Wall Street Is Sleeping On",
+      "source": "24/7 Wall St."
+    },
+    {
+      "date": "2026-05-13",
+      "title": "Nvidia vs. AMD: The Better AI Chip Stock for 2026",
+      "source": "The Motley Fool"
+    },
+    {
+      "date": "2026-05-12",
+      "title": "Why is AMD stock sliding today?",
+      "source": "Investing.com"
+    },
+    {
+      "date": "2026-05-12",
+      "title": "Why are Intel, Qualcomm, AMD stocks falling today?",
+      "source": "TradingView"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "Intel, AMD, Qualcomm stocks rise as AI chip rally reignites",
+      "source": "MSN"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "Intel, AMD, Qualcomm Stocks Rise as AI Chip Rally Reignites",
+      "source": "Barron's"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "Top Bank of America Analyst Raises AMD Stock Price Target – Here’s Why",
+      "source": "TipRanks"
+    },
+    {
+      "date": "2026-05-11",
+      "title": "Goldman Sachs Resets AMD Stock Price Target in 2026",
+      "source": "TIKR.com"
+    },
+    {
+      "date": "2026-05-13",
+      "title": "$435.00 support anchors AMD stock in a narrow range",
+      "source": "Traders Union"
+    },
+    {
+      "date": "2026-05-08",
+      "title": "Wall Street sees 'changing of the guard in AI' as Intel, AMD shares soar while Nvidia lags",
+      "source": "CNBC"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "persona": "george_soros",
+  "description": "反身性框架的问题序列，关注自我强化循环的形成与瓦解",
+  "confidence_base": 65,
+  "natural_adversaries": ["mark_minervini", "howard_marks"],
+  "sequence": [
+    {
+      "id": "q1",
+      "question": "这只股票的上涨是否在创造新的基本面现实？（买入→关注→分析师跟进→机构买入→估值提升→更多买入）",
+      "why": "反身性循环是我操作的核心依据，没有这个循环就只是普通的价格行动",
+      "data_required": ["rs_streak", "volume_trend", "analyst_upgrades"],
+      "fail_action": "early_stop",
+      "fail_output": {
+        "signal": "neutral",
+        "core_argument": "反身性循环尚未形成，上涨还是单纯的价格行动",
+        "invalidation": "出现多个正向反馈循环信号"
+      }
+    },
+    {
+      "id": "q2",
+      "question": "这个自我强化的循环还有多少燃料？",
+      "why": "循环的持续性决定了我应该持有多久，燃料耗尽就是离场信号",
+      "data_required": ["rs_streak", "sector_momentum", "institutional_buying"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q3",
+      "question": "什么会打破这个循环？（触发点在哪里）",
+      "why": "我需要知道改变方向的条件，这样我才能在循环瓦解时快速行动",
+      "data_required": ["key_risk", "catalyst_exhaustion"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    },
+    {
+      "id": "q4",
+      "question": "现在是趋势早期还是晚期？",
+      "why": "进入循环的时机和进入循环本身同样重要——太晚意味着风险回报比已经不利",
+      "data_required": ["trend_age", "valuation_stretch"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q5",
+      "question": "如果我的判断是错的，我能多快改变方向？",
+      "why": "能快速认错和调整是我最重要的能力，仓位规模必须允许这种灵活性",
+      "data_required": ["position_size", "liquidity"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 10
+    }
+  ]
+}

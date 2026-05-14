@@ -1,0 +1,35 @@
+{
+  "NBIS": {
+    "pattern": "C",
+    "conf": "低",
+    "macro": "NEUTRAL",
+    "chg": 7.35,
+    "sector_chg": null,
+    "action": "不操作，等方向",
+    "sizing": "不操作",
+    "rs_streak": 1,
+    "strong_trend": false
+  },
+  "MRVL": {
+    "pattern": "H",
+    "conf": "高",
+    "macro": "NEUTRAL",
+    "chg": 6.6,
+    "sector_chg": 0.49,
+    "action": "做多，注意板块不跟时及时退",
+    "sizing": "正常仓",
+    "rs_streak": 1,
+    "strong_trend": false
+  },
+  "ANET": {
+    "pattern": "C",
+    "conf": "低",
+    "macro": "NEUTRAL",
+    "chg": 2.54,
+    "sector_chg": null,
+    "action": "不操作，等方向",
+    "sizing": "不操作",
+    "rs_streak": 1,
+    "strong_trend": false
+  }
+}

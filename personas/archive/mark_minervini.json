@@ -1,0 +1,26 @@
+{
+  "master": "Mark Minervini",
+  "assigned_to": "TechAgent",
+  "core_philosophy": "只在最完美的时机出手——趋势、基本面、价格行为三者同时达标。宁可错过，不可做错。",
+  "veto_conditions": [
+    {"condition": "data['close'] < data['ma200']", "reason": "不在Stage 2上升趋势，SEPA策略绝对不在下降趋势中操作"},
+    {"condition": "data['ma50'] < data['ma150']", "reason": "均线排列不健康，趋势结构缺失"},
+    {"condition": "data['volume_breakout_ratio'] < 1.4", "reason": "突破无量能确认，假突破风险高"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['close'] > data['ma200'] and data['ma50'] > data['ma150'] > data['ma200']", "weight": 30, "insight": "[Minervini] Stage 2上升趋势：均线全部向上排列"},
+    {"condition": "data['vcp_detected']", "weight": 25, "insight": "[Minervini] VCP形态：价格波幅连续收窄，浮筹换手充分"},
+    {"condition": "data['volume'] > data['vol_ma20'] * 1.4", "weight": 20, "insight": "[Minervini] 放量突破：机构开始建仓信号"},
+    {"condition": "(data['hi52'] - data['close']) / max(data['hi52'], 0.01) < 0.10", "weight": 15, "insight": "[Minervini] 接近52周高点，强势股的特征"},
+    {"condition": "50 < data['rsi14'] < 70", "weight": 10, "insight": "[Minervini] RSI健康区间，动能充足但未超买"}
+  ],
+  "market_insight_checks": [
+    {"name": "overbought", "condition": "data['rsi14'] > 80", "signal_override": "neutral", "confidence_delta": -20, "priority": 1, "insight": "[Minervini] RSI超买区，历史追涨成功率<40%，SEPA策略等待回调"},
+    {"name": "perfect_breakout", "condition": "data['vcp_detected'] and data['volume_breakout_ratio'] > 1.5 and data['rsi14'] < 70", "signal_override": "bullish", "confidence_delta": 20, "priority": 2, "insight": "[Minervini] 教科书级VCP突破：缩量整理后放量突破，SEPA标准买点"}
+  ],
+  "position_sizing": {"max_pct": 10, "logic": "三条否决均未触发+进场分>60：满仓；50-60：半仓"},
+  "exit_logic": {"hard_stop_pct": 0.08, "never_do": ["跌破8%止损后继续持有等反弹", "在下降趋势中抄底"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['rsi14'] > 80", "insight": "RSI已进入超买区，看涨结论在此位置历史成功率低于40%，止损纪律比预期收益更重要"}
+  ]
+}

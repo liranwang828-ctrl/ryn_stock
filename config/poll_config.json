@@ -1,0 +1,111 @@
+{
+  "_comment": "\u8f6e\u8be2\u914d\u7f6e\uff0c\u5de5\u5177\u81ea\u52a8\u8bfb\u53d6",
+  "watchlist": [
+    "IREN",
+    "OXY",
+    "AAOI",
+    "AAPL",
+    "META",
+    "RKLB",
+    "MMM",
+    "GOOGL",
+    "AMZN",
+    "TTD",
+    "TLRY",
+    "BABA",
+    "AMD",
+    "FN",
+    "TSLA",
+    "BBAI",
+    "HOOD",
+    "MU",
+    "MRVL",
+    "OKLO",
+    "LITE",
+    "CRWV",
+    "SNDK",
+    "INTC",
+    "RGTI",
+    "MXL",
+    "QCOM",
+    "FLNC",
+    "PONY",
+    "NVDA",
+    "MSFT",
+    "IAU"
+  ],
+  "portfolio_symbols": [
+    "PONY",
+    "BABA",
+    "NVDA",
+    "IAU",
+    "MSFT"
+  ],
+  "default_symbols": [
+    "AAOI",
+    "RKLB",
+    "NVDA",
+    "MSFT",
+    "OXY",
+    "INTC",
+    "SNDK",
+    "IREN",
+    "BABA",
+    "PONY"
+  ],
+  "sector_map": {
+    "AAOI": {
+      "ref": "LITE",
+      "ref_name": "\u5149\u5b66LITE"
+    },
+    "RKLB": {
+      "ref": "ITA",
+      "ref_name": "\u822a\u5929ITA"
+    },
+    "SNXX": {
+      "ref": "SNDK",
+      "ref_name": "SNDK"
+    },
+    "INTC": {
+      "ref": "SOXX",
+      "ref_name": "\u534a\u5bfc\u4f53SOXX"
+    },
+    "AMD": {
+      "ref": "SOXX",
+      "ref_name": "\u534a\u5bfc\u4f53SOXX"
+    },
+    "NVDA": {
+      "ref": "SOXX",
+      "ref_name": "\u534a\u5bfc\u4f53SOXX"
+    },
+    "MRVL": {
+      "ref": "SOXX",
+      "ref_name": "\u534a\u5bfc\u4f53SOXX"
+    },
+    "SNDK": {
+      "ref": "SOXX",
+      "ref_name": "\u534a\u5bfc\u4f53SOXX"
+    },
+    "FN": {
+      "ref": "LITE",
+      "ref_name": "\u5149\u5b66LITE"
+    },
+    "MSFT": {
+      "ref": "IGV",
+      "ref_name": "\u8f6f\u4ef6IGV"
+    },
+    "OXY": {
+      "ref": "XOP",
+      "ref_name": "\u6cb9\u6c14XOP"
+    },
+    "IREN": {
+      "ref": "MARA",
+      "ref_name": "\u7b97\u529bMARA"
+    }
+  },
+  "interval_minutes": 2,
+  "conservative_rs_threshold": 1.5,
+  "aggressive_rs_threshold": 0.5,
+  "chinese_adrs_excluded": true,
+  "chinese_adrs_note": "\u4e0d\u4e70\u4e2d\u6982\u80a1\uff0cBABA\u4ec5\u8ddf\u8e2a\u4e0d\u63a8\u8350"
+}

@@ -1,0 +1,52 @@
+{
+  "persona": "mark_minervini",
+  "description": "SEPA方法论的强制问题序列，任何一问失败都有对应处理",
+  "confidence_base": 70,
+  "natural_adversaries": ["peter_lynch", "george_soros"],
+  "sequence": [
+    {
+      "id": "q1",
+      "question": "这只股票现在是 Stage 2 吗？（MA200 向上 + 价格在 MA200 上方）",
+      "why": "Stage 2 是所有操作的前提，没有这个一切都是噪音",
+      "data_required": ["ma200", "ma200_slope", "current_price"],
+      "fail_action": "early_stop",
+      "fail_output": {
+        "signal": "neutral",
+        "core_argument": "Stage 2 未确认，技术结构不支持入场",
+        "invalidation": "价格站上 MA200 且 MA200 斜率转正"
+      }
+    },
+    {
+      "id": "q2",
+      "question": "RS 是否强且在加速？（vs 大盘，过去4-8周趋势）",
+      "why": "RS 领先大盘说明资金在积极选择这只股票",
+      "data_required": ["rs_4w", "rs_8w"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q3",
+      "question": "有没有有效的整理形态 base？（至少3周量缩整理）",
+      "why": "量缩整理说明浮筹被洗出，后续突破更干净",
+      "data_required": ["consolidation_weeks", "vol_during_consolidation"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    },
+    {
+      "id": "q4",
+      "question": "突破时量能是否确认？（量比 > 1.5x 均量）",
+      "why": "没有量能的突破是谎言，我在那里亏过钱",
+      "data_required": ["breakout_volume_ratio"],
+      "fail_action": "veto",
+      "veto_reason": "突破无量能确认，假突破风险高"
+    },
+    {
+      "id": "q5",
+      "question": "风险回报比是否 ≥ 2:1？",
+      "why": "不满足最低风险回报比的交易是赌博",
+      "data_required": ["entry_price", "stop_price", "target_price"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 25
+    }
+  ]
+}

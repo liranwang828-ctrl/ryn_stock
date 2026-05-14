@@ -55,6 +55,24 @@ logs/
 .ipynb_checkpoints/
 *.ipynb
 
+# Stock team runtime (generated per session)
+run.lock
+data_raw_primary.json
+data_raw_secondary.json
+data_verified.json
+session_state_*.json
+discussion_board.jsonl
+persona_stances.jsonl
+persona_synthesis.json
+strategy_result.json
+findings/
+paper_trading/*/portfolio.json
+paper_trading/*/trades.jsonl
+paper_trading/*/evolution.jsonl
+knowledge/snapshots_*.jsonl
+quick_debate_*.json
+av_quota.json
+
 # Temporary
 tmp/
 temp/

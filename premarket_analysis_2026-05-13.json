@@ -1,0 +1,164 @@
+{
+  "date": "2026-05-13",
+  "generated_at": "2026-05-14T03:18:45.474561+00:00",
+  "macro": {
+    "spy_pre": 0,
+    "nq_futures": 0.39519322913574806,
+    "env": "中性"
+  },
+  "stocks": {
+    "MRVL": {
+      "symbol": "MRVL",
+      "prev_close": 164.5,
+      "pre_price": 182.5,
+      "gap_pct": 10.94,
+      "pre_vol_ratio": 0.0,
+      "news_type": "strategic_invest",
+      "catalyst_strength": 3,
+      "matched_keywords": [
+        "stake",
+        "discloses"
+      ],
+      "top_headline": "Marvell Technology, Inc. ($MRVL) CEO 2026 Pay Revealed - Quiver Quantitative",
+      "all_headlines": [
+        "Marvell Technology, Inc. ($MRVL) CEO 2026 Pay Revealed - Quiver Quantitative",
+        "Marvell Technology, Inc. Stock 12‑Month Price Target Raised to $133.71, Implies ",
+        "Marvell in focus as AMD discloses stake (AMD:NASDAQ) - Seeking Alpha"
+      ],
+      "news_sources": [
+        "Quiver Quantitative",
+        "TradingView",
+        "Seeking Alpha"
+      ],
+      "sector_ref": "SOXX",
+      "sector_gap": 2.38,
+      "spy_pre": 0,
+      "futures_nq": 0.4,
+      "atr": 9.74,
+      "pred_scene": "B",
+      "confidence": "高",
+      "reasoning": "高开+10.9%+强催化剂(strategic_invest)→上涨可持续，关注VWAP回踩入场",
+      "scene_name": "VWAP回踩",
+      "scene_icon": "🔵",
+      "actual_open": null,
+      "opening_hi": null,
+      "opening_lo": null,
+      "vwap_current": null,
+      "watch_zone": null,
+      "entry_confirm": null,
+      "sizing": null,
+      "stop_basis": null,
+      "macro_at_open": null,
+      "actual_scene": null,
+      "pred_vs_actual": null,
+      "obs_minutes": 0,
+      "obs_complete": false,
+      "month_context": {
+        "perf_1m": 32.2,
+        "perf_3m": 127.6,
+        "rs_1m": 32.2,
+        "hi_1m": 182.31,
+        "lo_1m": 128.42,
+        "ma20": 160.27,
+        "ma50": 124.05,
+        "above_ma20": true,
+        "above_ma50": true,
+        "tech_stage": "上升趋势",
+        "catalyst_timeline": [
+          {
+            "date": "",
+            "title": "Marvell Technology, Inc. ($MRVL) CEO 2026 Pay Revealed - Quiver Quantitative",
+            "source": "Quiver Quantitative"
+          },
+          {
+            "date": "",
+            "title": "Marvell Technology, Inc. Stock 12‑Month Price Target Raised to $133.71, Implies 19% Downside - Tradi",
+            "source": "TradingView"
+          },
+          {
+            "date": "",
+            "title": "Marvell in focus as AMD discloses stake (AMD:NASDAQ) - Seeking Alpha",
+            "source": "Seeking Alpha"
+          },
+          {
+            "date": "",
+            "title": "Why Marvell Technology (MRVL) Is Gaining Ground in AI Connectivity and Custom Silicon - Yahoo Financ",
+            "source": "Yahoo Finance"
+          },
+          {
+            "date": "",
+            "title": "[DEF 14A] Marvell Technology, Inc. Definitive Proxy Statement - Stock Titan",
+            "source": "Stock Titan"
+          }
+        ],
+        "vol_trend": "平稳"
+      }
+    }
+  },
+  "scenario_templates": {
+    "A": {
+      "name": "强势突破",
+      "icon": "🟢",
+      "watch": "放量突破日内/昨日高点",
+      "confirm": "量比>1.3x + 突破K线收盘站上压力位",
+      "sizing": "正常×1.5",
+      "stop": "突破K线低点 - ATR×0.3"
+    },
+    "B": {
+      "name": "VWAP回踩",
+      "icon": "🔵",
+      "watch": "回踩至VWAP ±1%",
+      "confirm": "缩量(<0.8x均量) + 3连阳 + 5分钟涨>0.3%",
+      "sizing": "正常",
+      "stop": "回踩低点 - ATR×0.5"
+    },
+    "C": {
+      "name": "横盘蓄力",
+      "icon": "🟡",
+      "watch": "区间上沿突破",
+      "confirm": "量比>1.5x + 收盘站上上沿",
+      "sizing": "正常",
+      "stop": "区间中值"
+    },
+    "D": {
+      "name": "冲高回落",
+      "icon": "🟠",
+      "watch": "从日高回落>3%后止跌区（日低±2%）",
+      "confirm": "量缩(<0.8x) + 3连阳 + 下影出现",
+      "sizing": "半仓",
+      "stop": "止跌低点 - ATR×0.5"
+    },
+    "E": {
+      "name": "弱势反弹",
+      "icon": "⚪",
+      "watch": "日低区间 ±1%",
+      "confirm": "下影出现 + 3连阳 + 量不继续放大",
+      "sizing": "1/4仓",
+      "stop": "日低下方 ATR×0.3"
+    },
+    "F": {
+      "name": "跳水下跌",
+      "icon": "🔴",
+      "watch": "不操作",
+      "confirm": "等止跌信号出现再重新评估",
+      "sizing": "0",
+      "stop": "—"
+    },
+    "G": {
+      "name": "板块强股弱",
+      "icon": "🟣",
+      "watch": "当个股RS vs 板块转正",
+      "confirm": "RS>0 + 3连阳 + 板块ETF继续强",
+      "sizing": "半仓",
+      "stop": "VWAP - ATR×0.3"
+    },
+    "H": {
+      "name": "独立领涨",
+      "icon": "💎",
+      "watch": "回踩VWAP或5分钟MA",
+      "confirm": "缩量 + 3连阳 + RS继续强于板块",
+      "sizing": "正常×1.5",
+      "stop": "VWAP - ATR×0.3"
+    }
+  }
+}

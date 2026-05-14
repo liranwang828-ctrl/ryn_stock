@@ -1,0 +1,58 @@
+{
+  "master": "Warren Buffett",
+  "assigned_to": "FundAgent",
+  "core_philosophy": "以合理价格买入优秀公司，永远持有。价格是你付出的，价值是你得到的。",
+  "veto_conditions": [
+    {"condition": "data['de_ratio'] > 0.5", "reason": "负债过高，护城河脆弱"},
+    {"condition": "data['roe5y_avg'] < 0.15", "reason": "ROE不足15%，护城河不够深"},
+    {
+      "condition": "(data.get('operating_cashflow') or 0) <= 0 and (data.get('fcf') or 0) <= 0",
+      "reason": "经营性现金流为负，主业不产生现金（注：FCF为负但OCF为正属扩产投资，不触发此条）"
+    },
+    {"condition": "data['pe_ratio'] > 25 and data['revenue_growth'] < 0.10", "reason": "贵且不成长，安全边际不足"},
+    {"condition": "data['gross_margin'] < 0.20", "reason": "毛利率过低，缺乏定价权"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['roe5y_avg'] > 0.15", "weight": 35, "insight": "[Buffett] ROE>15%连续多年，护城河深厚"},
+    {
+      "condition": "data.get('fcf', 0) > 0",
+      "weight": 25,
+      "insight": "[Buffett] 正自由现金流，真实创造股东价值"
+    },
+    {
+      "condition": "data.get('fcf_capex_driven', False) and (data.get('operating_cashflow') or 0) > 0",
+      "weight": 15,
+      "insight": "[Buffett] FCF暂时为负但经营性现金流健康，系扩产投资驱动（可接受）"
+    },
+    {"condition": "data['pe_ratio'] < 20 or (data['pe_ratio'] / max(data['revenue_growth'], 0.01)) < 1", "weight": 20, "insight": "[Buffett] 估值合理，有安全边际"},
+    {"condition": "data['gross_margin'] > 0.40", "weight": 15, "insight": "[Buffett] 高毛利率，具备定价权"},
+    {"condition": "data['insider_pct'] > 0.05", "weight": 5, "insight": "[Buffett] 管理层持股高，利益与股东一致"}
+  ],
+  "market_insight_checks": [
+    {"name": "market_euphoria", "condition": "data['analyst_rec'] < 1.5 and data['pe_ratio'] > 30", "signal_override": "neutral", "confidence_delta": -25, "priority": 1, "insight": "[Buffett] 市场先生过度乐观，我在别人贪婪时谨慎"},
+    {
+      "name": "fear_opportunity",
+      "condition": "data['price_chg_3m'] < -0.15 and data.get('fcf_healthy', False)",
+      "signal_override": null,
+      "confidence_delta": 15,
+      "priority": 2,
+      "insight": "[Buffett] 别人恐惧时我贪婪，基本面未变则下跌是机会"
+    },
+    {
+      "name": "capex_expansion",
+      "condition": "data.get('fcf_capex_driven', False) and (data.get('operating_cashflow') or 0) > 100000000",
+      "signal_override": null,
+      "confidence_delta": 8,
+      "priority": 3,
+      "insight": "[Buffett] FCF暂负系大规模扩产，经营性现金流仍健康，这是成长型企业正常投资周期"
+    }
+  ],
+  "position_sizing": {"max_pct": 10, "logic": "护城河明确+估值合理+长期持有意愿：上限10%"},
+  "exit_logic": {"hard_stop_pct": null, "never_do": ["因股价下跌卖出", "短线交易", "在基本面未变时止损"]},
+  "debate_triggers": [
+    {
+      "condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['pe_ratio'] > 30 and not data.get('fcf_healthy', True)",
+      "insight": "看涨结论建立在无现金流支撑的高估值上，经营性现金流也为负，这不是护城河，是泡沫"
+    }
+  ]
+}

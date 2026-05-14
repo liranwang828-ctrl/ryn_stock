@@ -1,0 +1,54 @@
+{
+  "_comment": "当前持仓，工具自动读取。告诉Claude操作即可自动更新。",
+  "cash": 5078,
+  "positions": {
+    "PONY": {
+      "cost": 11.5,
+      "shares": 100,
+      "date": "2026-05-12",
+      "note": "Pony AI 自动驾驶"
+    },
+    "BABA": {
+      "cost": 141.0,
+      "shares": 55,
+      "date": "2026-05-12",
+      "note": "阿里巴巴"
+    },
+    "NVDA": {
+      "cost": 184.0,
+      "shares": 30,
+      "date": "2026-05-12",
+      "note": "NVIDIA AI"
+    },
+    "IAU": {
+      "cost": 92.0,
+      "shares": 21,
+      "date": "2026-05-12",
+      "note": "黄金ETF"
+    },
+    "MSFT": {
+      "cost": 422.0,
+      "shares": 20,
+      "date": "2026-05-12",
+      "note": "微软"
+    },
+    "MRVU": {
+      "cost": 100.0,
+      "shares": 10,
+      "date": "2026-05-13",
+      "note": "MRVL 2x做多杠杆ETF"
+    },
+    "NBIL": {
+      "cost": 42.0,
+      "shares": 20,
+      "date": "2026-05-14",
+      "note": "NBIS 2x做多杠杆ETF，T1建仓"
+    },
+    "MRVL": {
+      "cost": 178.0,
+      "shares": 40,
+      "date": "2026-05-14",
+      "note": "由 entry_guard 自动记录，场景B"
+    }
+  }
+}
