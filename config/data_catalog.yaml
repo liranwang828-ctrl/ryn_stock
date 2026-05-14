@@ -1,0 +1,277 @@
+# Agent Team v2.0 — Shared Data Catalog
+# Centralized schema for all data tables referenced by agents.
+# This is the SINGLE SOURCE OF TRUTH for field definitions.
+# All other config files and prompts reference this catalog.
+
+version: "2.0"
+description: "All system-injected data tables with canonical field lists"
+
+tables:
+
+  market_news:
+    description: "Breaking news, earnings, macro events"
+    fields:
+      - {name: news_id, type: string, description: "Unique news identifier"}
+      - {name: headline, type: string, description: "News headline text"}
+      - {name: source, type: string, description: "News source (Reuters, Bloomberg, etc.)"}
+      - {name: severity, type: enum, values: [LOW, MEDIUM, HIGH], description: "Market impact severity"}
+      - {name: timestamp, type: datetime, description: "Publication timestamp"}
+      - {name: related_tickers, type: "string[]", description: "Comma-separated ticker symbols"}
+      - {name: sentiment_polarity, type: float, range: [-1.0, 1.0], description: "Pre-computed news sentiment"}
+
+  earnings_calendar:
+    description: "Upcoming earnings dates and estimates"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: report_date, type: date, description: "Earnings report date"}
+      - {name: estimate_eps, type: float, description: "Consensus EPS estimate"}
+      - {name: estimate_revenue, type: float, description: "Consensus revenue estimate"}
+
+  social_sentiment:
+    description: "Social media sentiment scores"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: source, type: string, description: "Social platform (reddit, twitter, stocktwits)"}
+      - {name: score, type: float, range: [-1.0, 1.0], description: "Sentiment polarity score"}
+      - {name: volume, type: integer, description: "Number of mentions/comments"}
+      - {name: sample_timestamp, type: datetime, description: "Sample collection time"}
+      - {name: trending_rank, type: integer, description: "Rank among all tickers by mention volume"}
+
+  wsb_mentions:
+    description: "WallStreetBets specific mention tracking"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: mention_count, type: integer, description: "Number of WSB mentions"}
+      - {name: sentiment_polarity, type: float, range: [-1.0, 1.0], description: "WSB sentiment polarity"}
+      - {name: timestamp, type: datetime, description: "Data collection time"}
+
+  kol_opinions:
+    description: "Curated KOL (Key Opinion Leader) statements"
+    fields:
+      - {name: kol_id, type: string, description: "Unique KOL identifier"}
+      - {name: kol_name, type: string, description: "KOL display name"}
+      - {name: ticker, type: string, description: "Ticker referenced in opinion"}
+      - {name: opinion, type: string, description: "Opinion text summary"}
+      - {name: conviction, type: integer, range: [1, 10], description: "KOL's conviction level"}
+      - {name: statement_date, type: date, description: "Date of statement"}
+      - {name: confidence_score, type: float, range: [0.0, 1.0], description: "System confidence in attribution"}
+
+  macro_indicators:
+    description: "Macroeconomic indicator values"
+    fields:
+      - {name: indicator_name, type: string, description: "Indicator name (VIX, DXY, 10Y_2Y_spread, etc.)"}
+      - {name: value, type: float, description: "Current value"}
+      - {name: change_pct, type: float, description: "Percentage change"}
+      - {name: timestamp, type: datetime, description: "Last update time"}
+      - {name: period, type: string, description: "Measurement period (daily, weekly, monthly)"}
+
+  factor_scores:
+    description: "Pre-computed quantitative factor scores (1-10 scale)"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: momentum_score, type: integer, range: [1, 10], description: "Multi-period momentum score"}
+      - {name: value_score, type: integer, range: [1, 10], description: "Value composite (PE, PB, PFCF)"}
+      - {name: quality_score, type: integer, range: [1, 10], description: "Quality composite (ROE, D/E, stability)"}
+      - {name: low_vol_score, type: integer, range: [1, 10], description: "Low volatility score"}
+      - {name: composite_score, type: integer, range: [1, 10], description: "Overall factor composite"}
+      - {name: calc_date, type: date, description: "Calculation date"}
+
+  fundamentals:
+    description: "Fundamental financial data"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: pe_ttm, type: float, description: "Trailing P/E ratio"}
+      - {name: forward_pe, type: float, description: "Forward P/E ratio (may be null)"}
+      - {name: pb, type: float, description: "Price-to-Book ratio"}
+      - {name: ps, type: float, description: "Price-to-Sales ratio"}
+      - {name: ev_ebitda, type: float, description: "Enterprise Value / EBITDA"}
+      - {name: roe, type: float, description: "Return on Equity"}
+      - {name: roic, type: float, description: "Return on Invested Capital"}
+      - {name: debt_to_equity, type: float, description: "Debt-to-Equity ratio"}
+      - {name: fcf_yield, type: float, description: "Free Cash Flow Yield"}
+      - {name: rev_growth_3y, type: float, description: "3-year revenue CAGR"}
+      - {name: report_date, type: date, description: "Last financial report date"}
+
+  analyst_estimates:
+    description: "Wall Street analyst consensus"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: avg_target, type: float, description: "Average price target"}
+      - {name: high_target, type: float, description: "Highest price target"}
+      - {name: low_target, type: float, description: "Lowest price target"}
+      - {name: num_analysts, type: integer, description: "Number of analysts covering"}
+      - {name: rating_consensus, type: enum, values: [STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL]}
+
+  price_history:
+    description: "OHLCV price history"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: date, type: date, description: "Trading date"}
+      - {name: open, type: float, description: "Opening price"}
+      - {name: high, type: float, description: "Session high"}
+      - {name: low, type: float, description: "Session low"}
+      - {name: close, type: float, description: "Closing price"}
+      - {name: volume, type: integer, description: "Trading volume"}
+      - {name: MA20, type: float, description: "20-period simple moving average (computed from close)"}
+      - {name: MA50, type: float, description: "50-period simple moving average"}
+      - {name: MA200, type: float, description: "200-period simple moving average"}
+      - {name: VWAP, type: float, description: "Volume-Weighted Average Price (intraday)"}
+      - {name: ATR14, type: float, description: "Average True Range (14 period) — COMPUTED ONCE PER SESSION"}
+      - {name: ADX14, type: float, description: "Average Directional Index (14 period)"}
+
+  technical_indicators:
+    description: "System-computed technical indicators — THIS TABLE IS THE SOLE SOURCE OF TRUTH FOR A7"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: indicator_name, type: string, description: "Indicator name from whitelist below"}
+      - {name: value, type: float, description: "Current indicator value"}
+      - {name: signal, type: enum, values: [BULLISH, BEARISH, NEUTRAL], description: "Standardized signal"}
+      - {name: timestamp, type: datetime, description: "Calculation timestamp"}
+    note: >
+      A7 (技术分析师) may ONLY use indicators whose indicator_name is present in this table.
+      If an indicator below is NOT in the table (system hasn't computed it), A7 MUST state it's not available.
+
+    # ============================================================
+    # COMPREHENSIVE INDICATOR WHITELIST
+    # The system SHOULD compute ALL of these. A7 can only use
+    # those ACTUALLY PRESENT in the table at runtime.
+    # ============================================================
+    indicator_whitelist:
+
+      trend:
+        - {name: "MA5", description: "5-period simple moving average", signal_source: "price > MA5 = bullish"}
+        - {name: "MA10", description: "10-period SMA", signal_source: "price > MA10"}
+        - {name: "MA20", description: "20-period SMA — key swing level", signal_source: "price > MA20"}
+        - {name: "MA50", description: "50-period SMA — intermediate trend", signal_source: "price > MA50"}
+        - {name: "MA200", description: "200-period SMA — long-term trend", signal_source: "price > MA200"}
+        - {name: "MA20_slope", description: "MA20 slope (rate of change per period)", signal_source: ">0 = uptrend"}
+        - {name: "ADX_14", description: "Average Directional Index (14) — trend strength", signal_source: ">25 = trending"}
+        - {name: "DI_plus", description: "+DI (14) — bullish directional movement", signal_source: "+DI > -DI"}
+        - {name: "DI_minus", description: "-DI (14) — bearish directional movement"}
+        - {name: "Parabolic_SAR", description: "Parabolic Stop and Reverse — trailing stop/trend flip", signal_source: "price > SAR = bullish"}
+
+      momentum:
+        - {name: "RSI_14", description: "Relative Strength Index (14)", signal_source: ">70 overbought, <30 oversold"}
+        - {name: "MACD_line", description: "MACD line (12,26)", signal_source: "MACD > Signal = bullish"}
+        - {name: "MACD_signal", description: "MACD signal line (9)"}
+        - {name: "MACD_histogram", description: "MACD histogram (MACD - Signal)", signal_source: ">0 and rising = accelerating"}
+        - {name: "Stoch_K", description: "Stochastic %K (14,3)", signal_source: ">80 overbought, <20 oversold"}
+        - {name: "Stoch_D", description: "Stochastic %D (3)", signal_source: "cross above/below %K"}
+        - {name: "Williams_R", description: "Williams %R (14)", signal_source: "> -20 overbought, < -80 oversold"}
+        - {name: "CCI_20", description: "Commodity Channel Index (20)", signal_source: ">100 overbought, <-100 oversold"}
+
+      volatility:
+        - {name: "BB_upper", description: "Bollinger Band upper (20,2)"}
+        - {name: "BB_middle", description: "Bollinger Band middle (20 SMA)"}
+        - {name: "BB_lower", description: "Bollinger Band lower (20,2)", signal_source: "price at lower band = potential bounce"}
+        - {name: "BB_width", description: "Bollinger Band width (upper-lower)/middle", signal_source: "expanding = volatility increasing"}
+        - {name: "ATR_14", description: "Average True Range (14) — volatility measure", signal_source: "absolute value, used for stop distance"}
+        - {name: "Keltner_upper", description: "Keltner Channel upper (20,2xATR)"}
+        - {name: "Keltner_lower", description: "Keltner Channel lower (20,2xATR)"}
+
+      volume:
+        - {name: "Volume_SMA_20", description: "20-period average volume"}
+        - {name: "Volume_ratio", description: "Current volume / Volume_SMA_20", signal_source: ">1.5 = high volume"}
+        - {name: "OBV", description: "On-Balance Volume — cumulative volume flow", signal_source: "rising = accumulation"}
+        - {name: "VWAP", description: "Volume-Weighted Average Price (intraday)", signal_source: "price > VWAP = bullish intraday"}
+        - {name: "MFI_14", description: "Money Flow Index (14) — volume-weighted RSI", signal_source: ">80 overbought, <20 oversold"}
+
+      support_resistance:
+        - {name: "Pivot_PP", description: "Daily pivot point (H+L+C)/3"}
+        - {name: "Pivot_R1", description: "Resistance 1"}
+        - {name: "Pivot_R2", description: "Resistance 2"}
+        - {name: "Pivot_S1", description: "Support 1"}
+        - {name: "Pivot_S2", description: "Support 2"}
+        - {name: "Fib_382", description: "Fibonacci 38.2% retracement (from 20-day swing high/low)"}
+        - {name: "Fib_500", description: "Fibonacci 50% retracement"}
+        - {name: "Fib_618", description: "Fibonacci 61.8% retracement — key level"}
+        - {name: "Prev_day_high", description: "Previous session high"}
+        - {name: "Prev_day_low", description: "Previous session low"}
+        - {name: "Prev_day_close", description: "Previous session close"}
+
+      candlestick_patterns:
+        - {name: "Candle_body_ratio", description: "Body / (high-low) — 0-1 range", signal_source: ">0.7 = strong candle"}
+        - {name: "Upper_wick_ratio", description: "Upper wick / (high-low)"}
+        - {name: "Lower_wick_ratio", description: "Lower wick / (high-low)", signal_source: "long lower wick = rejection of lows"}
+        - {name: "Consecutive_green", description: "Number of consecutive bullish candles"}
+        - {name: "Consecutive_red", description: "Number of consecutive bearish candles"}
+
+  volume_profile:
+    description: "Volume analysis data"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: volume, type: integer, description: "Current period volume"}
+      - {name: avg_volume_20d, type: integer, description: "20-day average volume"}
+      - {name: up_volume, type: integer, description: "Volume on upticks"}
+      - {name: down_volume, type: integer, description: "Volume on downticks"}
+      - {name: buy_sell_ratio, type: float, description: "Buy/sell order ratio"}
+
+  sector_data:
+    description: "Sector-level market data"
+    fields:
+      - {name: sector_etf_price, type: float, description: "Sector ETF current price"}
+      - {name: spy_price, type: float, description: "SPY current price"}
+      - {name: sector_etf_return_3d, type: float, description: "Sector ETF 3-day return"}
+      - {name: spy_return_3d, type: float, description: "SPY 3-day return"}
+      - {name: breadth_pct, type: float, description: "% of sector stocks above MA20"}
+      - {name: sector_volatility_30d, type: float, description: "Sector 30-day volatility"}
+
+  options_flow:
+    description: "Options market data"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: put_call_ratio, type: float, description: "Put/call ratio"}
+      - {name: unusual_activity, type: boolean, description: "Unusual options activity flag"}
+
+  risk_metrics:
+    description: "System-computed risk metrics"
+    fields:
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: var_95, type: float, description: "Value at Risk (95% confidence)"}
+      - {name: var_99, type: float, description: "Value at Risk (99% confidence)"}
+      - {name: beta, type: float, description: "Beta to SPY"}
+      - {name: correlation_to_spy, type: float, description: "Correlation coefficient to SPY"}
+      - {name: volatility_30d, type: float, description: "30-day annualized volatility"}
+      - {name: max_drawdown_1y, type: float, description: "1-year maximum drawdown"}
+      - {name: sharpe_ratio, type: float, description: "Sharpe ratio"}
+
+  correlation_matrix:
+    description: "Pairwise correlation data between tickers"
+    fields:
+      - {name: ticker_1, type: string, description: "First ticker"}
+      - {name: ticker_2, type: string, description: "Second ticker"}
+      - {name: correlation_60d, type: float, range: [-1.0, 1.0], description: "60-day correlation"}
+      - {name: correlation_1y, type: float, range: [-1.0, 1.0], description: "1-year correlation"}
+
+  trade_log:
+    description: "Completed trade records"
+    fields:
+      - {name: trade_id, type: string, description: "Unique trade identifier"}
+      - {name: ticker, type: string, description: "Stock ticker"}
+      - {name: entry_time, type: datetime, description: "Entry timestamp"}
+      - {name: exit_time, type: datetime, description: "Exit timestamp"}
+      - {name: pnl_pct, type: float, description: "Trade P&L as percentage"}
+      - {name: entry_reason, type: string, description: "Entry rationale"}
+      - {name: exit_reason, type: string, description: "Exit rationale"}
+
+  agent_decision_log:
+    description: "Agent decision tracking for performance scoring"
+    fields:
+      - {name: session_id, type: string, description: "Trading session identifier"}
+      - {name: agent_id, type: string, description: "Agent ID (A1-A9)"}
+      - {name: direction, type: enum, values: [BULLISH, BEARISH, NEUTRAL]}
+      - {name: conviction, type: integer, range: [1, 10]}
+      - {name: recommendation, type: enum, values: [BUY, SELL, HOLD, NO_ACTION]}
+      - {name: was_correct, type: boolean, description: "Was agent's direction correct? (scored post-hoc)"}
+
+  fabrication_log:
+    description: "Data integrity violation records"
+    fields:
+      - {name: session_id, type: string, description: "Trading session identifier"}
+      - {name: agent_id, type: string, description: "Agent ID (A1-A9)"}
+      - {name: violation_type, type: enum, values: [FABRICATION, UNSUBSTANTIATED]}
+      - {name: claim_text, type: string, description: "Exact text of the violating claim"}
+      - {name: cited_source, type: string, description: "What the agent claimed as source"}
+      - {name: dv_finding, type: string, description: "Why it was flagged"}
+      - {name: timestamp, type: datetime, description: "Violation timestamp"}
+      - {name: penalty_applied, type: enum, values: [MUTE, WARNING, SUSPENSION]}

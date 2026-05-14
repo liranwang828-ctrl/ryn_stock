@@ -1,0 +1,197 @@
+# Agent Team v2.0 — Multi-Account Paper Trading Comparison
+# Run 5 virtual accounts with different entry strictness and stop-loss tightness.
+# Compare performance to find optimal parameter combination.
+
+version: "2.0"
+
+# ============================================================
+# ACCOUNT DEFINITIONS
+# ============================================================
+
+accounts:
+
+  A_conservative:
+    id: "PAPER_A"
+    label: "保守型"
+    description: "Strict entry, tight stops, quick profit-taking"
+    philosophy: "Capital preservation first. Many small wins. Low drawdowns."
+    initial_capital: 100000
+    entry_strictness_mult: 1.3
+    stop_loss_atr_mult: 1.5
+    take_profit_atr_mult:
+      T1: 1.0
+      T2: 2.0
+      T3: 3.0
+    resonance_required: 4
+    max_position_pct: 0.15
+    max_correlated_pct: 0.25
+    staging_strategy: "pyramiding"
+    base_risk_per_trade: 0.01
+    time_stop_candles: 5
+
+  B_balanced:
+    id: "PAPER_B"
+    label: "均衡型 (Baseline)"
+    description: "Default settings — the control group"
+    philosophy: "Balanced risk/reward. This is the benchmark."
+    initial_capital: 100000
+    entry_strictness_mult: 1.0
+    stop_loss_atr_mult: 2.0
+    take_profit_atr_mult:
+      T1: 1.5
+      T2: 3.0
+      T3: 5.0
+    resonance_required: 3
+    max_position_pct: 0.25
+    max_correlated_pct: 0.40
+    staging_strategy: "pyramiding"
+    base_risk_per_trade: 0.02
+    time_stop_candles: 8
+
+  C_aggressive:
+    id: "PAPER_C"
+    label: "激进型"
+    description: "Loose entry, wide stops, let winners run"
+    philosophy: "Accept larger drawdowns for larger gains."
+    initial_capital: 100000
+    entry_strictness_mult: 0.7
+    stop_loss_atr_mult: 3.0
+    take_profit_atr_mult:
+      T1: 2.0
+      T2: 4.0
+      T3: 7.0
+    resonance_required: 2
+    max_position_pct: 0.35
+    max_correlated_pct: 0.50
+    staging_strategy: "pyramiding"
+    base_risk_per_trade: 0.03
+    time_stop_candles: 12
+
+  D_momentum:
+    id: "PAPER_D"
+    label: "动量追涨型"
+    description: "Chase strength — enter on momentum, ride trends"
+    philosophy: "The trend is your friend. Cut losers fast, let winners compound."
+    initial_capital: 100000
+    entry_strictness_mult: 0.8
+    stop_loss_atr_mult: 2.5
+    take_profit_atr_mult:
+      T1: 3.0
+      T2: 5.0
+      T3: 10.0
+    resonance_required: 3
+    max_position_pct: 0.30
+    max_correlated_pct: 0.45
+    staging_strategy: "pyramiding"
+    base_risk_per_trade: 0.025
+    time_stop_candles: 6
+    special_rule: "Only enter if ADX > 25 AND price > MA20. Skip ranging markets entirely."
+
+  E_contrarian:
+    id: "PAPER_E"
+    label: "逆向抄底型"
+    description: "Buy dips, sell rips. Mean-reversion approach."
+    philosophy: "Be greedy when others are fearful."
+    initial_capital: 100000
+    entry_strictness_mult: 1.2
+    stop_loss_atr_mult: 1.5
+    take_profit_atr_mult:
+      T1: 1.5
+      T2: 2.5
+      T3: 4.0
+    resonance_required: 3
+    max_position_pct: 0.20
+    max_correlated_pct: 0.30
+    staging_strategy: "scale_in_levels"
+    base_risk_per_trade: 0.015
+    time_stop_candles: 10
+    special_rule: "Only enter if RSI < 40 AND price at/near support. Exit if RSI > 65."
+
+# ============================================================
+# COMPARISON METRICS (computed at end of each session)
+# ============================================================
+comparison_metrics:
+  absolute:
+    - "total_return_pct"
+    - "annualized_return_pct"
+    - "sharpe_ratio"
+    - "sortino_ratio"
+    - "max_drawdown_pct"
+    - "calmar_ratio"
+    - "win_rate_pct"
+    - "profit_factor"
+    - "expectancy_dollar"
+    - "avg_r_multiple"
+
+  vs_spy:
+    - "excess_return_pct"
+    - "alpha_vs_spy"
+    - "beta_vs_spy"
+    - "information_ratio"
+
+  vs_other_accounts:
+    - "rank_by_sharpe"
+    - "rank_by_total_return"
+    - "rank_by_min_drawdown"
+    - "rank_by_win_rate"
+
+# ============================================================
+# LEADERBOARD OUTPUT (every M5 post-market review)
+# ============================================================
+leaderboard:
+  format: |
+    ╔══════════════════════════════════════════════════════════════╗
+    ║              模拟盘多账号比对 — 当日表现                       ║
+    ╠══════════╤════════╤════════╤════════╤═══════╤════════╤══════╣
+    ║ 账号     │ 总收益 │ 夏普   │ 最大回撤│ 胜率  │ 盈亏比 │ R倍数║
+    ╠══════════╪════════╪════════╪════════╪═══════╪════════╪══════╣
+    ║ A 保守   │ +3.2%  │ 1.8    │ -2.1%  │ 68%   │ 2.1    │ 0.8  ║
+    ║ B 均衡   │ +5.1%  │ 1.4    │ -5.3%  │ 52%   │ 1.8    │ 0.5  ║
+    ║ C 激进   │ +8.7%  │ 1.1    │ -12.1% │ 41%   │ 2.4    │ 0.6  ║
+    ║ D 动量   │ +6.3%  │ 1.3    │ -7.2%  │ 47%   │ 2.0    │ 0.5  ║
+    ║ E 逆向   │ +1.8%  │ 0.8    │ -3.5%  │ 55%   │ 0.9    │ 0.1  ║
+    ╠══════════╪════════╪════════╪════════╪═══════╪════════╪══════╣
+    ║ SPY基准  │ +2.1%  │  --    │ -3.0%  │ --    │  --    │  --  ║
+    ╚══════════╧════════╧════════╧════════╧═══════╧════════╧══════╝
+    🏆 今日最佳: A 保守型 (最高夏普+最低回撤)
+    ⚠️ 今日最差: E 逆向型 (跑输大盘)
+
+  weekly_review:
+    description: "Every Friday M5: aggregate weekly stats per account"
+    auto_suggestion: "Recommend top-2 account strategies for next week"
+    threshold_for_alert: "Any account drawdown > 15% → alert and suggest parameter review"
+
+# ============================================================
+# PARAMETER GRID SWEEP (optimization mode)
+# ============================================================
+grid_sweep:
+  description: >
+    Run a parameter sweep across entry strictness and stop tightness
+    to find the optimal combination. Uses historical paper data.
+    Only enabled in optimization mode.
+
+  parameters:
+    entry_strictness:
+      range: [0.5, 2.0]
+      step: 0.25
+    stop_atr_mult:
+      range: [1.0, 4.0]
+      step: 0.5
+    take_profit_atr_T1:
+      range: [1.0, 3.0]
+      step: 0.5
+
+  enabled: false  # Enable after 20 sessions of baseline data
+
+# ============================================================
+# DECISION INTEGRATION
+# ============================================================
+decision_integration:
+  description: >
+    At M5 post-market review, A9 (Trade Review Coach) reads the leaderboard
+    and feeds findings into the weight feedback loop.
+
+  rules:
+    - "If account X consistently beats others on Sharpe for 10+ sessions → suggest adopting X's parameters"
+    - "If ALL accounts underperform SPY for 5+ sessions → flag strategy review"
+    - "If max drawdown of any account > 20% → suggest disabling that account's philosophy"

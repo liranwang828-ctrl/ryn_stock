@@ -1,0 +1,252 @@
+# Agent Team v2.0 — Dynamic Weight Algorithm
+# Final weight = static_weight × D_accuracy × D_regime × D_freshness
+# Each D multiplier is clamped to [0.5, 1.5]
+
+version: "2.0"
+
+# ============================================================
+# CORE FORMULA
+# ============================================================
+core_formula:
+  description: "Final agent weight at decision time t in mode m"
+  formula: "W_final(i, m, t) = W_static(i, m) × D_accuracy(i) × D_regime(i) × D_freshness(i)"
+  clamp_range: [0, 100]
+  on_fabrication: "W_final = 0 (muted for session)"
+
+# ============================================================
+# D_accuracy — Rolling Decision Accuracy
+# ============================================================
+D_accuracy:
+  description: "Primary dynamic factor based on agent's last 20 scorable opinions"
+  window_size: 20
+  min_opinions_for_activation: 5
+  default_value: 1.0  # Before 5 opinions accumulated
+
+  scoring_rules:
+    correct_direction:
+      description: "Agent predicted direction AND actual N-day forward return matched"
+      credit: 1.0
+    neutral_correct:
+      description: "Agent said 'no trade' and price stayed flat (within 0.5 ATR)"
+      credit: 0.5
+    wrong_direction:
+      description: "Agent predicted direction opposite to actual return"
+      credit: 0.0
+    horizon:
+      description: "N = agent's stated horizon (intraday → same day; 1-3 days → 3 days; 1 week → 5 days)"
+
+  formula: |
+    accuracy(i) = (sum_correct_direction × 1.0 + sum_neutral_correct × 0.5) / total_scorable_opinions
+
+  multiplier_table:
+    - range: [0.75, 1.0]
+      multiplier: 1.5
+      label: "Excellent — agent is highly reliable"
+    - range: [0.65, 0.74]
+      multiplier: 1.3
+      label: "Good — agent adds consistent value"
+    - range: [0.55, 0.65]
+      multiplier: 1.1
+      label: "Slightly above average"
+    - range: [0.45, 0.55]
+      multiplier: 1.0
+      label: "Average — coin flip territory"
+    - range: [0.35, 0.45]
+      multiplier: 0.8
+      label: "Below average — agent is a contrarian indicator"
+    - range: [0.25, 0.35]
+      multiplier: 0.6
+      label: "Poor — mostly wrong"
+    - range: [0.0, 0.25]
+      multiplier: 0.5
+      label: "Very poor — strongly contrarian"
+
+  decay:
+    description: "Opinions older than 20 decisions are dropped. Recent opinions weight more within window."
+    recency_weighting: "exponential decay with half-life of 10 decisions"
+
+# ============================================================
+# D_regime — Market Regime Alignment
+# ============================================================
+D_regime:
+  description: "Each agent has known strengths in specific market regimes. D_regime boosts agents whose domain is most valuable in the current regime."
+
+  regime_detection:
+    frequency: "every session start (M1)"
+    rules:
+      trending_bull:
+        condition: "SPY > MA20 AND ADX(14) > 25 AND +DI > -DI"
+        label: "Trending Bull"
+      trending_bear:
+        condition: "SPY < MA20 AND ADX(14) > 25 AND -DI > +DI"
+        label: "Trending Bear"
+      ranging:
+        condition: "ADX(14) < 20 for 5+ consecutive sessions"
+        label: "Ranging / Mean-Reverting"
+      high_volatility:
+        condition: "VIX > 25 OR ATR(14)/close > 3%"
+        label: "High Volatility / Event-Driven"
+    ambiguous:
+      condition: "No clear regime detected"
+      default_multiplier: 1.0
+
+  agent_regime_map:
+    A1_news:
+      best_regime: "high_volatility"
+      multiplier_in_best: 1.3
+      multiplier_in_other: 0.9
+      rationale: "News events matter most in volatile, event-driven markets"
+    A2_sentiment:
+      best_regime: "trending_bull"
+      multiplier_in_best: 1.2
+      multiplier_in_other: 0.9
+      rationale: "Social sentiment has most predictive power in momentum-driven bull markets"
+    A3_kol:
+      best_regime: "trending_bull"
+      multiplier_in_best: 1.2
+      multiplier_in_other: 0.85
+      rationale: "KOL opinions carry premium in bull markets; lag in ranging"
+    A4_macro:
+      best_regime: "any"
+      multiplier: 1.0
+      rationale: "Macro is always relevant, consistent multiplier"
+    A5_quant:
+      best_regime: "ranging"
+      multiplier_in_best: 1.3
+      multiplier_in_other: 0.95
+      rationale: "Factor-based mean-reversion strategies excel in ranging markets"
+    A6_cfa:
+      best_regime: "trending_bull"
+      multiplier_in_best: 1.25
+      multiplier_in_other: 0.9
+      rationale: "Valuation expansion works in trending markets; value traps in ranging"
+    A7_technical:
+      best_regime: "trending_bull"
+      multiplier_in_best: 1.15
+      multiplier_in_other: 0.75
+      rationale: "Trend-following works in trending; breaks down badly in ranging"
+    A8_risk:
+      best_regime: "high_volatility"
+      multiplier_in_best: 1.3
+      multiplier_in_other: 0.95
+      rationale: "Risk management is most critical in high-volatility regimes"
+
+# ============================================================
+# D_freshness — Data Freshness
+# ============================================================
+D_freshness:
+  description: "How current is the data in each agent's domain? Stale data reduces weight."
+
+  rules:
+    A1_news:
+      multiplier_map:
+        - range_minutes: [0, 15]
+          multiplier: 1.2
+          label: "Very fresh"
+        - range_minutes: [15, 60]
+          multiplier: 1.0
+          label: "Fresh"
+        - range_minutes: [60, 240]
+          multiplier: 0.8
+          label: "Aging"
+        - range_minutes: [240, 99999]
+          multiplier: 0.5
+          label: "Stale — last news > 4 hours ago"
+
+    A2_sentiment:
+      multiplier_map:
+        - range_minutes: [0, 30]
+          multiplier: 1.2
+        - range_minutes: [30, 120]
+          multiplier: 1.0
+        - range_minutes: [120, 99999]
+          multiplier: 0.7
+
+    A3_kol:
+      multiplier_map:
+        - range_hours: [0, 24]
+          multiplier: 1.2
+          label: "Same-day opinion"
+        - range_hours: [24, 72]
+          multiplier: 1.0
+          label: "Recent"
+        - range_hours: [72, 99999]
+          multiplier: 0.6
+          label: "Stale"
+
+    A4_macro:
+      multiplier_map:
+        - condition: "data released today"
+          multiplier: 1.1
+        - condition: "data released this week"
+          multiplier: 1.0
+        - condition: "data released this month"
+          multiplier: 0.8
+        - condition: "data older than 1 month"
+          multiplier: 0.5
+
+    A5_quant:
+      multiplier_map:
+        - condition: "factor scores recalculated end of prior day"
+          multiplier: 1.1
+        - condition: "factor scores are intraday-stale"
+          multiplier: 0.9
+      default: 1.0
+
+    A6_cfa:
+      multiplier_map:
+        - range_days: [0, 7]
+          multiplier: 1.2
+          label: "Post-earnings, fresh fundamentals"
+        - range_days: [7, 90]
+          multiplier: 1.0
+          label: "Standard reporting cycle"
+        - range_days: [90, 99999]
+          multiplier: 0.7
+          label: "Stale — last earnings > 90 days ago"
+
+    A7_technical:
+      multiplier_map:
+        - range_minutes: [0, 1]
+          multiplier: 1.2
+          label: "Real-time"
+        - range_minutes: [1, 5]
+          multiplier: 1.0
+          label: "Fresh"
+        - range_minutes: [5, 15]
+          multiplier: 0.6
+          label: "Delayed — significant in fast markets"
+        - range_minutes: [15, 99999]
+          multiplier: 0.3
+          label: "Stale — >15 min delay is critical for price data"
+
+    A8_risk:
+      multiplier_map:
+        - condition: "risk metrics from current session"
+          multiplier: 1.0
+        - condition: "risk metrics from previous session"
+          multiplier: 0.8
+      default: 1.0
+
+# ============================================================
+# FINAL WEIGHT CALCULATION EXAMPLE
+# ============================================================
+example:
+  title: "A5 (Quant) in M3 (Real-Time Monitoring) during trending bull regime"
+  static_weight: 75
+  D_accuracy: 1.3  # 70% accuracy in last 20 opinions
+  D_regime: 0.95   # Not in best regime (ranging), but still decent
+  D_freshness: 1.1  # Factor scores recalculated EOD yesterday
+  calculation: "75 × 1.3 × 0.95 × 1.1 = 101.89 → clamped to 100"
+  final_weight: 100
+  interpretation: "A5's opinion carries maximum weight in this scenario"
+
+  example_poor_agent:
+    title: "A7 (Technical) in M3 after 2 fabrications"
+    static_weight: 20
+    D_accuracy: 0.48  # Reduced from 0.6 due to 2 fabrications (×0.8 ×0.8)
+    D_regime: 0.75   # Trending — A7's best regime, but low base
+    D_freshness: 1.0
+    calculation: "20 × 0.48 × 0.75 × 1.0 = 7.2"
+    final_weight: 7
+    interpretation: "A7's opinion barely registers after fabrication penalties"

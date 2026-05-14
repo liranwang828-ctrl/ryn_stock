@@ -1,0 +1,76 @@
+# Agent Team v2.0 — .gitignore
+
+# Secrets & Credentials
+.env
+*.env
+.env.*
+credentials.json
+secrets.yaml
+*_secret*
+api_keys.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Data (generated at runtime)
+*.db
+*.sqlite
+*.sqlite3
+data/cache/
+*.parquet
+*.feather
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# Local config overrides
+config/local.yaml
+config/local_override.yaml
+
+# Claude / AI agent history
+.claude/
+.agents/
+.gemini/
+
+# Node (if any JS tooling added later)
+node_modules/
+package-lock.json

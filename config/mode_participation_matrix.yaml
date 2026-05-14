@@ -1,0 +1,159 @@
+# Agent Team v2.0 — Mode Participation Matrix & Static Weights
+# Defines which agents participate in each mode and their base voting power.
+
+version: "2.0"
+
+modes:
+  M1:
+    id: M1
+    name: "盘前讨论会"
+    name_en: "Pre-Market Briefing"
+    time_window: "08:30-09:25 ET"
+    debate_enabled: true
+    max_debate_rounds: 3
+    description: >
+      Comprehensive pre-market analysis synthesizing prior day performance,
+      overnight news, social sentiment shifts, and pre-market indicators.
+      Outputs fine-grained guidance for the trading day.
+    participating_agents: [A1, A2, A3, A4, A5, A6, A7]
+    active_count: 7
+    static_weights:
+      A1: 70    # News — critical for pre-market context
+      A2: 50    # Sentiment — supportive, overnight sentiment changes
+      A3: 40    # KOL — lowest weight, opinions lag market
+      A4: 80    # Macro — highest, sets the macro framework for the day
+      A5: 60    # Quant — factor analysis for positioning
+      A6: 55    # CFA — valuation context
+      A7: 30    # Technical — intentionally conservative due to hallucination risk
+    output:
+      - "大盘方向判断 (market direction)"
+      - "关键支撑/阻力位 (key S/R levels)"
+      - "日内关注标的优先级 (focus ticker priority)"
+      - "今日操作指引 (daily action plan)"
+
+  M2:
+    id: M2
+    name: "开盘观察期"
+    name_en: "Opening Observation"
+    time_window: "09:30-10:00 ET"
+    debate_enabled: false
+    description: >
+      Opening 30 minutes — highest long/short tug-of-war.
+      No trading, observation only. Select focus tickers and generate
+      multiple scenario hypotheses for each. Fit subsequent price action
+      to these scenarios to decide whether to trade.
+    participating_agents: [A1, A2, A5, A7, A8]
+    active_count: 5
+    static_weights:
+      A1: 65    # News — opening catalysts
+      A2: 45    # Sentiment — opening sentiment pulse
+      A5: 70    # Quant — factor signals for ticker screening
+      A7: 25    # Technical — low weight, only MA/SR from price_history
+      A8: 60    # Risk — position sizing prep, correlation check
+    output:
+      - "焦点标的列表 (focus ticker list, max 5)"
+      - "每标的的多猜想路径 (multi-scenario hypotheses per ticker)"
+      - "量/价/指标/影线 多维假设 (volume, price, indicators, wick scenarios)"
+      - "拟合度追踪框架 (scenario fit tracking framework)"
+
+  M3:
+    id: M3
+    name: "实时监控"
+    name_en: "Real-Time Monitoring"
+    time_window: "09:30-16:00 ET"
+    interval: "every 2 minutes"
+    debate_enabled: false
+    description: >
+      High-frequency monitoring of focus tickers. Every 2 minutes pull
+      comprehensive data: individual indicators, sector indicators,
+      broad market (QQQ), VIX. Determine if entry conditions are met.
+      Agents produce rapid parallel signals — no debate for latency.
+    participating_agents: [A1, A2, A5, A7, A8]
+    active_count: 5
+    static_weights:
+      A1: 55    # News — real-time headlines
+      A2: 40    # Sentiment — real-time social pulse
+      A5: 75    # Quant — highest, factor signals are data-driven
+      A7: 20    # Technical — lowest, strict indicator whitelist
+      A8: 65    # Risk — real-time risk assessment
+    output:
+      - "综合信号分数 (composite signal score)"
+      - "买入/观望/回避 判断 (buy/watch/avoid)"
+      - "异常波动告警 (abnormal movement alert)"
+
+  M4:
+    id: M4
+    name: "策略执行"
+    name_en: "Strategy Execution"
+    time_window: "on demand (when M3 triggers entry signal)"
+    debate_enabled: true
+    max_debate_rounds: 3
+    description: >
+      When M3 triggers an entry signal, convene M4 for final deliberation.
+      Validate the signal, confirm stop-loss/take-profit levels,
+      calculate position size, execute (or veto).
+    participating_agents: [A4, A5, A6, A7, A8]
+    active_count: 5
+    static_weights:
+      A4: 65    # Macro — macro safety confirmation
+      A5: 80    # Quant — signal validation (highest)
+      A6: 70    # CFA — fundamental confirmation
+      A7: 35    # Technical — entry timing confirmation
+      A8: 75    # Risk — position sizing + stop-loss (highest)
+    output:
+      - "入场确认/否决 (entry confirm/veto)"
+      - "仓位大小 (position size)"
+      - "止损位 (stop-loss level)"
+      - "止盈位 T1/T2/T3 (take-profit targets)"
+      - "最大持仓时间 (max holding time)"
+
+  M5:
+    id: M5
+    name: "盘后复盘"
+    name_en: "Post-Market Review"
+    time_window: "16:00-17:00 ET"
+    debate_enabled: true
+    max_debate_rounds: "unlimited (multi-round until convergence)"
+    description: >
+      All agents review their own calls from the trading day.
+      Cross-examination between agents. Debate coordinator scores
+      each agent's performance. Feeds into dynamic weight system.
+    participating_agents: [A1, A2, A3, A4, A5, A6, A7, A8, A9]
+    active_count: 9
+    static_weights:
+      A9: null  # Trade Review Coach — moderator only, no vote weight
+      # All other agents have equal participation but A9 moderates
+      A1: 50
+      A2: 50
+      A3: 50
+      A4: 50
+      A5: 50
+      A6: 50
+      A7: 50
+      A8: 50
+    output:
+      - "每个agent的当日准确率评分 (per-agent daily accuracy score)"
+      - "行为模式偏差识别 (behavioral pattern deviation)"
+      - "策略参数调整建议 (strategy parameter adjustment)"
+      - "次日改进计划 (next-day improvement plan)"
+
+# Participation Quick-Reference Matrix
+# YES = participating, NO = not participating
+participation_matrix:
+  headers: [Mode, A1_News, A2_Sentiment, A3_KOL, A4_Macro, A5_Quant, A6_CFA, A7_Tech, A8_Risk, A9_Coach]
+  rows:
+    M1_Premarket:       [YES, YES, YES, YES, YES, YES, YES, NO,  NO]
+    M2_Opening:         [YES, YES, NO,  NO,  YES, NO,  YES, YES, NO]
+    M3_Monitoring:      [YES, YES, NO,  NO,  YES, NO,  YES, YES, NO]
+    M4_Execution:       [NO,  NO,  NO,  YES, YES, YES, YES, YES, NO]
+    M5_PostMarket:      [YES, YES, YES, YES, YES, YES, YES, YES, YES]
+
+# Weight Quick-Reference Matrix
+weight_matrix:
+  headers: [Mode, A1_News, A2_Sentiment, A3_KOL, A4_Macro, A5_Quant, A6_CFA, A7_Tech, A8_Risk]
+  rows:
+    M1_Premarket:       [70, 50, 40, 80, 60, 55, 30, "-"]
+    M2_Opening:         [65, 45, "-", "-", 70, "-", 25, 60]
+    M3_Monitoring:      [55, 40, "-", "-", 75, "-", 20, 65]
+    M4_Execution:       ["-", "-", "-", 65, 80, 70, 35, 75]
+    M5_PostMarket:      [50, 50, 50,  50, 50, 50, 50, 50]

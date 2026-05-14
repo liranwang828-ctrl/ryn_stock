@@ -1,0 +1,135 @@
+# Agent Team v2.0 — Staged Position Building Rules
+# 分批建仓: never all-in at once. Build positions in stages.
+
+version: "2.0"
+
+# ============================================================
+# CORE PRINCIPLES
+# ============================================================
+principles:
+  - "Never add to a losing position (no averaging down)"
+  - "Each add must be at a better price than previous (pyramid up for longs)"
+  - "Each stage has its own stop-loss"
+  - "Total position never exceeds max_single_position_pct (25%)"
+  - "Stage 1 is smallest — prove the trade first"
+
+# ============================================================
+# STAGING STRATEGIES
+# ============================================================
+
+strategies:
+
+  # ── Strategy A: Pyramiding (trend confirmation) ──────────
+  pyramiding:
+    description: >
+      Start small, add ONLY when price moves in your favor.
+      Each add confirms the thesis. Best for trending markets.
+      Worst for ranging — gets chopped.
+
+    stages:
+      S1_initial:
+        pct_of_max_position: 30
+        trigger: "Entry signal (resonance >= MODERATE)"
+        description: "Pilot position — prove the trade"
+        stop_loss: "entry - 2×ATR"
+        scale_out: "Close all if S1 stop hit"
+
+      S2_add:
+        pct_of_max_position: 40
+        trigger: "Price moved +1×ATR from S1 entry AND resonance still >= 3 groups"
+        description: "Confirmation add — thesis is playing out"
+        stop_loss: "S1 entry price (breakeven on S1, risk only S2)"
+        move_s1_stop: "S1 stop → S1 entry (breakeven)"
+
+      S3_add:
+        pct_of_max_position: 30
+        trigger: "Price moved +2×ATR from S1 entry AND no safety filter active"
+        description: "Full size — letting winner run"
+        stop_loss: "S2 entry price"
+        move_s1_s2_stop: "S1+S2 stop → S2 entry"
+
+    max_position_pct: 25
+    total_stages: 3
+
+  # ── Strategy B: Scale-in at levels (support approach) ────
+  scale_in_levels:
+    description: >
+      Pre-define price levels. Add at each level if it holds.
+      Best for ranging/support-buying. Worst in free-fall.
+
+    stages:
+      S1_initial:
+        pct_of_max_position: 25
+        trigger: "Entry signal at/near defined support level"
+        stop_loss: "below support - 0.5×ATR"
+
+      S2_add:
+        pct_of_max_position: 35
+        trigger: "Price bounced +0.5×ATR from S1 entry AND volume confirms"
+        stop_loss: "S1 stop level (same support floor)"
+
+      S3_add:
+        pct_of_max_position: 40
+        trigger: "Price broke above first resistance AND retested it as support"
+        stop_loss: "entry - 1×ATR"
+
+    max_position_pct: 25
+    total_stages: 3
+
+  # ── Strategy C: Time-based staging ───────────────────────
+  time_based:
+    description: >
+      Add in equal slices over time. Reduces timing risk.
+      Best for building core positions. Not for short-term trades.
+
+    stages:
+      S1:
+        pct_of_max_position: 33
+        trigger: "Entry signal at T+0"
+        stop_loss: "entry - 2×ATR"
+      S2:
+        pct_of_max_position: 33
+        trigger: "T+30 minutes AND no safety filter AND price > S1 entry - 0.5×ATR"
+        stop_loss: "entry - 2×ATR (same level)"
+      S3:
+        pct_of_max_position: 34
+        trigger: "T+60 minutes AND still above VWAP AND resonance >= 3"
+        stop_loss: "entry - 2×ATR (same level)"
+
+    max_position_pct: 25
+    total_stages: 3
+
+# ============================================================
+# STAGING VALIDATION RULES (apply to all strategies)
+# ============================================================
+global_rules:
+  no_add_if:
+    - "Safety filter F1-F8 is active → block all new adds, hold current"
+    - "VIX spike > 25% in 5 min → freeze staging, tighten existing stops to 1.5×ATR"
+    - "Price has reversed > 1×ATR against direction → staging complete, no more adds"
+    - "Correlated position total would exceed 40% → reduce or skip this add"
+
+  stop_management:
+    description: "Each stage's stop is INDEPENDENT. Closing S2 does not close S1."
+    cascade: "If S1 stop hit → close all (thesis invalid). If S2 stop hit → close S2+S3 only."
+
+  profit_taking:
+    description: "Scale out in reverse order — last in, first out"
+    T1_50pct: "Close S3 (last in) at +1.5×ATR from avg entry"
+    T2_25pct: "Close S2 at +3×ATR"
+    T3_25pct: "Close S1 (runner) at +5×ATR or trailing stop"
+
+# ============================================================
+# DEFAULT STRATEGY SELECTION
+# ============================================================
+default: "pyramiding"
+mode_mapping:
+  M3_intraday_scalp: "pyramiding"       # Fast moves, confirm before adding
+  M4_swing_entry: "scale_in_levels"     # Longer hold, buy at value areas
+  core_position_build: "time_based"     # Building a position over days
+
+# CONFIGURABLE
+configurable:
+  staging_pcts: [30, 40, 30]  # Pyramiding default — CONFIGURABLE
+  atr_add_trigger: 1.0        # ATR multiple for S2 add trigger
+  atr_reversal_block: 1.0     # Reversal threshold to stop adding

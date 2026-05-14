@@ -1,0 +1,409 @@
+# Agent Team v2.0 — Trading Strategy Rules
+# Multi-indicator resonance-based entry/exit system with safety filters.
+
+version: "2.0"
+
+# ============================================================
+# RESONANCE GROUPS
+# ============================================================
+# "Resonance" = multiple independent indicator groups simultaneously aligned.
+# Entry requires AND-gate logic across groups, not a simple weighted sum.
+
+resonance_groups:
+
+  G_PRICE:
+    id: G_PRICE
+    name: "价格共振"
+    description: "Price structure confirms bullish bias"
+    components:
+      - id: "above_vwap"
+        description: "Current price above VWAP"
+        check: "close > VWAP"
+      - id: "above_prev_close"
+        description: "Price above prior session close"
+        check: "close > previous_close"
+      - id: "higher_lows"
+        description: "Last 3 candles making higher lows"
+        check: "low[0] > low[1] > low[2]"
+    required_count: 3  # ALL must be true
+
+  G_TECH:
+    id: G_TECH
+    name: "技术共振"
+    description: "Technical indicators confirm trend"
+    components:
+      - id: "adx_strong"
+        description: "ADX > 25 (trending, not ranging)"
+        check: "ADX(14) > 25"  # Only if ADX in technical_indicators table
+        fallback: "If ADX not available: use price > MA20 AND MA20 slope positive as proxy"
+      - id: "above_ma20"
+        description: "Price above 20-period MA"
+        check: "close > MA20"
+      - id: "not_at_resistance"
+        description: "Price not at resistance (has room to run)"
+        check: "close > 1.02 * nearest_resistance_from_price_history"
+        note: "Resistance must be derived from actual price_history pivot points"
+    required_count: 3
+
+  G_SECTOR:
+    id: G_SECTOR
+    name: "板块共振"
+    description: "Sector confirms strength"
+    components:
+      - id: "sector_outperformance"
+        description: "Sector ETF outperforming SPY"
+        check: "sector_etf_return_session - spy_return_session > 0.003"
+      - id: "breadth_healthy"
+        description: "Sector breadth > 55%"
+        check: "sector_breadth_pct > 55"
+    required_count: 2
+
+  G_MACRO:
+    id: G_MACRO
+    name: "宏观安全"
+    description: "Macro environment is safe for long entries"
+    components:
+      - id: "vix_safe"
+        description: "VIX below panic threshold"
+        check: "VIX < 30"
+      - id: "no_deep_inversion"
+        description: "Yield curve not deeply inverted"
+        check: "10Y_2Y_spread > -0.3"
+      - id: "no_fomc"
+        description: "Not FOMC decision day"
+        check: "today != fomc_date"
+    required_count: 3  # ALL must be true
+
+  G_SENTIMENT:
+    id: G_SENTIMENT
+    name: "情绪共振"
+    description: "Sentiment confirms bullish bias"
+    components:
+      - id: "social_positive"
+        description: "Social sentiment z-score positive"
+        check: "social_sentiment_zscore > 0"
+      - id: "news_positive"
+        description: "News sentiment polarity positive"
+        check: "avg_news_polarity_24h > 0"
+      - id: "low_put_call"
+        description: "Put/call ratio < 1.0 (calls dominate)"
+        check: "put_call_ratio < 1.0"
+    required_count: 3
+
+# ============================================================
+# ENTRY LOGIC
+# ============================================================
+entry_logic:
+  description: >
+    Resonance-level based entry with G_MACRO as safety gate.
+    All entries are graded by how many resonance groups agree.
+
+  long_entry:
+    safety_gate: "G_MACRO must be TRUE"
+    on_safety_gate_fail: "NO ENTRY. Log reason for post-market review."
+
+    resonance_levels:
+      STRONG:
+        required_groups: 4  # G_PRICE + G_TECH + G_SECTOR + G_SENTIMENT all true
+        position_size_pct: 100  # Full size
+        label: "STRONG_ENTRY"
+        description: "4 of 5 groups aligned — highest conviction entry"
+
+      MODERATE:
+        required_groups: 3
+        position_size_pct: 60
+        label: "MODERATE_ENTRY"
+        description: "3 of 5 groups aligned — solid entry, reduced size"
+
+      WEAK:
+        required_groups: 2
+        position_size_pct: 30
+        label: "WEAK_ENTRY"
+        requires_a8_signoff: true
+        description: "2 of 5 groups aligned — speculative entry, requires A8 explicit approval"
+
+      NO_ENTRY:
+        required_groups: "0-1"
+        action: "Do not enter. Continue monitoring."
+
+  short_entry:
+    safety_gate: "G_MACRO relaxed for shorts (VIX can be > 30 for short entries)"
+    resonance_groups_inverted:
+      - "G_PRICE inverted (close < VWAP, lower highs, below prev close)"
+      - "G_TECH inverted (ADX > 25, price < MA20, not at support)"
+      - "G_SECTOR inverted (sector underperforming SPY)"
+      - "G_MACRO: VIX elevated (>25) is supportive for shorts"
+      - "G_SENTIMENT inverted (social negative, news negative, high put/call)"
+
+    resonance_levels:
+      STRONG:
+        required_groups: 4
+        position_size_pct: 100
+      MODERATE:
+        required_groups: 3
+        position_size_pct: 60
+      WEAK:
+        required_groups: 2
+        position_size_pct: 30
+        requires_a8_signoff: true
+      NO_ENTRY:
+        required_groups: "0-1"
+        action: "Do not short"
+
+# ============================================================
+# POSITION SIZING
+# ============================================================
+position_sizing:
+  base_risk_per_trade_pct: 0.02  # 2% of portfolio per trade (CONFIGURABLE)
+  formula: |
+    ATR = Average True Range (14 periods, from price_history)
+    account_value = current portfolio equity
+    position_risk = account_value × base_risk × W_final(A8)
+
+    position_size_shares = position_risk / (ATR × multiplier)
+    position_size_dollars = position_size_shares × entry_price
+
+    multiplier:
+      STRONG_ENTRY  → 1.0
+      MODERATE_ENTRY → 1.5
+      WEAK_ENTRY    → 2.0
+
+  concentration_limits:
+    max_single_position_pct: 0.25    # No single position > 25% of portfolio (CONFIGURABLE)
+    max_correlated_exposure_pct: 0.40  # Sum of correlated positions < 40% (CONFIGURABLE)
+    max_total_exposure_pct: 0.85     # Max 85% invested, always keep 15%+ cash
+    max_positions: 8                 # Max concurrent open positions
+
+  correlation_check:
+    description: "Before entry, check correlation of new ticker with each existing position"
+    threshold: 0.7  # If correlation > 0.7, treat as same exposure bucket
+    action: "If adding would exceed max_correlated_exposure_pct, reduce size proportionally"
+
+# ============================================================
+# EXIT CONDITIONS
+# ============================================================
+exit_conditions:
+
+  hard_stop_loss:
+    description: "Absolute maximum loss per trade"
+    long: "entry_price × 0.98"   # -2%
+    short: "entry_price × 1.02"  # +2%
+    priority: 1  # Highest priority — always enforced
+
+  atr_trailing_stop:
+    description: "Trailing stop based on ATR, tightened after T1 reached"
+    initial:
+      long: "entry_price - 2 × ATR(14)"
+      short: "entry_price + 2 × ATR(14)"
+    after_t1_reached:
+      long: "highest_high_since_entry - 1 × ATR(14)"
+      short: "lowest_low_since_entry + 1 × ATR(14)"
+    priority: 2
+
+  take_profit:
+    description: "Multi-target profit taking"
+    targets:
+      T1:
+        pct_of_position: 50
+        trigger: "entry_price + 1.5 × ATR(14)"
+        description: "First target — take half off"
+      T2:
+        pct_of_position: 25
+        trigger: "entry_price + 3.0 × ATR(14)"
+        description: "Second target — let remaining quarter run"
+      T3:
+        pct_of_position: 25
+        trigger: "entry_price + 5.0 × ATR(14)"
+        description: "Runner — trail with 1×ATR stop"
+    priority: 3
+
+  time_stop:
+    description: "Exit if trade goes nowhere — prevents capital tie-up"
+    intraday:
+      condition: "Position flat (±0.5 ATR) after 8 consecutive candles"
+      action: "Close at market"
+    swing:
+      condition: "Position flat (±1.0 ATR) after 3 trading days"
+      action: "Close at market"
+    priority: 4
+
+  max_drawdown_stop:
+    description: "Circuit breaker — protects account from cascading losses"
+    condition: "Account drawdown from session start exceeds 6%"
+    action: "Close ALL positions immediately. No new entries for rest of session."
+    priority: 0  # Override — above all other exits
+
+  # ============================================================
+  # EXIT PRIORITY RESOLUTION
+  # ============================================================
+  priority_order:
+    description: "When multiple exit conditions fire simultaneously, use this order"
+    order:
+      - "max_drawdown_stop (priority 0 — circuit breaker, close everything)"
+      - "hard_stop_loss (priority 1 — always protect capital first)"
+      - "atr_trailing_stop (priority 2 — protect profits / limit losses)"
+      - "take_profit (priority 3 — take gains at targets)"
+      - "time_stop (priority 4 — free up capital from dead trades)"
+
+# ============================================================
+# MARKET SAFETY FILTERS (Override ALL buy signals)
+# ============================================================
+safety_filters:
+
+  F1:
+    id: F1
+    name: "VIX急涨 (VIX Spike)"
+    condition: "VIX > 35"
+    action: "Block all new long entries. Close existing long positions at 50% of current size. Shorts evaluated independently."
+    reset: "VIX drops below 30 for 15+ minutes"
+    severity: "CRITICAL"
+
+  F2:
+    id: F2
+    name: "重大新闻冲击 (Major News Shock)"
+    condition: "market_news table has event with severity='HIGH' AND timestamp < 30 min ago"
+    action: "Block ALL entries (long and short) for 30 minutes from event timestamp."
+    reset: "30 minutes elapsed from event timestamp"
+    severity: "CRITICAL"
+
+  F3:
+    id: F3
+    name: "大盘熔断 (Circuit Breaker)"
+    condition: "SPY decline > 5% from prior close"
+    action: "Block all new entries for 15 minutes. Tighten existing stops to 1×ATR."
+    reset: "15 minutes elapsed AND SPY recovered to within 3% of prior close"
+    severity: "CRITICAL"
+
+  F4:
+    id: F4
+    name: "低流动性 (Low Liquidity)"
+    condition: "SPY 5-min volume < 50% of 20-day same-window average"
+    action: "Block new entries. Scale out of existing positions at market (50% immediately)."
+    reset: "SPY 5-min volume > 75% of 20-day average for 2 consecutive 5-min periods"
+    severity: "HIGH"
+
+  F5:
+    id: F5
+    name: "FOMC管制期 (FOMC Blackout)"
+    condition: "Today is FOMC decision day AND current time is within [30 min before release, 60 min after release]"
+    action: "Block all new entries. Existing positions: tighten stops to 1.5×ATR."
+    reset: "90 minutes after FOMC release time"
+    severity: "HIGH"
+
+  F6:
+    id: F6
+    name: "财报风险 (Earnings Risk)"
+    condition: "Ticker has earnings in next 48 hours AND position is not explicitly tagged as earnings_play"
+    action: "Block entry for this specific ticker only."
+    reset: "After earnings released AND 1 hour of price discovery elapsed"
+    severity: "MEDIUM"
+    scope: "ticker-specific"
+
+  F7:
+    id: F7
+    name: "隔夜跳空 (Overnight Gap)"
+    condition: "First 5 minutes of session AND gap open > 2% from prior close"
+    action: "Block entries until price stabilizes. Stabilization defined as: 5-min range < 0.5% for 3 consecutive 5-min candles."
+    reset: "Stabilization condition met"
+    severity: "MEDIUM"
+
+  F8:
+    id: F8
+    name: "相关性融涨 (Correlation Melt-up)"
+    condition: "> 80% of SPX sectors moving in same direction AND R² > 0.9"
+    action: "Block entries. Indiscriminate buying/selling — no edge in stock selection."
+    reset: "R² drops below 0.8 for 10 minutes"
+    severity: "MEDIUM"
+
+# ============================================================
+# AGENT CONSENSUS OVERRIDE (Debate vs Mechanical Signal)
+# ============================================================
+consensus_override:
+  description: >
+    When the debate protocol produces a validated consensus that conflicts
+    with the mechanical entry signal, these rules resolve the conflict.
+    Agent consensus carries significant weight but doesn't completely override
+    mechanical signals — it adjusts position sizing and requires additional sign-off.
+
+  rules:
+    - id: CO1
+      mechanical: "ENTRY (any strength)"
+      consensus: "NO_ENTRY"
+      resolution: "No trade. Consensus veto takes precedence. Record for post-market review."
+
+    - id: CO2
+      mechanical: "ENTRY (WEAK, 2 groups)"
+      consensus: "ENTRY (STRONG, consensus_strength >= 0.7)"
+      resolution: "Trade at 70% of standard STRONG position size. This caps the upside of agent enthusiasm."
+
+    - id: CO3
+      mechanical: "NO_ENTRY"
+      consensus: "ENTRY (consensus_strength >= 0.7)"
+      resolution: "Trade at 50% of standard position size. A8 must explicitly sign off. Record as 'agent-driven entry'."
+
+    - id: CO4
+      mechanical: "NO_ENTRY"
+      consensus: "NO_ENTRY"
+      resolution: "No trade. Complete agreement to stay out."
+
+# ============================================================
+# STRATEGY PARAMETERS (CONFIGURABLE)
+# ============================================================
+configurable_parameters:
+  # These are the "口子" — configurable knobs the user adjusts during review.
+  # Values shown are defaults. User can tune based on paper trading results.
+
+  base_risk_per_trade_pct:
+    value: 0.02
+    range: [0.005, 0.05]
+    description: "Max portfolio risk per single trade"
+
+  max_single_position_pct:
+    value: 0.25
+    range: [0.10, 0.40]
+    description: "Max concentration in one ticker"
+
+  max_correlated_exposure_pct:
+    value: 0.40
+    range: [0.25, 0.60]
+    description: "Max total exposure to correlated positions"
+
+  hard_stop_loss_pct:
+    value: 0.02
+    range: [0.01, 0.05]
+    description: "Absolute stop-loss percentage from entry"
+
+  atr_multiplier_stop:
+    value: 2.0
+    range: [1.5, 3.0]
+    description: "ATR multiplier for initial trailing stop"
+
+  atr_multiplier_trail:
+    value: 1.0
+    range: [0.5, 2.0]
+    description: "ATR multiplier for trailing stop after T1"
+
+  take_profit_atr_mults:
+    T1: 1.5
+    T2: 3.0
+    T3: 5.0
+    description: "ATR multiples for take-profit targets"
+
+  time_stop_candles:
+    intraday: 8
+    description: "Exit flat positions after this many candles"
+
+  account_drawdown_circuit_breaker_pct:
+    value: 0.06
+    range: [0.03, 0.10]
+    description: "Session drawdown that triggers close-all"
+
+  vix_spike_threshold:
+    value: 35
+    range: [30, 40]
+    description: "VIX level that blocks all long entries"
+
+  debate_consensus_strength_threshold:
+    value: 0.6
+    range: [0.5, 0.8]
+    description: "Minimum consensus_strength for strong signal"

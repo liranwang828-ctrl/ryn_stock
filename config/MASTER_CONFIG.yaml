@@ -1,0 +1,116 @@
+# Agent Team v2.0 — Master Configuration Index
+# Single entry point for the entire agent system configuration.
+# Load this file first; it references all other config files.
+
+version: "2.0"
+description: "9-agent stock trading AI team — master configuration"
+
+includes:
+  data_catalog:
+    path: "config/data_catalog.yaml"
+    description: "Shared data table schemas — single source of truth for all field definitions"
+    load_order: 1
+
+  agent_definitions:
+    path: "config/agent_definitions.yaml"
+    description: "9 agent + 2 system role definitions with data boundaries"
+    load_order: 2
+    references: [data_catalog]
+
+  mode_participation_matrix:
+    path: "config/mode_participation_matrix.yaml"
+    description: "5-mode participation matrix with static weights"
+    load_order: 3
+    references: [agent_definitions]
+
+  debate_protocol_v2:
+    path: "config/debate_protocol_v2.yaml"
+    description: "3-round debate structure, DV validation gate, anti-fabrication guardrails"
+    load_order: 4
+    references: [mode_participation_matrix]
+
+  dynamic_weights:
+    path: "config/dynamic_weights.yaml"
+    description: "D_accuracy, D_regime, D_freshness algorithms for weight adjustment"
+    load_order: 5
+    references: [agent_definitions, mode_participation_matrix]
+
+  fabrication_penalties:
+    path: "config/fabrication_penalties.yaml"
+    description: "Multi-tier penalty escalation for data integrity violations"
+    load_order: 6
+    references: [debate_protocol_v2, dynamic_weights]
+
+  observation_framework:
+    path: "config/observation_framework.yaml"
+    description: "6-category observation indicator system with weights and formulas"
+    load_order: 7
+    references: [data_catalog]
+
+  trading_strategy:
+    path: "config/trading_strategy.yaml"
+    description: "Multi-indicator resonance entry/exit rules and 8 safety filters"
+    load_order: 8
+    references: [observation_framework, dynamic_weights]
+
+  paper_trading:
+    path: "config/paper_trading.yaml"
+    description: "Paper trading simulator, analytics, and weight feedback loop"
+    load_order: 9
+    references: [trading_strategy, dynamic_weights]
+
+  position_staging:
+    path: "config/position_staging.yaml"
+    description: "Staged position building rules — pyramiding, scale-in, time-based"
+    load_order: 10
+    references: [trading_strategy]
+
+  paper_accounts_comparison:
+    path: "config/paper_accounts_comparison.yaml"
+    description: "5-account paper trading comparison with different parameter profiles"
+    load_order: 11
+    references: [paper_trading, trading_strategy, dynamic_weights]
+
+  agent_prompts:
+    path: "prompts/agent_system_prompts.md"
+    description: "Per-agent system prompt templates with mode-specific overrides"
+    load_order: 12
+    references: [agent_definitions, mode_participation_matrix, data_catalog]
+
+  trade_record_schema:
+    path: "schemas/trade_record_schema.json"
+    description: "JSON Schema for paper and live trade records"
+    load_order: 13
+
+configurable_parameters_summary:
+  description: "All user-tunable parameters consolidated from sub-configs"
+  parameters:
+    base_risk_per_trade_pct: {default: 0.02, range: [0.005, 0.05], source: "trading_strategy.yaml"}
+    max_single_position_pct: {default: 0.25, range: [0.10, 0.40], source: "trading_strategy.yaml"}
+    max_correlated_exposure_pct: {default: 0.40, range: [0.25, 0.60], source: "trading_strategy.yaml"}
+    hard_stop_loss_pct: {default: 0.02, range: [0.01, 0.05], source: "trading_strategy.yaml"}
+    atr_multiplier_stop: {default: 2.0, range: [1.5, 3.0], source: "trading_strategy.yaml"}
+    vix_spike_threshold: {default: 35, range: [30, 40], source: "trading_strategy.yaml"}
+    debate_consensus_strength_threshold: {default: 0.6, range: [0.5, 0.8], source: "trading_strategy.yaml"}
+    account_drawdown_circuit_breaker_pct: {default: 0.06, range: [0.03, 0.10], source: "trading_strategy.yaml"}
+    fabrication_threshold_suspension: {default: 3, range: [2, 5], source: "fabrication_penalties.yaml"}
+    suspension_duration_sessions: {default: 5, range: [1, 20], source: "fabrication_penalties.yaml"}
+    paper_trading_enabled: {default: false, source: "paper_trading.yaml"}
+    paper_initial_capital: {default: 100000, source: "paper_trading.yaml"}
+    warmup_sessions: {default: 10, range: [5, 50], source: "paper_trading.yaml"}
+    staging_strategy: {default: "pyramiding", options: ["pyramiding", "scale_in_levels", "time_based"], source: "position_staging.yaml"}
+    staging_pcts: {default: [30, 40, 30], source: "position_staging.yaml"}
+    atr_add_trigger: {default: 1.0, range: [0.5, 2.0], source: "position_staging.yaml"}
+    grid_sweep_enabled: {default: false, source: "paper_accounts_comparison.yaml"}
+    comparison_account_count: {default: 5, source: "paper_accounts_comparison.yaml"}
+    comparison_initial_capital: {default: 100000, source: "paper_accounts_comparison.yaml"}
+
+pending_user_decisions:
+  description: "Items requiring user input — do NOT block implementation"
+  items:
+    - {id: DECISION_01, question: "Enable paper trading? (currently disabled)", resolved: true, value: true, config_key: "paper_trading.system.enabled"}
+    - {id: DECISION_02, question: "Confirm base risk per trade at 2%?", default: 0.02, config_key: "trading_strategy.configurable_parameters.base_risk_per_trade_pct"}
+    - {id: DECISION_03, question: "Confirm max single position at 25%?", default: 0.25, config_key: "trading_strategy.configurable_parameters.max_single_position_pct"}
+    - {id: DECISION_04, question: "Agent suspension threshold: 3 fabrications in 10 sessions?", default: 3, config_key: "fabrication_penalties.appeal.configurable"}
+    - {id: DECISION_05, question: "Data sources to enable: Yahoo Finance / Finnhub / Reddit / others?", default: ["Yahoo Finance", "Finnhub", "Reddit"]}
+    - {id: DECISION_06, question: "Review A7 (技术分析师) permanent constraints? Currently on strict indicator whitelist.", default: "keep_constraints"}

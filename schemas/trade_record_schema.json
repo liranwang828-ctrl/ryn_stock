@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Trade Record Schema v2.0",
+  "description": "Schema for paper and live trade records. Used by paper trading engine and post-market review (M5).",
+  "type": "object",
+  "required": [
+    "trade_id",
+    "ticker",
+    "direction",
+    "entry_price",
+    "entry_time",
+    "position_size_pct",
+    "stop_loss_price",
+    "exit_price",
+    "exit_time",
+    "exit_reason",
+    "pnl_pct",
+    "pnl_dollar"
+  ],
+  "properties": {
+    "trade_id": {
+      "type": "string",
+      "description": "Unique trade identifier: {PAPER|LIVE}_{ticker}_{entry_timestamp}",
+      "pattern": "^(PAPER|LIVE)_[A-Z]+_\\d{14}$"
+    },
+    "trade_type": {
+      "type": "string",
+      "enum": ["PAPER", "LIVE"],
+      "description": "Whether this was a paper or live trade"
+    },
+    "ticker": {
+      "type": "string",
+      "description": "Stock ticker symbol",
+      "minLength": 1,
+      "maxLength": 10
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["LONG", "SHORT"],
+      "description": "Trade direction"
+    },
+    "entry_price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Entry fill price (after slippage)"
+    },
+    "entry_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of entry fill"
+    },
+    "entry_reason": {
+      "type": "string",
+      "description": "Concise reason for entry: which resonance groups triggered",
+      "examples": [
+        "STRONG_ENTRY: G_PRICE+G_TECH+G_SECTOR+G_MACRO (4 groups)",
+        "MODERATE_ENTRY: G_PRICE+G_TECH+G_MACRO (3 groups)"
+      ]
+    },
+    "position_size_shares": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Number of shares"
+    },
+    "position_size_dollars": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Dollar amount of position"
+    },
+    "position_size_pct": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 100,
+      "description": "Position size as percentage of portfolio"
+    },
+    "stop_loss_price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Initial stop-loss price"
+    },
+    "take_profit_targets": {
+      "type": "object",
+      "properties": {
+        "tp1_price": { "type": "number" },
+        "tp1_pct": { "type": "number", "description": "Percentage of position to sell at TP1" },
+        "tp2_price": { "type": "number" },
+        "tp2_pct": { "type": "number" },
+        "tp3_price": { "type": "number" },
+        "tp3_pct": { "type": "number" }
+      }
+    },
+    "exit_price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Exit fill price"
+    },
+    "exit_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of exit fill"
+    },
+    "exit_reason": {
+      "type": "string",
+      "enum": [
+        "HARD_STOP_LOSS",
+        "ATR_TRAILING_STOP",
+        "TAKE_PROFIT_T1",
+        "TAKE_PROFIT_T2",
+        "TAKE_PROFIT_T3",
+        "TIME_STOP",
+        "MAX_DRAWDOWN_STOP",
+        "SAFETY_FILTER_F1_VIX",
+        "SAFETY_FILTER_F2_NEWS",
+        "SAFETY_FILTER_F3_CIRCUIT_BREAKER",
+        "MANUAL_OVERRIDE",
+        "SESSION_END_FORCE_CLOSE"
+      ],
+      "description": "Which exit condition triggered the close"
+    },
+    "pnl_pct": {
+      "type": "number",
+      "description": "Trade P&L as percentage of entry value"
+    },
+    "pnl_dollar": {
+      "type": "number",
+      "description": "Trade P&L in dollars (net of commission)"
+    },
+    "commission_paid": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total commission paid for this trade"
+    },
+    "slippage_paid": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Estimated slippage cost"
+    },
+    "holding_period": {
+      "type": "string",
+      "description": "Holding period as candles (intraday) or days (swing)",
+      "examples": ["12 candles", "3 days"]
+    },
+    "r_multiple": {
+      "type": "number",
+      "description": "R-multiple: P&L / initial risk"
+    },
+    "mae_pct": {
+      "type": "number",
+      "description": "Maximum Adverse Excursion — worst drawdown during trade (%)"
+    },
+    "mfe_pct": {
+      "type": "number",
+      "description": "Maximum Favorable Excursion — best profit during trade (%)"
+    },
+    "exit_efficiency": {
+      "type": "number",
+      "minimum": -100,
+      "maximum": 100,
+      "description": "How well the exit captured the move. 1.0=perfect, <0=exited at worst point."
+    },
+    "resonance_level": {
+      "type": "string",
+      "enum": ["STRONG", "MODERATE", "WEAK"],
+      "description": "Resonance level at entry"
+    },
+    "resonance_groups_triggered": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["G_PRICE", "G_TECH", "G_SECTOR", "G_MACRO", "G_SENTIMENT"]
+      },
+      "description": "Which resonance groups were true at entry"
+    },
+    "consensus_strength": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Agent consensus strength at entry (0-1)"
+    },
+    "agent_votes": {
+      "type": "object",
+      "description": "Each agent's vote at entry: direction and conviction",
+      "patternProperties": {
+        "^A[1-9]$": {
+          "type": "object",
+          "properties": {
+            "direction": { "enum": ["BULLISH", "BEARISH", "NEUTRAL", "MUTED"] },
+            "conviction": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          "required": ["direction", "conviction"]
+        }
+      }
+    },
+    "fabrication_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agent_id": { "type": "string" },
+          "claim": { "type": "string" },
+          "violation_type": { "enum": ["FABRICATION", "UNSUBSTANTIATED"] }
+        }
+      },
+      "description": "Any fabrication events during the decision that led to this trade"
+    },
+    "market_regime_at_entry": {
+      "type": "string",
+      "enum": ["trending_bull", "trending_bear", "ranging", "high_volatility", "ambiguous"],
+      "description": "Market regime classification at entry time"
+    },
+    "vix_at_entry": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "VIX level at entry"
+    },
+    "safety_filters_active": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"]
+      },
+      "description": "Which safety filters were active (blocking entries) at entry time"
+    },
+    "obs_signal_at_entry": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1,
+      "description": "Composite observation signal at entry"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes from agents or user"
+    },
+    "reviewed_by_A9": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether A9 (Trade Review Coach) has reviewed this trade in M5"
+    },
+    "A9_review_notes": {
+      "type": "string",
+      "description": "A9's behavioral pattern observations"
+    }
+  }
+}

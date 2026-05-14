@@ -1,0 +1,231 @@
+# Agent Team v2.0 — Paper Trading System
+# In-simulation trading engine that tracks virtual trades,
+# calculates performance metrics, and feeds results back into
+# agent dynamic weights.
+
+version: "2.0"
+
+# ============================================================
+# SYSTEM CONFIGURATION
+# ============================================================
+system:
+  enabled: true   # Activated by user — tracks win rate vs market, feeds post-market review
+  initial_capital: 100000
+  description: >
+    Paper trading runs parallel to live trading. When enabled=false:
+    agents still generate signals, but no virtual trades are executed.
+    When enabled=true: every agent team decision triggers a virtual trade
+    that is tracked and scored.
+
+# ============================================================
+# TRADE SIMULATOR
+# ============================================================
+simulator:
+  commission:
+    per_side_pct: 0.001  # 0.1% per side
+    minimum_fee: 1.0     # $1 minimum commission
+
+  slippage_model:
+    type: "volume_impact"
+    formula: "slippage = base_slippage + (order_size / avg_volume_last_5min) × impact_factor"
+    base_slippage_pct: 0.0002  # 0.02% base slippage
+    impact_factor: 0.05
+    max_slippage_pct: 0.01     # 1% cap
+
+  execution:
+    entry_delay_ms: 500  # Round-trip delay from decision to fill
+    fill_logic: "Next available price after decision_timestamp + delay"
+    stop_loss_fill: "Fill at exact trigger — assume stop orders execute at stop price"
+    take_profit_fill: "Limit fill — only if price trades through level"
+    partial_fills: "TP1 50%, TP2 25%, TP3 25% — each filled independently"
+
+  constraints:
+    min_holding_candles: 2       # Minimum 2 candles before exit allowed
+    max_concurrent_positions: 8
+    max_correlated_exposure_pct: 0.40
+    trade_size_fraction: 1.0     # Full size for realism
+    warmup_sessions: 10          # Sessions before D_accuracy starts updating from paper
+    feedback_delay_sessions: 1   # Wait 1 session before feeding results to weights
+
+# ============================================================
+# PERFORMANCE ANALYTICS
+# ============================================================
+analytics:
+
+  per_trade_metrics:
+    - id: "pnl_pct"
+      name: "P&L %"
+      formula: "(exit_value - entry_value) / entry_value × 100"
+    - id: "pnl_dollar"
+      name: "P&L $"
+      formula: "exit_value - entry_value - commission"
+    - id: "r_multiple"
+      name: "R-Multiple"
+      formula: "pnl_dollar / initial_risk_dollar"
+      interpretation: "How many R's was the trade worth? >1 = good trade."
+    - id: "holding_period"
+      name: "Holding Period"
+      formula: "exit_timestamp - entry_timestamp"
+      unit: "candles (intraday) or days (swing)"
+    - id: "mae"
+      name: "Maximum Adverse Excursion"
+      formula: "worst_drawdown_during_trade"
+      interpretation: "How wrong did it get? High MAE = bad entry or loose stop."
+    - id: "mfe"
+      name: "Maximum Favorable Excursion"
+      formula: "best_profit_during_trade"
+      interpretation: "How right did it get? Low MFE vs exit = left money on table."
+    - id: "exit_efficiency"
+      name: "Exit Efficiency"
+      formula: |
+        For winners: (exit_price - entry) / (MFE_price - entry)
+        For losers: 1 - (exit_price - entry) / (MAE_price - entry)
+      interpretation: "How well did you capture the move? 1.0 = perfect, 0.5 = OK, <0 = bad."
+
+  rolling_aggregate_metrics:
+    - id: "win_rate"
+      name: "Win Rate"
+      formula: "winning_trades / total_trades"
+      windows: [20, 50, "all_time"]
+      target: "> 45%"
+      warning: "< 35%"
+
+    - id: "sharpe_ratio"
+      name: "Sharpe Ratio"
+      formula: "(mean_return - risk_free_rate) / std_return × sqrt(252)"
+      risk_free_rate: 0.04  # 4% annual
+      windows: ["rolling_60_day"]
+      target: "> 1.0"
+      warning: "< 0.5"
+
+    - id: "sortino_ratio"
+      name: "Sortino Ratio"
+      formula: "(mean_return - risk_free_rate) / downside_std × sqrt(252)"
+      windows: ["rolling_60_day"]
+      target: "> 1.5"
+
+    - id: "max_drawdown"
+      name: "Maximum Drawdown"
+      formula: "max(peak - trough) / peak"
+      windows: ["since_inception"]
+      target: "< 15%"
+      warning: "> 25%"
+
+    - id: "calmar_ratio"
+      name: "Calmar Ratio"
+      formula: "annualized_return / max_drawdown"
+      windows: ["since_inception"]
+      target: "> 1.0"
+
+    - id: "profit_factor"
+      name: "Profit Factor"
+      formula: "gross_profit / gross_loss"
+      windows: ["all_time"]
+      target: "> 1.5"
+
+    - id: "expectancy"
+      name: "Expectancy (per trade)"
+      formula: "(win_rate × avg_win) - (loss_rate × avg_loss)"
+      windows: [50]
+      target: "> 0"  # Positive expectancy = profitable system
+
+    - id: "avg_r_multiple"
+      name: "Average R-Multiple"
+      formula: "mean(r_multiple) over last 50 trades"
+      target: "> 0.3"
+
+    - id: "win_loss_ratio"
+      name: "Win/Loss Ratio"
+      formula: "avg_win_size / avg_loss_size"
+      windows: ["all_time"]
+      target: "> 1.5"
+
+# ============================================================
+# WEIGHT FEEDBACK CONTROLLER
+# ============================================================
+weight_feedback:
+  description: >
+    Paper trading results feed directly into D_accuracy for each agent.
+    This creates a self-improving system where agents with better
+    prediction track records gain more influence.
+
+  agent_attribution:
+    description: "When a trade closes, each agent's vote is scored"
+    logic: |
+      if trade was PROFITABLE:
+        agents who voted SAME_DIRECTION   → positive credit (+1 × conviction/10)
+        agents who voted OPPOSITE_DIRECTION → negative credit (-1 × conviction/10)
+        agents who voted NEUTRAL          → neutral (0)
+        agents who were MUTED             → no credit (skipped)
+
+      if trade was UNPROFITABLE:
+        agents who voted SAME_DIRECTION   → negative credit (-1 × conviction/10)
+        agents who voted OPPOSITE_DIRECTION → positive credit (+1 × conviction/10)
+        (they were right to dissent)
+        agents who voted NEUTRAL          → small positive credit (+0.3)
+        (they were right to stay out)
+        agents who were MUTED             → no credit (skipped)
+
+    conviction_weighting:
+      formula: "contribution(i) = direction_match × conviction(i) / 10"
+      direction_match_values:
+        agree_with_winner: +1
+        agree_with_loser: -1
+        neutral: 0
+
+    accumulation:
+      description: "Contributions accumulate into rolling 20-decision window"
+      window_size: 20
+      edge_cases:
+        fewer_than_5: "D_accuracy = 1.0 (default — not enough data)"
+
+# ============================================================
+# DASHBOARD CONFIGURATION
+# ============================================================
+dashboard:
+  update_frequency: "end_of_session"  # M5 triggers dashboard update
+  display_components:
+    - id: "equity_curve"
+      type: "chart"
+      description: "Portfolio equity over time with drawdown overlay"
+    - id: "drawdown_chart"
+      type: "chart"
+      description: "Underwater plot showing all drawdown periods"
+    - id: "agent_accuracy_heatmap"
+      type: "heatmap"
+      description: "Agent × Session accuracy matrix, color-coded"
+    - id: "resonance_matrix"
+      type: "table"
+      description: "Entry signal × actual outcome — which resonance levels are profitable?"
+    - id: "fabrication_incident_log"
+      type: "table"
+      description: "All fabrication events with agent, claim, and penalty"
+    - id: "current_weights"
+      type: "table"
+      description: "W_final for all agents, showing breakdown (static × D_accuracy × D_regime × D_freshness)"
+
+# ============================================================
+# METRICS EXPORT
+# ============================================================
+metrics_export:
+  format: "json"
+  destination: "paper_trading/metrics_{date}.json"
+  auto_export: true
+  retention_days: 365
+
+# ============================================================
+# WARMUP MODE
+# ============================================================
+warmup:
+  description: >
+    During warmup (first N sessions), paper trades are executed and tracked,
+    but results DO NOT feed into D_accuracy. This prevents erratic initial
+    data from skewing agent weights.
+  sessions: 10  # CONFIGURABLE
+  during_warmup:
+    D_accuracy: "Locked at 1.0 for all agents"
+    weight_feedback: "Disabled — trades recorded but not scored for accuracy"
+    dashboard: "Shows warmup label"
+  post_warmup:
+    D_accuracy: "Begins updating from session 11 onward"
+    initial_values: "All agents start at 1.0. No historical carry-over from warmup."

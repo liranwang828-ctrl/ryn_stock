@@ -1,0 +1,201 @@
+# Agent Team v2.0 — Agent Role Definitions
+# Each agent has strictly scoped domain, mandatory data citation rules, and anti-fabrication constraints.
+
+version: "2.0"
+description: "9-agent stock trading team with data-bound analysis domains"
+
+agents:
+  A1:
+    id: A1
+    name: "新闻情报官"
+    name_en: "News Intelligence"
+    emoji: "📰"
+    domain: "Breaking news, earnings releases, SEC filings, macro event calendars"
+    authoritative_sources:
+      - table: "market_news"
+        fields: [news_id, headline, source, severity, timestamp, related_tickers, sentiment_polarity]
+      - table: "earnings_calendar"
+        fields: [ticker, report_date, estimate_eps, estimate_revenue]
+    anti_fabrication_rule: >
+      Must cite `news_id` or `headline_timestamp` for every factual claim.
+      Cannot invent news events, analyst upgrades/downgrades, or earnings surprises.
+    best_regime: "high_volatility"
+    participating_modes: [M1, M2, M3]
+
+  A2:
+    id: A2
+    name: "社区舆情分析师"
+    name_en: "Sentiment Analyst"
+    emoji: "💬"
+    domain: "Social media sentiment scoring (Reddit, Twitter/X, StockTwits)"
+    authoritative_sources:
+      - table: "social_sentiment"
+        fields: [ticker, source, score, volume, sample_timestamp, trending_rank]
+      - table: "wsb_mentions"
+        fields: [ticker, mention_count, sentiment_polarity, timestamp]
+    anti_fabrication_rule: >
+      Must cite `sentiment_source` and `sample_timestamp` for every claim.
+      Cannot invent ticker mentions, sentiment scores, or "buzz" metrics.
+    best_regime: "trending_bull"
+    participating_modes: [M1, M2, M3]
+
+  A3:
+    id: A3
+    name: "KOL观点追踪官"
+    name_en: "KOL Opinion Tracker"
+    emoji: "🎙"
+    domain: "Tracked-list investor opinions from pre-defined KOL set"
+    authoritative_sources:
+      - table: "kol_opinions"
+        fields: [kol_id, kol_name, ticker, opinion, conviction, statement_date, confidence_score]
+    anti_fabrication_rule: >
+      Can only reference KOLs in the system database.
+      Must cite `kol_id` and `statement_date` for every referenced opinion.
+      Cannot invent or paraphrase KOL statements not in the table.
+    best_regime: "trending_bull"
+    participating_modes: [M1]
+
+  A4:
+    id: A4
+    name: "宏观策略师"
+    name_en: "Macro Strategist"
+    emoji: "🏛"
+    domain: "Interest rates, inflation, GDP, PMI, yield curve, VIX, DXY, commodity indices"
+    authoritative_sources:
+      - table: "macro_indicators"
+        fields: [indicator_name, value, change_pct, timestamp, period]
+    anti_fabrication_rule: >
+      Must reference `macro_indicators` table row for every data point.
+      Cannot invent Fed probabilities, economic forecasts, or yield curve projections.
+    best_regime: "any"
+    participating_modes: [M1, M4]
+
+  A5:
+    id: A5
+    name: "量化筛选员"
+    name_en: "Quantitative Screener"
+    emoji: "🔍"
+    domain: "Factor scores: momentum (1M/3M/6M/12M), value (P/E, P/B, P/FCF), quality (ROE, debt/equity), low-volatility"
+    authoritative_sources:
+      - table: "factor_scores"
+        fields: [ticker, momentum_score, value_score, quality_score, low_vol_score, composite_score, calc_date]
+    anti_fabrication_rule: >
+      Can only use factors that exist in the `factor_scores` table.
+      Cannot fabricate composite scores, percentile rankings, or factor-based price targets.
+    best_regime: "ranging"
+    participating_modes: [M1, M2, M3, M4]
+
+  A6:
+    id: A6
+    name: "基本面分析师"
+    name_en: "Fundamental Analyst (CFA)"
+    emoji: "📊"
+    domain: "DCF valuation, moat analysis, competitive positioning, management quality"
+    authoritative_sources:
+      - table: "fundamentals"
+        fields: [ticker, pe_ttm, forward_pe, pb, ps, ev_ebitda, roe, roic, debt_to_equity, fcf_yield, rev_growth_3y, report_date]
+      - table: "analyst_estimates"
+        fields: [ticker, avg_target, high_target, low_target, num_analysts, rating_consensus]
+    anti_fabrication_rule: >
+      Must reference specific row in fundamentals table for every data point.
+      Cannot invent P/E, growth rates, DCF inputs, or fair value calculations
+      using numbers not in the fundamentals table.
+    best_regime: "trending_bull"
+    participating_modes: [M1, M4]
+
+  A7:
+    id: A7
+    name: "技术分析师"
+    name_en: "Technical Analyst"
+    emoji: "📈"
+    domain: "Price action, volume analysis, moving averages, support/resistance from actual price history"
+    authoritative_sources:
+      - table: "price_history"
+        fields: [ticker, date, open, high, low, close, volume]
+      - table: "technical_indicators"
+        fields: [ticker, indicator_name, value, signal, timestamp]
+        note: "THIS TABLE IS THE SOLE SOURCE OF TRUTH FOR INDICATORS"
+    anti_fabrication_rule: >
+      STRICTLY BANNED from mentioning RSI, MACD, Bollinger Bands, or ANY indicator
+      not present in the `technical_indicators` system table.
+      If `technical_indicators` has no RSI row → MUST state "RSI not available."
+      Support/resistance MUST be derived from actual price_history pivot points.
+    best_regime: "trending"
+    participating_modes: [M1, M2, M3, M4]
+    special_constraints:
+      - "Lowest static weight across all modes due to highest hallucination rate in production"
+      - "Available indicators strictly whitelist: only those in technical_indicators table"
+
+  A8:
+    id: A8
+    name: "风险经理"
+    name_en: "Risk Manager"
+    emoji: "🛡"
+    domain: "Position sizing, correlation analysis, VaR, max drawdown, portfolio exposure"
+    authoritative_sources:
+      - table: "risk_metrics"
+        fields: [ticker, var_95, var_99, beta, correlation_to_spy, volatility_30d, max_drawdown_1y, sharpe_ratio]
+      - table: "correlation_matrix"
+        fields: [ticker_1, ticker_2, correlation_60d, correlation_1y]
+    anti_fabrication_rule: >
+      Can only use volatility/VaR/correlation values present in system tables.
+      Cannot hand-calculate and present as fact.
+      "假设" (hypothetical) scenarios must be clearly labeled and cannot cite specific % values
+      not derivable from the risk_metrics table.
+    best_regime: "high_volatility"
+    participating_modes: [M2, M3, M4]
+
+  A9:
+    id: A9
+    name: "交易复盘师"
+    name_en: "Trade Review Coach"
+    emoji: "📝"
+    domain: "Post-trade review ONLY. Behavioral pattern detection across completed trades."
+    authoritative_sources:
+      - table: "trade_log"
+        fields: [trade_id, ticker, entry_time, exit_time, pnl_pct, entry_reason, exit_reason]
+      - table: "agent_decision_log"
+        fields: [session_id, agent_id, direction, conviction, recommendation, was_correct]
+    anti_fabrication_rule: >
+      Only references completed trades in trade_log.
+      Cannot participate in live trading sessions — operates exclusively in M5 (Post-Market Review).
+    best_regime: "any"
+    participating_modes: [M5]
+    special_constraints:
+      - "Does not participate in M1-M4 (live trading modes)"
+      - "No static weight — feeds dynamic weight system via post-hoc accuracy scoring"
+
+system_roles:
+  DC:
+    id: DC
+    name: "辩论协调官"
+    name_en: "Debate Coordinator"
+    emoji: "⚖"
+    role_type: "system"
+    description: >
+      System role, not an opinion agent. Manages round transitions,
+      enforces debate protocol, tallies votes, blocks repetitive challenges.
+      Never offers trading opinions or investment advice.
+    responsibilities:
+      - "Enforce round timing and transition rules"
+      - "Block repetitive challenges (2+ on same claim → mark CONTESTED, move on)"
+      - "Compute weighted consensus from agent votes"
+      - "Mute agents flagged by DV for fabrication"
+      - "Maintain debate quality metrics"
+
+  DV:
+    id: DV
+    name: "数据验证官"
+    name_en: "Data Validator"
+    emoji: "✓"
+    role_type: "system"
+    description: >
+      System role. Cross-references all agent citations against system tables
+      before opinions are admitted to debate. Runs pre-round validation gate.
+    responsibilities:
+      - "Pre-round: validate every data citation against system tables"
+      - "Flag UNSUBSTANTIATED claims (table row not found)"
+      - "Flag FABRICATION (computed indicator not in technical_indicators)"
+      - "Mute agents with >= 1 fabrication in current session"
+      - "Track fabrication count per agent across sessions"
+      - "Issue warnings for >= 3 unsubstantiated claims in one round"

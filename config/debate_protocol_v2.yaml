@@ -1,0 +1,256 @@
+# Agent Team v2.0 — Debate Protocol v2
+# Improved round structure with anti-fabrication guardrails, DV pre-validation gate,
+# and efficient debate flow that prevents repetitive corrections.
+
+version: "2.0"
+
+# ============================================================
+# PRE-DEBATE: Data Validation Gate (DV runs before every round)
+# ============================================================
+data_validation_gate:
+  enabled: true
+  run_by: "DV"
+  timing: "before each debate round AND before any agent opinion is admitted to the record"
+
+  validation_rules:
+    rule_citation_format:
+      description: "All agents MUST use structured citation format"
+      required_format: "[TABLE: table_name | ROW: row_id | FIELD: field_name]"
+      example: "[TABLE: price_history | ROW: NVDA_2026-05-14 | FIELD: close]"
+      penalty_for_missing_citation: "Claim classified as UNSUBSTANTIATED"
+
+    rule_data_existence:
+      description: "DV cross-references every cited table/row/field against system data"
+      actions:
+        match_found: "claim admitted"
+        table_not_found: "flag as UNSUBSTANTIATED — agent warned"
+        row_not_found: "flag as UNSUBSTANTIATED — agent warned"
+        field_not_found: "flag as UNSUBSTANTIATED — agent warned"
+
+    rule_indicator_whitelist:
+      description: "A7 (技术分析师) may ONLY reference indicators in technical_indicators table"
+      whitelist_source: "technical_indicators table"
+      violation: "flag as FABRICATION — agent muted immediately"
+
+    rule_forward_looking:
+      description: "Any computed metric (PE, growth rate, DCF value, VaR, volatility estimate) NOT in system tables is FABRICATION"
+      exception: "Analysis/opinion statements without specific numeric claims (e.g., 'the stock looks expensive')"
+
+    rule_news_attribution:
+      description: "A1 must cite news_id for every news event referenced"
+      violation: "flag as UNSUBSTANTIATED"
+
+  penalty_escalation:
+    unsubstantiated_count_1_2: "Warning issued, claims struck from record"
+    unsubstantiated_count_3: "Agent muted for remainder of round"
+    fabrication_count_1: "Agent muted for remainder of SESSION (all modes)"
+    fabrication_count_3_in_10_sessions: "Agent suspended for 5 sessions"
+
+# ============================================================
+# ROUND STRUCTURE
+# ============================================================
+
+rounds:
+  # --- Round 1: Independent Analysis ---
+  R1:
+    name: "独立分析"
+    name_en: "Independent Analysis"
+    duration_seconds: 120
+    cross_talk: false
+    description: >
+      All participating agents produce analysis in isolation.
+      No agent sees any other agent's output during this round.
+      DV runs validation gate on all outputs simultaneously after submission.
+    agent_output_template:
+      required_fields:
+        - field: "DIRECTION"
+          values: [BULLISH, BEARISH, NEUTRAL]
+          description: "Directional view on the ticker/market"
+        - field: "CONVICTION"
+          type: integer
+          range: [1, 10]
+          description: "Confidence level (1=lowest, 10=highest)"
+        - field: "HORIZON"
+          values: [intraday, "1-3_days", "1_week", "1_month"]
+          description: "Time horizon for this view"
+        - field: "KEY_FACTOR_1"
+          type: string
+          description: "Primary factor with data citation"
+          must_have_citation: true
+        - field: "KEY_FACTOR_2"
+          type: string
+          description: "Secondary factor with data citation"
+          must_have_citation: true
+        - field: "KEY_FACTOR_3"
+          type: string
+          description: "Tertiary factor with data citation"
+          must_have_citation: true
+        - field: "RECOMMENDATION"
+          values: [BUY, SELL, HOLD, NO_ACTION]
+          description: "Actionable recommendation"
+        - field: "STOP_LOSS_SUGGESTION"
+          type: string
+          description: "Price level or ATR-multiple. Can be 'N/A' if NO_ACTION."
+    post_round_actions:
+      - "DV runs validation gate on all R1 outputs simultaneously"
+      - "Any agent with FABRICATION → immediately muted, icon shown as [MUTED]"
+      - "Any agent with >2 UNSUBSTANTIATED → warning, claims struck"
+      - "DC collects all valid R1 outputs and presents summary to all agents"
+
+  # --- Round 2: Challenge with Evidence ---
+  R2:
+    name: "挑战与反驳"
+    name_en: "Challenge with Evidence"
+    duration_seconds: 180
+    cross_talk: true
+    description: >
+      Non-muted agents may challenge specific claims from other agents.
+      Must provide contrary evidence with citation. DC blocks repetitive challenges.
+    rules:
+      max_challenges_per_agent: 2
+      max_endorsements_per_agent: 1
+      challenge_format:
+        required_fields:
+          - field: "CHALLENGE_TARGET"
+            description: "Agent ID being challenged"
+          - field: "CLAIM_DISPUTED"
+            description: "Specific claim being challenged"
+          - field: "EVIDENCE"
+            description: "Contrary data with citation [TABLE:...]"
+      endorsement_format:
+        required_fields:
+          - field: "ENDORSE_TARGET"
+            description: "Agent ID being endorsed"
+          - field: "CLAIM_ENDORSED"
+            description: "Specific claim being endorsed"
+          - field: "SUPPORTING_EVIDENCE"
+            description: "Additional supporting data (optional, can be 'concur with original citation')"
+    repetition_rule:
+      description: "If a claim has been challenged by 2+ agents, DC blocks additional challenges"
+      dc_response: "CLAIM_ALREADY_CONTESTED: Move to rebuttal. [Agent ID] may respond in R3."
+    post_round_actions:
+      - "DV re-validates all challenge evidence"
+      - "DC tracks which claims are contested vs. uncontested"
+      - "Uncontested claims carry higher weight in R3 synthesis"
+
+  # --- Round 3: Synthesis and Vote ---
+  R3:
+    name: "综合与投票"
+    name_en: "Synthesis and Vote"
+    duration_seconds: 120
+    cross_talk: false
+    description: >
+      Each agent submits final vote incorporating what was learned in R2.
+      DC computes weighted consensus from all votes.
+    agent_vote_format:
+      required_fields:
+        - field: "FINAL_DIRECTION"
+          values: [BULLISH, BEARISH, NEUTRAL]
+        - field: "FINAL_CONVICTION"
+          type: integer
+          range: [1, 10]
+          description: "Adjusted for what was learned in debate"
+        - field: "KEY_RISK_ACKNOWLEDGED"
+          type: string
+          description: "One risk identified during debate that the agent now acknowledges"
+        - field: "CHANGED_MIND"
+          type: boolean
+          description: "Whether agent changed direction from R1"
+    consensus_calculation:
+      formula: |
+        weighted_bullish = SUM(W_final(i) × conviction(i)) for all BULLISH votes
+        weighted_bearish = SUM(W_final(i) × conviction(i)) for all BEARISH votes
+        consensus_strength = ABS(weighted_bullish - weighted_bearish) / SUM(all W_final)
+    consensus_thresholds:
+      strong:
+        min_strength: 0.6
+        action: "Strong signal — proceed to execution (or action)"
+      moderate:
+        min_strength: 0.3
+        max_strength: 0.6
+        action: "Moderate signal — require A8 (Risk) explicit sign-off before execution"
+      weak:
+        max_strength: 0.3
+        action: "No consensus — no trade. Record for post-market review."
+
+# ============================================================
+# ANTI-FABRICATION GUARDRAILS
+# ============================================================
+anti_fabrication:
+  guardrails:
+    - name: "One-Strike Mute"
+      mechanism: "1 fabrication in any session → agent muted for remainder of ALL modes in that session"
+      scope: "session-wide, all modes"
+
+    - name: "DV Pre-Validation"
+      mechanism: "Every claim with data-citation expectation is checked before admission to any debate round"
+      scope: "per-round, per-claim"
+
+    - name: "Repetition Block"
+      mechanism: "2+ challenges on same claim → DC blocks further discussion, claim marked CONTESTED"
+      scope: "per-claim, per-session"
+
+    - name: "Permanent Accuracy Decay"
+      mechanism: "Each fabrication reduces D_accuracy by multiplicative 0.8"
+      formula: "D_accuracy_new = D_accuracy_old × 0.8"
+      scope: "persistent across sessions"
+
+    - name: "3-Strike Suspension"
+      mechanism: "3 fabrications in rolling 10-session window → agent suspended for 5 sessions"
+      scope: "rolling 10-session window"
+
+    - name: "Citation Template Enforcement"
+      mechanism: "DC rejects any claim using free-text citation format"
+      required_format: "[TABLE: name | ROW: id | FIELD: name]"
+      scope: "all modes, all rounds"
+
+    - name: "A7 Indicator Whitelist"
+      mechanism: "A7's available indicators are STRICTLY those in technical_indicators table"
+      description: >
+        If technical_indicators table has only: MA20, MA50, MA200, ADX, ATR →
+        A7 may ONLY use those 5 indicators. Mentioning RSI, MACD, Bollinger,
+        or any other indicator NOT in the table is FABRICATION.
+      scope: "permanent constraint on A7"
+
+# ============================================================
+# DEBATE MODE APPLICABILITY
+# ============================================================
+debate_mode_applicability:
+  M1_Premarket:
+    debate_enabled: true
+    rounds: [R1, R2, R3]
+    description: "Full 3-round debate for comprehensive pre-market analysis"
+
+  M2_Opening:
+    debate_enabled: false
+    rounds: []
+    description: "No debate — agents produce quick parallel signals. Latency critical."
+
+  M3_Monitoring:
+    debate_enabled: false
+    rounds: []
+    description: "No debate — raw signals processed directly by DC. 2-min interval."
+
+  M4_Execution:
+    debate_enabled: true
+    rounds: [R1, R2, R3]
+    description: "Full 3-round debate for execution validation"
+
+  M5_PostMarket:
+    debate_enabled: true
+    rounds: [R1, R2, R3]
+    max_iterations: 3
+    description: >
+      Multi-iteration review. Can run debate loop up to 3 times
+      (covering different aspects: trade review, strategy refinement,
+      agent performance scoring).
+
+# ============================================================
+# CONSENSUS OVERRIDE RULES
+# ============================================================
+# ⚠️ Authoritative definition is in config/trading_strategy.yaml § consensus_override
+# The debate protocol computes consensus_strength;
+# trading_strategy.yaml resolves conflicts between consensus and mechanical signals.
+consensus_override:
+  source: "config/trading_strategy.yaml"
+  section: "consensus_override"

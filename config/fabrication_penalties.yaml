@@ -1,0 +1,154 @@
+# Agent Team v2.0 — Fabrication Penalty System
+# Multi-tier penalty escalation for data integrity violations.
+# This is the enforcement mechanism behind the anti-fabrication guardrails.
+
+version: "2.0"
+
+# ============================================================
+# VIOLATION CLASSIFICATION
+# ============================================================
+violation_types:
+
+  UNSUBSTANTIATED:
+    severity: "WARNING"
+    definition: "Claim references a data source but the cited table/row/field does not exist in system data"
+    examples:
+      - "Citing [TABLE: fundamentals | ROW: NVDA | FIELD: forward_pe] when forward_pe field is not populated"
+      - "Citing a news_id that does not exist in market_news table"
+    escalation:
+      count_1_2: "Warning issued. Affected claims struck from record. DV notifies DC."
+      count_3_in_round: "Agent muted for remainder of current round. Reset next round."
+    does_not_affect_D_accuracy: true
+
+  FABRICATION:
+    severity: "CRITICAL"
+    definition: "Claim presents a specific numeric value, indicator, or data point that the system never provided"
+    examples:
+      - "Saying 'RSI 45.3' when technical_indicators table has no RSI row"
+      - "Saying 'MACD死叉' when no MACD data exists in system"
+      - "Saying 'Forward PE 19.4' when fundamentals table has no forward_pe field"
+      - "Saying '止盈位190, 止损178' when no price data supports these specific levels"
+      - "Saying '波动率衰减1%-5%' when no volatility data exists for the underlying"
+    escalation:
+      count_1: "IMMEDIATE SESSION MUTE — agent silenced for remainder of current session (ALL modes)"
+      count_2_in_10_sessions: "Reduced trust — DC adds warning annotation to agent's every R1 output"
+      count_3_in_10_sessions: "SUSPENSION — agent suspended from ALL modes for 5 sessions"
+
+  HALLUCINATION_PATTERN:
+    severity: "STRUCTURAL"
+    definition: "Same agent repeatedly fabricates the same TYPE of data across sessions"
+    indicators:
+      - "A7 repeatedly invents RSI/MACD values → indicator fabrication pattern"
+      - "A8 repeatedly invents volatility calculations → risk metric fabrication pattern"
+      - "A6 repeatedly invents Forward PE → valuation metric fabrication pattern"
+    escalation:
+      detection: "After 2 fabrications of same TYPE in 10 sessions"
+      action: "Permanent constraint added to agent's system prompt (whitelist explicitly enumerates allowed data)"
+      review: "After 5 clean sessions, constraint may be relaxed by user decision"
+
+  # ============================================================
+  # A7-SPECIFIC: ZERO TOLERANCE (per user directive)
+  # ============================================================
+  A7_strict_policy:
+    description: >
+      A7 (技术分析师) has the highest hallucination rate. Per user directive,
+      A7 is under zero-tolerance for indicator fabrication.
+    rules:
+      - "A7 may only use indicators that ACTUALLY EXIST in the technical_indicators table at runtime."
+      - "The indicator whitelist in data_catalog.yaml defines what the system SHOULD compute."
+      - "A7 must check the table at the START of every session and list which indicators are available."
+      - "Mentioning any indicator NOT present in the table = FABRICATION → immediate session mute."
+    escalation:
+      fabrication_count_1: "Session mute + D_accuracy × 0.7 (steeper than standard 0.8)"
+      fabrication_count_2_in_10_sessions: "2-session suspension + permanent [PROBATION] tag"
+      fabrication_count_3_in_10_sessions: "10-session suspension + user review required for reinstatement"
+    self_check_requirement:
+      description: >
+        Before every R1 output, A7 MUST list the indicators it WILL use,
+        with the corresponding technical_indicators table row for each.
+        DV validates this list before A7's opinion is admitted.
+
+# ============================================================
+# PENALTY MECHANICS
+# ============================================================
+penalties:
+
+  session_mute:
+    trigger: "1 FABRICATION in current session"
+    scope: "ALL modes for remainder of session"
+    icon: "[MUTED]"
+    effect: "Agent cannot submit opinions to any debate round or monitoring signal. DC skips agent in vote tally."
+    reset: "Next session — agent starts fresh (but D_accuracy penalty persists)"
+
+  accuracy_decay:
+    trigger: "Each FABRICATION"
+    formula: "D_accuracy_new = D_accuracy_old × 0.8"
+    floor: 0.1
+    description: "Multiplicative 20% reduction per fabrication. Three fabrications: 1.0 → 0.8 → 0.64 → 0.512"
+    reset: "Never auto-resets. Recovers naturally as agent accumulates correct opinions in rolling window."
+
+  suspension:
+    trigger: "3 FABRICATIONS in rolling 10-session window"
+    duration_sessions: 5
+    effect: "Agent completely removed from all modes. DC excludes from participation matrix."
+    notification: "DC announces: '[SUSPENDED: A{id}] — {count}/10 fabrications. Returns session #{return_session}.'"
+    post_suspension:
+      D_accuracy: "Set to 0.5 (probationary)"
+      annotation: "DC adds [PROBATION] tag to agent's outputs for 3 sessions post-return"
+      escalation: "Any fabrication during probation → immediate 10-session suspension"
+
+  permanent_constraint:
+    trigger: "2 fabrications of same TYPE in 10 sessions"
+    action: "System prompt updated with explicit whitelist constraint"
+    example_A7: "Available indicators: MA20, MA50, MA200, ADX(14), ATR(14). These ONLY."
+    review: "After 10 clean sessions, user may remove constraint (requires explicit user action)"
+
+# ============================================================
+# TRACKING
+# ============================================================
+tracking:
+  storage:
+    table: "fabrication_log"
+    schema:
+      - session_id
+      - agent_id
+      - violation_type: "FABRICATION | UNSUBSTANTIATED"
+      - claim_text: "The exact text of the violating claim"
+      - cited_source: "What the agent claimed as source"
+      - dv_finding: "Why it was flagged"
+      - timestamp
+      - penalty_applied: "MUTE | WARNING | SUSPENSION"
+
+  rolling_window:
+    size: 10  # sessions
+    query: "SELECT COUNT(*) FROM fabrication_log WHERE agent_id = ? AND session_id IN (last 10 sessions) AND violation_type = 'FABRICATION'"
+
+  agent_status_board:
+    description: "DC maintains an always-visible status board for all agents"
+    format: |
+      ┌────────┬──────────┬───────────┬──────────────┬──────────┐
+      │ Agent  │ Accuracy │ Fab/10ses │ Status       │ Weight%  │
+      ├────────┼──────────┼───────────┼──────────────┼──────────┤
+      │ A1 📰  │   72%    │    0      │ ACTIVE       │   100%   │
+      │ A2 💬  │   65%    │    0      │ ACTIVE       │    90%   │
+      │ A3 🎙  │   58%    │    0      │ ACTIVE       │    75%   │
+      │ A4 🏛  │   70%    │    0      │ ACTIVE       │   100%   │
+      │ A5 🔍  │   74%    │    0      │ ACTIVE       │   100%   │
+      │ A6 📊  │   60%    │    1      │ ACTIVE       │    85%   │
+      │ A7 📈  │   42%    │    3      │ SUSPENDED    │     0%   │
+      │ A8 🛡  │   55%    │    1      │ ACTIVE       │    70%   │
+      │ A9 📝  │   N/A    │    0      │ ACTIVE       │   N/A    │
+      └────────┴──────────┴───────────┴──────────────┴──────────┘
+
+# ============================================================
+# APPEAL PROCESS (User Decision Required)
+# ============================================================
+appeal:
+  description: "User may override any automated penalty. This requires explicit user action."
+  configurable:
+    - "suspension_duration_sessions (default: 5, range: 1-20)"
+    - "fabrication_threshold_for_suspension (default: 3, range: 2-5)"
+    - "rolling_window_sessions (default: 10, range: 5-20)"
+    - "accuracy_decay_factor (default: 0.8, range: 0.5-0.95)"
+    - "permanent_constraint_auto_apply (default: true)"
+  note: "⚠️ These settings should only be changed by the user during M5 (Post-Market Review)."

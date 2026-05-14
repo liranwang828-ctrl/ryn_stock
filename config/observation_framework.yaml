@@ -1,0 +1,326 @@
+# Agent Team v2.0 — Observation Indicator Framework
+# 6 indicator categories, each producing a sub-score in [-1.0, +1.0]
+# +1.0 = maximally bullish, -1.0 = maximally bearish, 0 = neutral
+
+version: "2.0"
+
+# ============================================================
+# CATEGORY DEFINITIONS
+# ============================================================
+
+categories:
+
+  C1:
+    id: C1
+    name: "价格行为 (Price Action)"
+    weight: 0.25
+    update_frequency: "per candle / per minute"
+    data_sources:
+      - table: "price_history"
+        fields: [open, high, low, close, volume]
+    sub_score_formula:
+      description: "Combines VWAP position and candle body/wick quality"
+      components:
+        close_vs_vwap:
+          weight: 0.6
+          formula: "(close - VWAP) / ATR(14)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Price above VWAP — buyers in control"
+            negative: "Price below VWAP — sellers in control"
+        body_wick_ratio:
+          weight: 0.4
+          formula: "(body / (high - low)) * sign(close - open)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Strong body in bullish direction, small wicks"
+            negative: "Strong body in bearish direction OR long wicks against direction"
+        consecutive_direction:
+          type: "boolean modifier"
+          description: "3+ consecutive candles in same direction adds ±0.1 to score"
+          modifier: 0.1
+
+  C2:
+    id: C2
+    name: "成交量动态 (Volume Dynamics)"
+    weight: 0.15
+    update_frequency: "per minute"
+    data_sources:
+      - table: "volume_profile"
+        fields: [ticker, volume, avg_volume_20d, up_volume, down_volume, buy_sell_ratio]
+    sub_score_formula:
+      description: "Volume surge, direction, and buy/sell imbalance"
+      components:
+        volume_vs_ma20:
+          weight: 0.5
+          formula: "(volume / avg_volume_20d - 1)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Above-average volume — conviction behind move"
+            negative: "Below-average volume — lack of conviction"
+        up_down_ratio:
+          weight: 0.3
+          formula: "(up_volume - down_volume) / (up_volume + down_volume)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "More volume on up moves"
+            negative: "More volume on down moves (distribution)"
+        buy_sell_imbalance:
+          weight: 0.2
+          formula: "(buy_sell_ratio - 1)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Buy orders dominating"
+            negative: "Sell orders dominating"
+
+  C3:
+    id: C3
+    name: "技术结构 (Technical Structure)"
+    weight: 0.15
+    update_frequency: "end of candle"
+    data_sources:
+      - table: "price_history"
+        fields: [close, MA20, MA50, MA200]
+      - table: "technical_indicators"
+        fields: [indicator_name, value]
+        note: "Only indicators present in this table may be used"
+    sub_score_formula:
+      description: "Moving average alignment, support/resistance proximity"
+      components:
+        ma_alignment:
+          weight: 0.5
+          rules:
+            - condition: "close > MA20 > MA50"
+              score: +0.3
+              label: "Bullish alignment"
+            - condition: "close < MA20 < MA50"
+              score: -0.3
+              label: "Bearish alignment"
+            - condition: "otherwise"
+              score: 0.0
+              label: "Mixed/undefined alignment"
+        ma200_position:
+          weight: 0.3
+          rules:
+            - condition: "close > MA200"
+              score: +0.2
+              label: "Long-term bullish"
+            - condition: "close < MA200"
+              score: -0.2
+              label: "Long-term bearish"
+        sr_proximity:
+          weight: 0.2
+          rules:
+            - condition: "distance_to_support < 1 ATR"
+              score: +0.2
+              label: "Near support — potential bounce zone"
+            - condition: "distance_to_resistance < 1 ATR"
+              score: -0.2
+              label: "Near resistance — potential rejection zone"
+            - condition: "otherwise"
+              score: 0.0
+      clamp: [-1.0, 1.0]
+
+  C4:
+    id: C4
+    name: "板块强度 (Sector Strength)"
+    weight: 0.10
+    update_frequency: "every 5 minutes"
+    data_sources:
+      - table: "sector_data"
+        fields: [sector_etf_price, spy_price, sector_etf_return_3d, spy_return_3d, breadth_pct]
+    sub_score_formula:
+      description: "Sector relative strength vs SPY and sector breadth"
+      components:
+        relative_strength:
+          weight: 0.6
+          formula: "(sector_etf_return_3d - spy_return_3d) / sector_volatility_30d"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Sector outperforming SPY"
+            negative: "Sector underperforming SPY"
+        breadth:
+          weight: 0.4
+          formula: "(breadth_pct - 50) / 50"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: ">50% of sector stocks above MA20 — broad strength"
+            negative: "<50% — narrow or weakening"
+
+  C5:
+    id: C5
+    name: "宏观条件 (Macro Conditions)"
+    weight: 0.20
+    update_frequency: "every 30 minutes / on data release"
+    data_sources:
+      - table: "macro_indicators"
+        fields: [indicator_name, value]
+    sub_score_formula:
+      description: "VIX, yield curve, dollar, rate expectations"
+      components:
+        vix_level:
+          score_map:
+            - range: [0, 20]
+              score: +0.3
+              label: "Risk-on, low fear"
+            - range: [20, 25]
+              score: +0.1
+              label: "Normal"
+            - range: [25, 30]
+              score: -0.1
+              label: "Elevated caution"
+            - range: [30, 35]
+              score: -0.3
+              label: "Risk-off, high fear"
+            - range: [35, 100]
+              score: -0.5
+              label: "Panic — safety filters may activate"
+        yield_curve:
+          score_map:
+            - condition: "10Y-2Y spread > 0"
+              score: +0.2
+              label: "No inversion — healthy"
+            - condition: "10Y-2Y spread <= 0 AND > -0.3"
+              score: -0.1
+              label: "Mild inversion — caution"
+            - condition: "10Y-2Y spread <= -0.3"
+              score: -0.2
+              label: "Deep inversion — recession signal"
+        dxy_direction:
+          score_map:
+            - condition: "DXY 5-day change < -0.5%"
+              score: +0.2
+              label: "Weakening USD — good for equities/commodities"
+            - condition: "DXY 5-day change > 0.5%"
+              score: -0.2
+              label: "Strengthening USD — headwind for risk assets"
+            - condition: "otherwise"
+              score: 0.0
+              label: "Stable"
+        rate_expectations:
+          score_map:
+            - condition: "Fed funds futures imply cut probability > 60%"
+              score: +0.1
+              label: "Rate cut tailwind"
+            - condition: "Fed funds futures imply hike probability > 60%"
+              score: -0.1
+              label: "Rate hike headwind"
+            - condition: "otherwise"
+              score: 0.0
+              label: "Neutral"
+      clamp: [-1.0, 1.0]
+
+  C6:
+    id: C6
+    name: "情绪综合 (Sentiment Composite)"
+    weight: 0.15
+    update_frequency: "every 5 minutes"
+    data_sources:
+      - table: "social_sentiment"
+        fields: [ticker, score, volume]
+      - table: "market_news"
+        fields: [news_id, sentiment_polarity]
+      - table: "options_flow"
+        fields: [ticker, put_call_ratio]
+    sub_score_formula:
+      description: "Social sentiment, news polarity, put/call ratio"
+      components:
+        social_sentiment:
+          weight: 0.4
+          formula: "social_sentiment_score z-score (normalized)"
+          clamp: [-1.0, 1.0]
+        news_polarity:
+          weight: 0.3
+          formula: "average(news_polarity) for ticker over last 24h"
+          clamp: [-1.0, 1.0]
+        put_call_inverse:
+          weight: 0.3
+          formula: "1 - put_call_ratio (normalized)"
+          clamp: [-1.0, 1.0]
+          interpretation:
+            positive: "Low put/call — bullish sentiment"
+            negative: "High put/call — bearish sentiment or hedging"
+
+# ============================================================
+# M3 PERFORMANCE: CACHING STRATEGY
+# ============================================================
+# M3 runs every 2 minutes. To avoid redundant computation:
+m3_caching:
+  ATR14: "Compute ONCE per session start. Used by C1, position sizing, stops, TPs."
+  macro_checks: "VIX, yield curve, FOMC date are session-static. Compute ONCE per M3 cycle start, reuse across all tickers."
+  dv_validation:
+    description: "DV gate in M3 should cache citation validation for daily-static tables."
+    cached_tables: [factor_scores, fundamentals, analyst_estimates, correlation_matrix]
+    cache_duration: "Entire session (these tables don't update intraday)"
+    non_cached_tables: [price_history, technical_indicators, market_news, social_sentiment]
+  composite_signal:
+    description: "C4 (sector) and C5 (macro) update at 5-30 min intervals. Cache their sub-scores between native update frequencies."
+    c4_cache_seconds: 300
+    c5_cache_seconds: 1800
+    c6_cache_seconds: 300
+  safety_filters:
+    description: "F1-F5 are market-wide. Evaluate ONCE per cycle, share result across all tickers."
+    per_ticker_filters: [F6]
+    market_wide_filters: [F1, F2, F3, F4, F5, F7, F8]
+  previous_close: "Session-static. Cache at M1 start, reuse all session."
+  correlation_matrix: "Session-static. Cache at M1 start, reuse all session."
+  G_MACRO: "VIX, yield curve, FOMC are session-static. Evaluate ONCE per cycle."
+
+# ============================================================
+# COMPOSITE OBSERVATION SIGNAL
+# ============================================================
+composite_signal:
+  formula: "OBS_SIGNAL = C1×0.25 + C2×0.15 + C3×0.15 + C4×0.10 + C5×0.20 + C6×0.15"
+  range: [-1.0, +1.0]
+  interpretation:
+    strong_bullish:
+      range: [0.6, 1.0]
+      label: "STRONG_BULLISH"
+      color: "dark_green"
+    moderate_bullish:
+      range: [0.3, 0.6]
+      label: "MODERATE_BULLISH"
+      color: "light_green"
+    weak_bullish:
+      range: [0.1, 0.3]
+      label: "WEAK_BULLISH"
+      color: "pale_green"
+    neutral:
+      range: [-0.1, 0.1]
+      label: "NEUTRAL"
+      color: "gray"
+    weak_bearish:
+      range: [-0.3, -0.1]
+      label: "WEAK_BEARISH"
+      color: "pale_red"
+    moderate_bearish:
+      range: [-0.6, -0.3]
+      label: "MODERATE_BEARISH"
+      color: "light_red"
+    strong_bearish:
+      range: [-1.0, -0.6]
+      label: "STRONG_BEARISH"
+      color: "dark_red"
+
+# ============================================================
+# DATA FRESHNESS REQUIREMENTS
+# ============================================================
+data_freshness:
+  C1_price_action:
+    max_staleness_seconds: 60
+    on_stale: "Use last known close, mark signal with STALE flag, halve weight"
+  C2_volume:
+    max_staleness_seconds: 120
+    on_stale: "Use last known volume, mark STALE"
+  C3_technical:
+    max_staleness_seconds: 300
+    on_stale: "Recalculate MA from price_history; indicators from technical_indicators table may be stale"
+  C4_sector:
+    max_staleness_seconds: 300
+    on_stale: "Use last known sector data, mark STALE"
+  C5_macro:
+    max_staleness_seconds: 1800
+    on_stale: "Use last known macro data, mark STALE, warning if >1 hour"
+  C6_sentiment:
+    max_staleness_seconds: 300
+    on_stale: "Use last known sentiment, mark STALE"
