@@ -68,6 +68,17 @@ All notable changes to the Ryn Stock Team project.
 
 ## [Unreleased]
 
+### Changed (2026-05-14)
+- `pipelines/news_pipeline.py` — Sentiment engine upgraded from keyword counting to NLP:
+  - VADER sentiment (NLTK) replaces all crude keyword matching
+  - FinBERT optional integration for financial-domain sentiment
+  - StockTwits free API for retail trader sentiment
+  - Xueqiu (雪球) Chinese retail investor community sentiment
+  - SentimentAggregator with cross-source confidence-weighted scoring
+  - SentimentSignal dataclass: compound, confidence, source_count, trend, breakdown
+  - Chinese bullish/bearish keyword lexicon (30+ terms)
+- `requirements.txt` — Added `nltk>=3.8`, optional `transformers` and `torch` for FinBERT
+
 ### Planned
 - [ ] DeepSeek API integration for live 9-agent debate
 - [ ] Web dashboard with real-time charts
