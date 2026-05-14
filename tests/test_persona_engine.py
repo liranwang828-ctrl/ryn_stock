@@ -1,11 +1,11 @@
-import json, sys, os
+﻿import json, sys, os
 sys.path.insert(0, '/home/lirawang/stock_team')
 from agents.persona_engine import PersonaEngine
 
 FIXTURE_DIR = '/home/lirawang/stock_team/tests/fixtures'
 
 def load(name):
-    return json.load(open(f'{FIXTURE_DIR}/{name}'))
+    return json.load(open(f'{FIXTURE_DIR}/{name}', encoding="utf-8"))
 
 def test_veto_triggered_when_volume_ratio_low():
     data    = load('persona_data.json')

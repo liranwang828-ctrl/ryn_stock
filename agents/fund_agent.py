@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
 log = get_logger(__name__)
@@ -6,7 +6,9 @@ from agents.protocol import (BASE, VERIFIED_PATH, BOARD_PATH, FINDINGS_DIR,
                               make_finding, make_revision, compute_phase2_response)
 
 def analyze(symbol, fields):
+    """Score fundamental metrics (PE, PB, EPS, FCF, ROE, growth) into a signal with confidence."""
     def f(name):
+        """Return (value, verified) tuple for a field entry."""
         return fields.get(name, {}).get("value"), fields.get(name, {}).get("verified", False)
     pe, pe_v   = f("pe_ratio")
     pb, pb_v   = f("pb_ratio")
@@ -103,22 +105,23 @@ def analyze(symbol, fields):
     return signal, confidence, points or ["基本面数据不足"], data_refs, analysis, conclusion
 
 def main():
+    """Parse args, run fundamental analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
     args = parser.parse_args()
-    data = json.load(open(VERIFIED_PATH))
+    data = json.load(open(VERIFIED_PATH, encoding="utf-8"))
     signal, conf, points, refs, analysis, conclusion = analyze(args.symbol, data["fields"])
     os.makedirs(FINDINGS_DIR, exist_ok=True)
     from agents.protocol import apply_persona
     _fields_flat = {k: v.get("value") if isinstance(v, dict) else v for k, v in data["fields"].items()}
     if args.round is None:
         msg = make_finding("FundAgent", args.symbol, signal, conf, points, refs, analysis=analysis, conclusion=conclusion)
-        _board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        _board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = apply_persona(msg, _fields_flat, "FundAgent", _board)
         atomic_write_json(msg, os.path.join(FINDINGS_DIR, "FundAgent.json"), indent=2)
     else:
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = compute_phase2_response("FundAgent", args.symbol, board,
                                       signal, conf, points, refs, _fields_flat)
         if not msg:

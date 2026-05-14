@@ -26,6 +26,7 @@ def calc_stop(vwap: float, atr14: float, seed: int = None) -> float:
 def infer_scene(vol_ratio, above_prev_high, rs, macd_positive, range_pct,
                 near_vwap, high_pullback_pct, below_vwap, rebound_pct,
                 etf_up, rs_vs_sector) -> str:
+    """Infer the actual scene A-H from observed market signals."""
     if vol_ratio >= 1.5 and rs <= -3.0 and below_vwap:
         return "F"
     if vol_ratio >= 1.3 and above_prev_high and rs > 0 and macd_positive:
@@ -55,6 +56,7 @@ _T2_CONDITION_A_TPL = "价格>T1成本×1.005 + 量比>0.85x"
 _T2_CONDITION_B_TPL = "缩量回踩0.3-2.5% + 守VWAP"
 
 def _build_stock_plan(pre_data: dict, date_str: str, seed: int = None) -> dict:
+    """Build a trading plan for a single stock from premarket data."""
     vwap  = pre_data.get("vwap_current") or pre_data.get("pre_price", 100.0)
     atr14 = pre_data.get("atr", 5.0)
     watch_lo = round(vwap * 0.99, 2)
@@ -78,31 +80,36 @@ def _build_stock_plan(pre_data: dict, date_str: str, seed: int = None) -> dict:
 
 
 def _plan_path(date_str: str) -> str:
+    """Return the daily plan JSON file path for a given date."""
     return os.path.join(BASE, f"daily_plan_{date_str}.json")
 
 def _pre_path(date_str: str) -> str:
+    """Return the premarket analysis JSON file path for a given date."""
     return os.path.join(BASE, f"premarket_analysis_{date_str}.json")
 
 def _load_plan(date_str: str) -> dict:
+    """Load the daily plan from disk, returning a default skeleton if missing."""
     path = _plan_path(date_str)
     if os.path.exists(path):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {"date": date_str,
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "stocks": {}}
 
 def _save_plan(plan: dict, date_str: str) -> None:
+    """Atomically write the daily plan to disk."""
     path = _plan_path(date_str)
     atomic_write_json(plan, path, indent=2)
 
 def generate_plan(symbols: list, date_str: str = None, seed: int = None) -> dict:
+    """Generate the daily trading plan from premarket data for given symbols."""
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     pre_path = _pre_path(date_str)
     if not os.path.exists(pre_path):
         raise FileNotFoundError(f"premarket 文件不存在：{pre_path}")
-    with open(pre_path) as f:
+    with open(pre_path, encoding="utf-8") as f:
         pre = json.load(f)
     target_syms = set(symbols) if symbols else set(pre["stocks"].keys())
     plan = _load_plan(date_str)
@@ -115,12 +122,14 @@ def generate_plan(symbols: list, date_str: str = None, seed: int = None) -> dict
 
 
 def get_plan(symbol: str, date_str: str = None) -> dict:
+    """Retrieve the daily plan for a single symbol."""
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     plan = _load_plan(date_str)
     return plan["stocks"].get(symbol.upper())
 
 def get_all(date_str: str = None) -> dict:
+    """Retrieve all daily plans for the given date."""
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     plan = _load_plan(date_str)
@@ -128,13 +137,14 @@ def get_all(date_str: str = None) -> dict:
 
 
 def add_symbol(symbol: str, date_str: str = None, seed: int = None) -> dict:
+    """Add a new symbol to the existing daily plan."""
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sym = symbol.upper()
     pre_path = _pre_path(date_str)
     if not os.path.exists(pre_path):
         raise FileNotFoundError(f"premarket 文件不存在：{pre_path}")
-    with open(pre_path) as f:
+    with open(pre_path, encoding="utf-8") as f:
         pre = json.load(f)
     if sym not in pre["stocks"]:
         raise KeyError(f"premarket 中无标的：{sym}")
@@ -146,6 +156,7 @@ def add_symbol(symbol: str, date_str: str = None, seed: int = None) -> dict:
 
 def update_scene(symbol: str, actual_scene: str, actual_vwap: float = None,
                  date_str: str = None, infer_kwargs: dict = None) -> dict:
+    """Update the actual scene and/or VWAP for a symbol in the daily plan."""
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sym = symbol.upper()

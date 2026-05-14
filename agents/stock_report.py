@@ -108,6 +108,7 @@ SUPPLY_CHAIN = {
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 
 def safe(fn, default="N/A"):
+    """Execute fn() safely, returning default on exception or NaN."""
     try:
         result = fn()
         if result is None or (isinstance(result, float) and math.isnan(result)):
@@ -118,6 +119,7 @@ def safe(fn, default="N/A"):
 
 
 def fmt_num(v, unit="", decimals=2, default="N/A"):
+    """Format a numeric value with unit suffix (B/M/K/T) to string."""
     if v == "N/A" or v is None:
         return default
     try:
@@ -138,6 +140,7 @@ def fmt_num(v, unit="", decimals=2, default="N/A"):
 
 
 def pct(a, b, default="N/A"):
+    """Return (a-b)/|b| as a formatted percentage string."""
     try:
         a, b = float(a), float(b)
         if b == 0:
@@ -148,6 +151,7 @@ def pct(a, b, default="N/A"):
 
 
 def pct_float(a, b):
+    """Return (a-b)/|b| * 100 as float, or None."""
     try:
         a, b = float(a), float(b)
         if b == 0:
@@ -158,6 +162,7 @@ def pct_float(a, b):
 
 
 def load_json(path):
+    """Load a JSON file, returning {} on any error."""
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -166,16 +171,19 @@ def load_json(path):
 
 
 def load_sector_map():
+    """Load symbol-to-sector mapping from poll_config.json."""
     cfg = load_json(POLL_CONFIG_FILE)
     return cfg.get("sector_map", {})
 
 
 def load_positions():
+    """Load current portfolio positions from positions.json."""
     cfg = load_json(POSITIONS_FILE)
     return cfg.get("positions", {})
 
 
 def price_change(hist, days):
+    """Compute price change over N days from a history DataFrame."""
     try:
         if hist is None or len(hist) < 2:
             return None
@@ -266,6 +274,7 @@ def detect_price_events(h10y, sym, company_name, max_events=10):
 # ── 新闻抓取 ──────────────────────────────────────────────────────────────────
 
 def fetch_news(sym, days=30, max_items=15):
+    """Fetch recent stock news headlines from Google News RSS."""
     url = f"https://news.google.com/rss/search?q={sym}+stock&hl=en-US&gl=US&ceid=US:en"
     items = []
     try:
@@ -300,6 +309,7 @@ def fetch_news(sym, days=30, max_items=15):
 
 
 def classify_news(title):
+    """Classify a news headline as bullish, bearish, or neutral by keyword count."""
     title_lower = title.lower()
     bullish = ["beat", "record", "surge", "rally", "strong", "upgrade", "buy",
                "outperform", "growth", "profit", "win", "expand", "boost"]
@@ -317,6 +327,7 @@ def classify_news(title):
 # ── 技术指标 ──────────────────────────────────────────────────────────────────
 
 def compute_rsi(close, period=14):
+    """Compute RSI indicator series from a closing price series."""
     try:
         delta = close.diff()
         gain = delta.clip(lower=0).rolling(period).mean()
@@ -330,6 +341,7 @@ def compute_rsi(close, period=14):
 # ── 章节一：公司业务理解 ────────────────────────────────────────────────────────
 
 def section_business(sym, info, lines):
+    """Generate report section: company overview, business model, and basic info table."""
     lines.append("## 一、公司业务理解\n\n")
     try:
         name = info.get("longName") or info.get("shortName") or sym
@@ -469,6 +481,7 @@ def section_segments(sym, profile, ticker, lines):
 # ── 章节二（原）：竞争格局 ──────────────────────────────────────────────────────
 
 def section_competition(sym, info, cur_price, lines):
+    """Generate report section: competitor comparison table and moat assessment."""
     lines.append("## 二、竞争格局\n\n")
     try:
         # 竞争对手股价对比
@@ -569,6 +582,7 @@ def section_competition(sym, info, cur_price, lines):
 # ── 章节三：近8季度财报表现 ──────────────────────────────────────────────────────
 
 def section_earnings(sym, ticker, info, lines):
+    """Generate report section: last 8 quarters EPS results and revenue trends."""
     lines.append("## 三、近8季度财报表现\n\n")
     try:
         # 财报历史
@@ -653,6 +667,7 @@ def section_earnings(sym, ticker, info, lines):
 # ── 章节四：盈利能力深析 ────────────────────────────────────────────────────────
 
 def section_profitability(sym, ticker, info, lines):
+    """Generate report section: margin trends, FCF quality, and capital allocation."""
     lines.append("## 四、盈利能力深析\n\n")
     try:
         qf = safe(lambda: ticker.quarterly_financials, None)
@@ -761,6 +776,7 @@ def section_profitability(sym, ticker, info, lines):
 # ── 章节五：估值分析 ────────────────────────────────────────────────────────────
 
 def section_valuation(sym, info, cur_price, competitors, lines):
+    """Generate report section: valuation multiples, PEG, and analyst target prices."""
     lines.append("## 五、估值分析\n\n")
     try:
         pe = info.get("trailingPE")
@@ -847,6 +863,7 @@ def section_valuation(sym, info, cur_price, competitors, lines):
 # ── 章节六：长期结构分析（10年日K）─────────────────────────────────────────────
 
 def section_long_term(sym, ticker, cur_price, lines):
+    """Generate report section: Weinstein stage, historical context, supports/resistances, drawdown stats."""
     lines.append("## 六、长期结构分析（10年日K）\n\n")
     try:
         h10y = safe(lambda: ticker.history(period="10y"), None)
@@ -1096,6 +1113,7 @@ def section_long_term(sym, ticker, cur_price, lines):
 # ── 章节七：板块分析 ────────────────────────────────────────────────────────────
 
 def section_sector(sym, info, sector_map, lines):
+    """Generate report section: sector trends, ETF comparison, and macro drivers."""
     lines.append("## 七、板块分析\n\n")
     try:
         sect_info = sector_map.get(sym, {})
@@ -1166,6 +1184,7 @@ def section_sector(sym, info, sector_map, lines):
 # ── 章节八：机构与市场情绪 ──────────────────────────────────────────────────────
 
 def section_sentiment(sym, ticker, info, lines):
+    """Generate report section: short interest, institutional holders, insider trades, and analyst ratings."""
     lines.append("## 八、机构与市场情绪\n\n")
     try:
         # 空头比例
@@ -1256,6 +1275,7 @@ def section_sentiment(sym, ticker, info, lines):
 # ── 章节九：催化剂地图 ──────────────────────────────────────────────────────────
 
 def section_catalysts(sym, ticker, news_items, lines):
+    """Generate report section: earnings dates, news timeline, and sentiment distribution."""
     lines.append("## 九、催化剂地图\n\n")
     try:
         # 下次财报日期
@@ -1318,6 +1338,7 @@ def section_catalysts(sym, ticker, news_items, lines):
 # ── 章节十：风险矩阵 ────────────────────────────────────────────────────────────
 
 def section_risks(sym, info, ticker, lines):
+    """Generate report section: risk matrix covering valuation, leverage, cash runway, beta, and competition."""
     lines.append("## 十、风险矩阵\n\n")
     try:
         lines.append("| 风险类型 | 具体描述 | 严重度 | 备注 |\n|---|---|---|---|\n")
@@ -1400,6 +1421,7 @@ def section_risks(sym, info, ticker, lines):
 # ── 章节十一：持仓信息 ──────────────────────────────────────────────────────────
 
 def section_position(sym, info, cur_price, positions, lines):
+    """Generate report section: portfolio position details, cost basis, and unrealized P&L."""
     lines.append("## 十一、持仓信息\n\n")
     try:
         pos_info = positions.get(sym)
@@ -1443,6 +1465,7 @@ def section_position(sym, info, cur_price, positions, lines):
 # ── 章节十二：综合判断 ──────────────────────────────────────────────────────────
 
 def section_judgment(sym, info, cur_price, tech_data, news_items, pos_info, lines):
+    """Generate report section: multi-master perspectives and composite score 0-10."""
     lines.append("## 十二、综合判断\n\n")
     try:
         pe = info.get("trailingPE")
@@ -1670,6 +1693,7 @@ def section_judgment(sym, info, cur_price, tech_data, news_items, pos_info, line
 # ── 主报告生成函数 ─────────────────────────────────────────────────────────────
 
 def generate_report(sym, positions, sector_map):
+    """Orchestrate data fetching, compute all 12 report sections, and write markdown + JSON output."""
     sym = sym.upper()
     lines = []
     lines.append(f"# {sym} 深度研究报告 | {TODAY}\n\n")
@@ -1841,6 +1865,7 @@ def generate_report(sym, positions, sector_map):
 # ── 入口 ──────────────────────────────────────────────────────────────────────
 
 def main():
+    """CLI entry point: generate depth research reports for given symbols or all positions."""
     symbols = [s.upper() for s in sys.argv[1:]]
     if not symbols:
         pos = load_positions()

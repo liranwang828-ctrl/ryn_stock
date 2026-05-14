@@ -11,7 +11,7 @@
 - 闲聊提及股票名称
 - 市场开盘时段（9:30-16:00 ET）
 """
-import os, re, subprocess
+import os, re, sys, subprocess
 from datetime import datetime, timezone
 
 BASE   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,10 +60,7 @@ def should_trigger(question: str, symbols: list = None) -> bool:
 
 def auto_run_cio(symbol: str, question_type: str = "日内/短线交易",
                  phases: str = "0123") -> dict:
-    """
-    自动运行 CIO 全量分析。
-    返回运行状态。
-    """
+    """Run the full CIO analysis pipeline and return the execution status."""
     agents_dir = os.path.join(BASE, "agents")
     cio_script = os.path.join(agents_dir, "cio.py")
 
@@ -93,10 +90,7 @@ def auto_run_cio(symbol: str, question_type: str = "日内/短线交易",
 
 def trigger_if_needed(question: str, symbols: list = None,
                       question_type: str = "日内/短线交易") -> str:
-    """
-    对话集成入口：判断并触发（如果需要）。
-    返回触发状态消息。
-    """
+    """Check if auto-trigger conditions are met and run CIO analysis if so."""
     syms = symbols or _extract_symbols(question)
 
     if not should_trigger(question, syms):

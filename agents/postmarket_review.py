@@ -24,13 +24,13 @@ def load_session_log(date_str=None):
         date_str = datetime.now().strftime("%Y-%m-%d")
     path = os.path.join(KNOWLEDGE_DIR, f"session_{date_str}.md")
     if os.path.exists(path):
-        return open(path).read()
+        return open(path, encoding="utf-8").read()
     return None
 
 def load_methodology():
     """加载历史方法论知识库"""
     path = os.path.join(KNOWLEDGE_DIR, "trading_methodology.md")
-    return open(path).read() if os.path.exists(path) else ""
+    return open(path, encoding="utf-8").read() if os.path.exists(path) else ""
 
 def extract_unknowns(session_log):
     """从 session_log 提取未知条件"""

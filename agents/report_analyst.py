@@ -45,6 +45,7 @@ except anthropic.AuthenticationError:
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 
 def load_positions():
+    """Return list of symbols from positions.json."""
     try:
         with open(POSITIONS_FILE, "r", encoding="utf-8") as f:
             cfg = json.load(f)
@@ -499,6 +500,7 @@ def synthesize_section(section_name: str, data: dict, context: str) -> str:
 # ── 主流程：生成完整报告 ─────────────────────────────────────────────────────
 
 def generate_full_report(sym: str) -> str:
+    """Load data package, call Claude API per chapter, and write a complete analysis report."""
     sym = sym.upper()
     print(f"  [{sym}] 开始生成分析报告...")
 
@@ -555,6 +557,7 @@ def generate_full_report(sym: str) -> str:
 # ── 入口 ──────────────────────────────────────────────────────────────────────
 
 def main():
+    """CLI entry point: generate narrative analysis reports for given symbols or all positions."""
     symbols = [s.upper() for s in sys.argv[1:]]
     if not symbols:
         symbols = load_positions()

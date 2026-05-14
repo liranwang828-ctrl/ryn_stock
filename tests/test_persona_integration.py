@@ -1,4 +1,4 @@
-import json, os, shutil, subprocess
+﻿import json, os, shutil, subprocess
 PYTHON  = "/tool/pandora/bin/python3.12"
 BASE    = "/home/lirawang/stock_team"
 FIXTURE = f"{BASE}/tests/fixtures"
@@ -11,7 +11,7 @@ def agent_finding(agent_script, agent_name):
     r = subprocess.run([PYTHON, f"{BASE}/agents/{agent_script}.py", "AMD"],
                        capture_output=True, text=True, cwd=BASE, timeout=60)
     assert r.returncode == 0, f"{agent_script} failed: {r.stderr}"
-    return json.load(open(f"{BASE}/findings/{agent_name}.json"))
+    return json.load(open(f"{BASE}/findings/{agent_name}.json", encoding="utf-8"))
 
 def test_tech_agent_has_master_fields():
     setup()

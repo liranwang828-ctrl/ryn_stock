@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 def setup_logging(log_dir=None, level=logging.DEBUG):
+    """Configure root logger with file and stream handlers."""
     if log_dir is None:
         log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
     os.makedirs(log_dir, exist_ok=True)
@@ -42,4 +43,5 @@ def setup_logging(log_dir=None, level=logging.DEBUG):
 
 
 def get_logger(name):
+    """Return a logger instance for the given name."""
     return logging.getLogger(name)

@@ -1,4 +1,4 @@
-import sys, os, json, argparse, requests, re
+﻿import sys, os, json, argparse, requests, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from agents.protocol import (BASE, BOARD_PATH, FINDINGS_DIR, VERIFIED_PATH,
                               make_finding, make_revision, compute_phase2_response)
@@ -40,6 +40,7 @@ def fetch_reddit_sentiment(symbol):
     return _fetch_reddit_raw(symbol, bullish_words, bearish_words)
 
 def _fetch_reddit_praw(symbol, reddit, bullish_words, bearish_words):
+    """Search Reddit via PRAW for symbol mentions and tally bullish/bearish upvotes."""
     posts, bullish, bearish = [], 0, 0
     for sub in SUBREDDITS:
         try:
@@ -61,6 +62,7 @@ def _fetch_reddit_praw(symbol, reddit, bullish_words, bearish_words):
     return bullish, bearish, posts[:5]
 
 def _fetch_reddit_raw(symbol, bullish_words, bearish_words):
+    """Search Reddit via raw API for symbol mentions and tally bullish/bearish upvotes."""
     posts, bullish, bearish = [], 0, 0
     for sub in SUBREDDITS:
         try:
@@ -94,6 +96,7 @@ def _fetch_reddit_raw(symbol, bullish_words, bearish_words):
     return bullish, bearish, posts[:5]
 
 def fetch_stocktwits_sentiment(symbol):
+    """Fetch StockTwits bullish/bearish message counts for a symbol."""
     try:
         url  = f"https://api.stocktwits.com/api/2/streams/symbol/{symbol}.json"
         resp = fetch_with_retry(lambda: requests.get(url, timeout=10))
@@ -124,6 +127,7 @@ _BEARISH_EN = ['bear', 'short', 'sell', 'put', 'dump', 'rug', 'dead']
 
 
 def _chinese_sentiment_score(text: str) -> float:
+    """Score Chinese/English text using bilingual bullish/bearish keyword lists."""
     text_l = text.lower()
     score, total = 0.0, 0
     for kw in _CHINESE_BULLISH:
@@ -182,6 +186,7 @@ def fetch_xueqiu(symbol: str):
 
 
 def analyze(symbol):
+    """Aggregate Reddit, StockTwits, and Xueqiu sentiment into a signal with confidence."""
     r_bull, r_bear, posts = fetch_reddit_sentiment(symbol)
     st_bull, st_bear      = fetch_stocktwits_sentiment(symbol)
     xq_bull, xq_bear, xq_posts = fetch_xueqiu(symbol)
@@ -202,6 +207,7 @@ def analyze(symbol):
     return signal, score, points, refs
 
 def main():
+    """Parse args, run community sentiment analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
@@ -209,15 +215,15 @@ def main():
     signal, conf, points, refs = analyze(args.symbol)
     os.makedirs(FINDINGS_DIR, exist_ok=True)
     from agents.protocol import apply_persona
-    _raw = json.load(open(VERIFIED_PATH)).get("fields", {}) if os.path.exists(VERIFIED_PATH) else {}
+    _raw = json.load(open(VERIFIED_PATH, encoding="utf-8")).get("fields", {}) if os.path.exists(VERIFIED_PATH) else {}
     _data = {k: v.get("value") if isinstance(v, dict) else v for k, v in _raw.items()}
     if args.round is None:
         msg = make_finding("CommunityAgent", args.symbol, signal, conf, points, refs)
-        _board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        _board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = apply_persona(msg, _data, "CommunityAgent", _board)
         atomic_write_json(msg, os.path.join(FINDINGS_DIR, "CommunityAgent.json"), indent=2)
     else:
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = compute_phase2_response("CommunityAgent", args.symbol, board,
                                       signal, conf, points, refs, _data)
         if not msg:

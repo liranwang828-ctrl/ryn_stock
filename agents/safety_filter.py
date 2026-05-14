@@ -1,4 +1,4 @@
-"""
+﻿"""
 Safety Filter — 8 market safety checks with tiered response.
 Tiers: red (hard block) / orange (strong warning + override) / yellow (info only)
 """
@@ -35,6 +35,7 @@ NEWS_PANIC_KEYWORDS = [
 
 
 def _get_field(fields, key, default=None):
+    """Extract a field value from a potentially nested dict."""
     v = fields.get(key)
     if isinstance(v, dict):
         return v.get("value", default)
@@ -265,7 +266,7 @@ def main():
         print("未找到 data_verified.json，请先运行 data_agent + verifier_agent")
         return
 
-    data = json.load(open(VERIFIED_PATH))
+    data = json.load(open(VERIFIED_PATH, encoding="utf-8"))
     fields = data.get("fields", {})
 
     blocked, report = check_all(fields, args.symbol)

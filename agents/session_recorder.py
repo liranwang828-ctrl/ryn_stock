@@ -1,4 +1,4 @@
-"""
+﻿"""
 交易记录系统 — 分层存储
 
 层1: snapshots_{date}.jsonl     → 日内2分钟快照，盘后自动删除
@@ -16,9 +16,11 @@ os.makedirs(LOG_DIR, exist_ok=True)
 HISTORY_FILE = os.path.join(LOG_DIR, "trading_history.jsonl")
 
 def today():
+    """Return today's date as YYYY-MM-DD."""
     return datetime.now().strftime("%Y-%m-%d")
 
 def snapshot_path():
+    """Return the file path for today's snapshot JSONL."""
     return os.path.join(LOG_DIR, f"snapshots_{today()}.jsonl")
 
 # ── 层1：日内快照（自动删除）─────────────────────────────
@@ -45,7 +47,7 @@ def write_snapshot(stocks_data: dict, vix_data: dict, spy_chg: float, qqq_chg: f
             for sym, d in stocks_data.items() if d
         }
     }
-    with open(snapshot_path(), "a") as f:
+    with open(snapshot_path(), "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 def cleanup_old_snapshots(keep_days=1):
@@ -65,7 +67,7 @@ def _get_latest_snapshot():
     """拿到最近一条快照作为决策时的市场上下文"""
     path = snapshot_path()
     if not os.path.exists(path): return {}
-    lines = [l for l in open(path) if l.strip()]
+    lines = [l for l in open(path, encoding="utf-8") if l.strip()]
     return json.loads(lines[-1]) if lines else {}
 
 def log_action(action_type: str, sym: str, price: float, reason: str = "",
@@ -103,7 +105,7 @@ def log_action(action_type: str, sym: str, price: float, reason: str = "",
         "ts": ts_utc,
     }
 
-    with open(HISTORY_FILE, "a") as f:
+    with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
     print(f"[SessionLog ✓] {entry['time']} {action_type.upper()} {sym} ${price}")
@@ -131,7 +133,7 @@ def log_thought(category: str, content: str, sym: str = ""):
         },
         "ts": datetime.now(timezone.utc).isoformat(),
     }
-    with open(HISTORY_FILE, "a") as f:
+    with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     print(f"[SessionLog ✓] {ts} [{category}] {content[:60]}")
 
@@ -142,7 +144,7 @@ def build_daily_summary(date=None):
     if not os.path.exists(HISTORY_FILE):
         print("[SessionLog] 无历史记录"); return
 
-    today_entries = [json.loads(l) for l in open(HISTORY_FILE) if l.strip()
+    today_entries = [json.loads(l) for l in open(HISTORY_FILE, encoding="utf-8") if l.strip()
                      and json.loads(l).get("date") == d]
 
     if not today_entries:
@@ -202,7 +204,7 @@ def build_daily_summary(date=None):
     md += "- 明日值得关注的机会？\n"
 
     out = os.path.join(LOG_DIR, f"session_{d}.md")
-    open(out, "w").write(md)
+    open(out, "w", encoding="utf-8").write(md)
     print(f"[SessionLog] 日记已生成: {out}")
     return out
 
@@ -210,7 +212,7 @@ def build_daily_summary(date=None):
 def summarize_patterns(n_days=30):
     """从 trading_history 归纳最近 N 天的行为模式"""
     if not os.path.exists(HISTORY_FILE): return
-    entries = [json.loads(l) for l in open(HISTORY_FILE) if l.strip()]
+    entries = [json.loads(l) for l in open(HISTORY_FILE, encoding="utf-8") if l.strip()]
     actions = [e for e in entries if e["type"] != "thought"]
     if not actions: return
 

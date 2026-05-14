@@ -1,4 +1,4 @@
-import json, os
+﻿import json, os
 import os as _os
 import json as _json
 
@@ -30,7 +30,10 @@ def load_persona_full(persona_name: str) -> dict:
     return result
 
 class PersonaEngine:
+    """Evaluates persona rules against market data."""
+
     def _eval(self, condition: str, data: dict, board_signals: dict = None) -> bool:
+        """Evaluate a single condition expression against market data."""
         ns = {"data": data, "board_signals": board_signals or {}, "any": any, "all": all}
         try:
             return bool(eval(condition, {"__builtins__": {}}, ns))
@@ -39,8 +42,9 @@ class PersonaEngine:
 
     def evaluate(self, data: dict, persona,
                  board_signals: dict = None) -> dict:
+        """Score a persona's entry/exit rules against market data and return a signal."""
         if isinstance(persona, str):
-            persona = json.load(open(persona))
+            persona = json.load(open(persona, encoding="utf-8"))
 
         # Step 0: debate trigger check (runs regardless of veto, so board conflicts are always surfaced)
         debate_insight = None
@@ -161,7 +165,7 @@ class PersonaEngine:
             price = data.get("current_price")
             ma200 = data.get("ma200")
             if slope is not None and price is not None and ma200 is not None:
-                return {"passed": slope > 0 and price > ma200}
+                return {"passed": bool(slope > 0 and price > ma200)}
 
         if q_id == "q4" and "breakout_volume_ratio" in data:
             return {"passed": data["breakout_volume_ratio"] >= 1.5}

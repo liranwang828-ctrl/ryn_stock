@@ -32,6 +32,7 @@ from functools import lru_cache
 
 
 def _safe_div(a: float, b: float, fallback: float = 0.0) -> float:
+    """Safely divide a by b, returning fallback on zero division."""
     return a / b if b and b != 0 else fallback
 
 
@@ -48,32 +49,25 @@ def _rolling_window(arr: np.ndarray, window: int):
 
 
 def compute_ma(close: pd.Series, period: int) -> float:
-    """
-    Simple Moving Average
-    Formula: SMA = sum(close[-period:]) / period
-    """
+    """Compute simple moving average for the given period."""
+    # Formula: SMA = sum(close[-period:]) / period
     if len(close) < period:
         return None
     return float(close.rolling(window=period).mean().iloc[-1])
 
 
 def compute_ema(close: pd.Series, period: int) -> float:
-    """
-    Exponential Moving Average
-    Formula: EMA_t = α × price_t + (1-α) × EMA_{t-1}
-             where α = 2 / (period + 1)
-    """
+    """Compute exponential moving average for the given period."""
+    # Formula: EMA_t = α × price_t + (1-α) × EMA_{t-1}, where α = 2 / (period + 1)
     if len(close) < period:
         return None
     return float(close.ewm(span=period, adjust=False).mean().iloc[-1])
 
 
 def compute_ma_slope(close: pd.Series, period: int = 20, lookback: int = 5) -> float:
-    """
-    MA slope = rate of change of the MA over `lookback` periods
-    Formula: (MA_t - MA_{t-lookback}) / MA_{t-lookback} / lookback
-    Positive → uptrend accelerating. Negative → downtrend.
-    """
+    """Compute the rate of change of the moving average slope."""
+    # Formula: (MA_t - MA_{t-lookback}) / MA_{t-lookback} / lookback
+    # Positive → uptrend accelerating. Negative → downtrend.
     ma = close.rolling(window=period).mean()
     if len(ma) < period + lookback:
         return None
@@ -81,19 +75,10 @@ def compute_ma_slope(close: pd.Series, period: int = 20, lookback: int = 5) -> f
 
 
 def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14):
-    """
-    Average Directional Index — trend strength (not direction)
-    Formula:
-        TR  = max(H-L, |H-C_prev|, |L-C_prev|)
-        +DM = if H-H_prev > L_prev-L and H-H_prev > 0 → H-H_prev else 0
-        -DM = if L_prev-L > H-H_prev and L_prev-L > 0 → L_prev-L else 0
-        ATR = Wilder smoothed TR (period)
-        +DI = 100 × Wilder(+DM) / ATR
-        -DI = 100 × Wilder(-DM) / ATR
-        DX  = 100 × |+DI - -DI| / (+DI + -DI)
-        ADX = Wilder smoothed DX (period)
-    Returns (ADX, +DI, -DI)
-    """
+    """Compute Average Directional Index, +DI, and -DI for trend strength."""
+    # Formula: TR = max(H-L, |H-C_prev|, |L-C_prev|); ATR = Wilder(TR)
+    # +DI = 100 × Wilder(+DM) / ATR; -DI = 100 × Wilder(-DM) / ATR
+    # DX = 100 × |+DI - -DI| / (+DI + -DI); ADX = Wilder(DX)
     if len(close) < period * 2:
         return None, None, None
 
@@ -125,16 +110,9 @@ def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int =
 
 def compute_parabolic_sar(high, low, close,
                           af_start=0.02, af_step=0.02, af_max=0.20) -> float:
-    """
-    Parabolic SAR — trailing stop that flips with trend
-    Formula (simplified incremental, intended for bar-by-bar iteration):
-        Initial: SAR[0] = lowest low of first N bars (uptrend)
-        SAR_t = SAR_{t-1} + AF × (EP_{t-1} - SAR_{t-1})
-        EP = extreme point (highest high in uptrend, lowest low in downtrend)
-        AF increments by af_step each new EP, capped at af_max
-        Flip: when price crosses SAR, reset SAR to prior EP, flip direction
-    Implemented via vectorized approximation using Wilder's method.
-    """
+    """Compute Parabolic SAR trailing stop and trend direction."""
+    # SAR_t = SAR_{t-1} + AF × (EP_{t-1} - SAR_{t-1}); AF accelerates to af_max
+    # Flip: when price crosses SAR, reset SAR to prior EP, flip direction
     n = len(close)
     if n < 20:
         return None
@@ -205,14 +183,8 @@ def compute_parabolic_sar(high, low, close,
 
 
 def compute_rsi(close: pd.Series, period: int = 14) -> float:
-    """
-    Relative Strength Index
-    Formula:
-        avg_gain = Wilder smoothed average of gains over `period`
-        avg_loss = Wilder smoothed average of losses over `period`
-        RS = avg_gain / avg_loss
-        RSI = 100 - 100/(1 + RS)
-    """
+    """Compute Relative Strength Index for the given period."""
+    # RSI = 100 - 100/(1 + RS), where RS = avg_gain / avg_loss (Wilder smoothed)
     if len(close) < period + 1:
         return None
     delta = close.diff()
@@ -227,14 +199,8 @@ def compute_rsi(close: pd.Series, period: int = 14) -> float:
 
 
 def compute_macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
-    """
-    MACD (Moving Average Convergence Divergence)
-    Formula:
-        MACD_line = EMA(fast) - EMA(slow)
-        MACD_signal = EMA(MACD_line, signal)
-        MACD_histogram = MACD_line - MACD_signal
-    Returns (MACD_line, signal_line, histogram)
-    """
+    """Compute MACD line, signal line, and histogram."""
+    # MACD_line = EMA(fast) - EMA(slow); Signal = EMA(MACD_line); Histogram = MACD_line - Signal
     if len(close) < slow + signal:
         return None, None, None
     ema_fast = close.ewm(span=fast, adjust=False).mean()
@@ -246,13 +212,8 @@ def compute_macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int =
 
 
 def compute_stochastic(high, low, close, k_period: int = 14, d_period: int = 3):
-    """
-    Stochastic Oscillator
-    Formula:
-        %K = 100 × (close - lowest_low(k)) / (highest_high(k) - lowest_low(k))
-        %D = SMA(%K, d_period)
-    Returns (%K, %D)
-    """
+    """Compute Stochastic Oscillator %K and %D."""
+    # %K = 100 × (close - lowest_low) / (highest_high - lowest_low); %D = SMA(%K, d_period)
     if len(close) < k_period:
         return None, None
     lowest_low = low.rolling(window=k_period).min()
@@ -263,12 +224,8 @@ def compute_stochastic(high, low, close, k_period: int = 14, d_period: int = 3):
 
 
 def compute_williams_r(high, low, close, period: int = 14) -> float:
-    """
-    Williams %R
-    Formula:
-        %R = -100 × (highest_high(period) - close) / (highest_high(period) - lowest_low(period))
-    Oscillates between -100 and 0. > -20 overbought, < -80 oversold.
-    """
+    """Compute Williams %R oscillator."""
+    # %R = -100 × (highest_high - close) / (highest_high - lowest_low); > -20 overbought, < -80 oversold
     if len(close) < period:
         return None
     hh = high.rolling(window=period).max()
@@ -278,12 +235,8 @@ def compute_williams_r(high, low, close, period: int = 14) -> float:
 
 
 def compute_cci(high, low, close, period: int = 20) -> float:
-    """
-    Commodity Channel Index
-    Formula:
-        TP = (H + L + C) / 3
-        CCI = (TP - SMA(TP, period)) / (0.015 × mean_absolute_deviation(TP, period))
-    """
+    """Compute Commodity Channel Index."""
+    # TP = (H+L+C)/3; CCI = (TP - SMA(TP)) / (0.015 × mean_absolute_deviation(TP))
     if len(close) < period:
         return None
     tp = (high + low + close) / 3.0
@@ -299,15 +252,8 @@ def compute_cci(high, low, close, period: int = 20) -> float:
 
 
 def compute_bollinger_bands(close: pd.Series, period: int = 20, std_mult: float = 2.0):
-    """
-    Bollinger Bands
-    Formula:
-        Middle = SMA(close, period)
-        Upper  = Middle + std_mult × std(close, period)
-        Lower  = Middle - std_mult × std(close, period)
-        Width  = (Upper - Lower) / Middle
-    Returns (upper, middle, lower, width)
-    """
+    """Compute Bollinger Bands upper, middle, lower, and width."""
+    # Middle = SMA(close); Upper/Lower = Middle ± std_mult × std(close); Width = (Upper-Lower)/Middle
     if len(close) < period:
         return None, None, None, None
     middle = close.rolling(window=period).mean()
@@ -320,12 +266,8 @@ def compute_bollinger_bands(close: pd.Series, period: int = 20, std_mult: float 
 
 
 def compute_atr(high, low, close, period: int = 14) -> float:
-    """
-    Average True Range
-    Formula:
-        TR = max(H-L, |H-C_prev|, |L-C_prev|)
-        ATR = Wilder smoothed TR (EWM, alpha=1/period)
-    """
+    """Compute Average True Range for the given period."""
+    # TR = max(H-L, |H-C_prev|, |L-C_prev|); ATR = Wilder smoothed TR (EWM, alpha=1/period)
     if len(close) < period + 1:
         return None
     tr = pd.concat([
@@ -338,15 +280,8 @@ def compute_atr(high, low, close, period: int = 14) -> float:
 
 
 def compute_keltner_channels(high, low, close, ema_period: int = 20, atr_mult: float = 2.0):
-    """
-    Keltner Channels
-    Formula:
-        Middle = EMA(close, ema_period)
-        ATR    = ATR(ema_period)  ← use ATR with same period
-        Upper  = Middle + atr_mult × ATR
-        Lower  = Middle - atr_mult × ATR
-    Returns (upper, middle, lower)
-    """
+    """Compute Keltner Channels upper, middle, and lower."""
+    # Middle = EMA(close); Upper/Lower = Middle ± atr_mult × ATR
     if len(close) < ema_period * 2:
         return None, None, None
     middle = close.ewm(span=ema_period, adjust=False).mean()
@@ -371,10 +306,8 @@ def compute_volume_sma(volume: pd.Series, period: int = 20) -> float:
 
 
 def compute_volume_ratio(volume: pd.Series, period: int = 20) -> float:
-    """
-    Volume ratio = current volume / 20-period average volume
-    > 1.5 = unusually high volume
-    """
+    """Compute ratio of current volume to period average volume."""
+    # > 1.5 = unusually high volume
     if len(volume) < period:
         return None
     avg = volume.rolling(window=period).mean().iloc[-1]
@@ -382,28 +315,16 @@ def compute_volume_ratio(volume: pd.Series, period: int = 20) -> float:
 
 
 def compute_obv(close: pd.Series, volume: pd.Series) -> float:
-    """
-    On-Balance Volume
-    Formula:
-        OBV_t = OBV_{t-1} + volume  if close > close_prev
-        OBV_t = OBV_{t-1} - volume  if close < close_prev
-        OBV_t = OBV_{t-1}           if close = close_prev
-    Returns latest OBV value.
-    """
+    """Compute On-Balance Volume cumulative value."""
+    # OBV accumulates volume on up days, subtracts on down days, unchanged on flat days
     direction = np.sign(close.diff())
     obv = (direction * volume).cumsum()
     return float(obv.iloc[-1])
 
 
 def compute_vwap(high, low, close, volume) -> float:
-    """
-    Volume-Weighted Average Price — intraday
-    Formula:
-        VWAP = sum(TP × volume) / sum(volume)
-        where TP = (H + L + C) / 3
-    For intraday: compute from session start.
-    For daily analysis: use entire DataFrame range.
-    """
+    """Compute Volume-Weighted Average Price."""
+    # VWAP = sum(TP × volume) / sum(volume), where TP = (H+L+C)/3
     tp = (high + low + close) / 3.0
     total_pv = (tp * volume).sum()
     total_v = volume.sum()
@@ -411,16 +332,8 @@ def compute_vwap(high, low, close, volume) -> float:
 
 
 def compute_mfi(high, low, close, volume, period: int = 14) -> float:
-    """
-    Money Flow Index — volume-weighted RSI
-    Formula:
-        TP = (H + L + C) / 3
-        Raw Money Flow = TP × volume
-        Positive MF = sum of Raw MF where TP > TP_prev, over period
-        Negative MF = sum of Raw MF where TP < TP_prev, over period
-        Money Ratio = Positive MF / Negative MF
-        MFI = 100 - 100/(1 + Money Ratio)
-    """
+    """Compute Money Flow Index for the given period."""
+    # MFI = 100 - 100/(1 + Money Ratio); Money Ratio = Positive MF / Negative MF (TP-weighted)
     if len(close) < period + 1:
         return None
     tp = (high + low + close) / 3.0
@@ -439,15 +352,8 @@ def compute_mfi(high, low, close, volume, period: int = 14) -> float:
 
 
 def compute_pivot_points(prev_high: float, prev_low: float, prev_close: float) -> Dict:
-    """
-    Daily Pivot Points (floor trader method)
-    Formula:
-        PP = (H_prev + L_prev + C_prev) / 3
-        R1 = 2 × PP - L_prev
-        R2 = PP + (H_prev - L_prev)
-        S1 = 2 × PP - H_prev
-        S2 = PP - (H_prev - L_prev)
-    """
+    """Compute daily pivot points and support/resistance levels (floor trader method)."""
+    # PP = (H+L+C)/3; R1 = 2×PP-L; R2 = PP+(H-L); S1 = 2×PP-H; S2 = PP-(H-L)
     pp = (prev_high + prev_low + prev_close) / 3.0
     return {
         'Pivot_PP': round(pp, 2),
@@ -459,15 +365,8 @@ def compute_pivot_points(prev_high: float, prev_low: float, prev_close: float) -
 
 
 def compute_fibonacci(high: pd.Series, low: pd.Series, lookback: int = 20) -> Dict:
-    """
-    Fibonacci retracement levels from most recent swing high/low
-    Formula:
-        range = swing_high - swing_low
-        Fib 38.2% = swing_high - 0.382 × range (uptrend retracement)
-        Fib 50.0% = swing_high - 0.500 × range
-        Fib 61.8% = swing_high - 0.618 × range
-    Uses highest high and lowest low over `lookback` period as swing points.
-    """
+    """Compute Fibonacci retracement levels from recent swing high/low."""
+    # Fib = swing_high - ratio × (swing_high - swing_low) at 38.2%, 50.0%, 61.8%
     if len(high) < lookback:
         return {}
     swing_high = float(high.iloc[-lookback:].max())
@@ -493,10 +392,7 @@ def compute_prev_day_levels(high: pd.Series, low: pd.Series, close: pd.Series):
 
 
 def compute_candle_body_ratio(o, h, l, c) -> float:
-    """
-    Candle body ratio = |close - open| / (high - low)
-    0 = doji (no body).  1 = marubozu (no wick).
-    """
+    """Compute ratio of candle body to total range (0=doji, 1=marubozu)."""
     rng = h - l
     if rng == 0:
         return 0.0
@@ -504,12 +400,8 @@ def compute_candle_body_ratio(o, h, l, c) -> float:
 
 
 def compute_wick_ratios(o, h, l, c) -> tuple:
-    """
-    Upper wick ratio = (high - max(open, close)) / (high - low)
-    Lower wick ratio = (min(open, close) - low) / (high - low)
-    Long lower wick = potential reversal up.
-    Long upper wick = potential reversal down.
-    """
+    """Compute upper and lower wick ratios."""
+    # Long lower wick = potential reversal up; long upper wick = potential reversal down
     rng = h - l
     if rng == 0:
         return 0.0, 0.0
@@ -519,10 +411,7 @@ def compute_wick_ratios(o, h, l, c) -> tuple:
 
 
 def compute_consecutive_direction(close: pd.Series) -> tuple:
-    """
-    Count consecutive bullish (close > prev close) and bearish candles.
-    Returns (consecutive_green, consecutive_red).
-    """
+    """Count consecutive bullish and bearish candles."""
     if len(close) < 2:
         return 0, 0
     diff = close.diff()
@@ -549,20 +438,7 @@ def compute_consecutive_direction(close: pd.Series) -> tuple:
 # ============================================================
 
 def compute_all_indicators(df: pd.DataFrame) -> Dict[str, Optional[float]]:
-    """
-    Compute all 40+ technical indicators from OHLCV DataFrame.
-
-    Args:
-        df: DataFrame with columns [open, high, low, close, volume],
-            indexed by datetime. Must have at least 60 rows for reliable calculation.
-
-    Returns:
-        Flat dict of {indicator_name: value_or_None}, ready to insert into
-        the technical_indicators table.
-
-        If an indicator cannot be computed (insufficient data), its value is None.
-        A7 MUST check for None and say "not available" instead of fabricating.
-    """
+    """Compute all 40+ technical indicators from OHLCV DataFrame."""
     # Ensure lowercase column names
     df = df.copy()
     df.columns = [c.lower() for c in df.columns]
@@ -737,24 +613,14 @@ TIER_3_NAMES = [
 
 
 def compute_tier1(df_daily: pd.DataFrame) -> Dict[str, Optional[float]]:
-    """
-    Session-static indicators. Call ONCE at M1 start.
-    Uses DAILY bars — these values are valid all session.
-
-    Cost: ~30 indicators, ~50ms on 200 bars.
-    """
+    """Compute session-static indicators from daily bars (call once at session start)."""
     # Compute all from daily bars
     full = compute_all_indicators(df_daily)
     return {k: full[k] for k in TIER_1_NAMES if k in full}
 
 
 def compute_tier2(df_intraday: pd.DataFrame) -> Dict[str, Optional[float]]:
-    """
-    5-minute cache indicators. Call every 5 min during M2/M3.
-    Uses INTRADAY bars (e.g., 1-min or 2-min intervals).
-
-    Cost: ~7 indicators, ~5ms on 390 bars (full session of 1-min bars).
-    """
+    """Compute 5-minute cache indicators from intraday bars."""
     result = {}
     o, h, l, c, v = (df_intraday['open'], df_intraday['high'],
                       df_intraday['low'], df_intraday['close'],
@@ -773,12 +639,7 @@ def compute_tier2(df_intraday: pd.DataFrame) -> Dict[str, Optional[float]]:
 
 
 def compute_tier3(df_intraday: pd.DataFrame) -> Dict[str, Optional[float]]:
-    """
-    Every-2-minute indicators. Call every M3 monitoring cycle.
-    Only computes indicators that change with the latest bar.
-
-    Cost: ~10 indicators, ~2ms on any number of bars (reads latest only).
-    """
+    """Compute per-cycle indicators from latest intraday bars."""
     result = {}
     if len(df_intraday) < 1:
         return result
@@ -817,11 +678,7 @@ def compute_tier3(df_intraday: pd.DataFrame) -> Dict[str, Optional[float]]:
 
 
 def merge_tiers(tier1: Dict, tier2: Dict, tier3: Dict) -> Dict[str, Optional[float]]:
-    """
-    Merge all three tiers into a complete indicator dict.
-    Tier 3 overrides Tier 2 overrides Tier 1 (fresher data wins).
-    Use this to assemble the full technical_indicators table row set.
-    """
+    """Merge tier dicts with later tiers overriding earlier ones."""
     merged = {}
     merged.update(tier1)   # Base: session-static
     merged.update(tier2)   # Overlay: 5-min refresh
@@ -860,14 +717,7 @@ def merge_tiers(tier1: Dict, tier2: Dict, tier3: Dict) -> Dict[str, Optional[flo
 
 def to_table_rows(ticker: str, indicators: Dict[str, Optional[float]],
                   timestamp: str) -> list:
-    """
-    Convert the flat dict from compute_all_indicators() into a list of
-    dicts suitable for inserting into the `technical_indicators` table.
-
-    Each row matches: {ticker, indicator_name, value, signal, timestamp}
-    - signal is derived from indicator value using standard thresholds
-    - None values are NOT included (A7 can't use missing indicators)
-    """
+    """Convert indicator dict to a list of table row dicts with derived signals."""
     rows = []
     for name, value in indicators.items():
         if value is None:

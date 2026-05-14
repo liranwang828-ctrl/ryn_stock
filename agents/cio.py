@@ -1,4 +1,4 @@
-import sys, os, json, argparse, subprocess, time, shutil
+﻿import sys, os, json, argparse, subprocess, time, shutil
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from agents.protocol import (BASE, BOARD_PATH, VERIFIED_PATH, STRATEGY_PATH,
@@ -25,12 +25,14 @@ AGENT_NAMES = {
 }
 
 def run(script, args, timeout=120):
+    """Run an agent script as a subprocess."""
     path = os.path.join(AGENTS_DIR, script + ".py")
     return subprocess.run([PYTHON, path] + args, cwd=BASE, timeout=timeout)
 
 def acquire_lock(symbol):
+    """Acquire a run lock, blocking if another analysis is in progress."""
     if os.path.exists(LOCK_PATH):
-        lock = json.load(open(LOCK_PATH))
+        lock = json.load(open(LOCK_PATH, encoding="utf-8"))
         age  = time.time() - lock.get("start_time", 0)
         if age < 600:
             print(f"[CIO] 已有分析进行中（{age:.0f}s），排队等待...")
@@ -40,10 +42,12 @@ def acquire_lock(symbol):
     return True
 
 def release_lock():
+    """Remove the run lock file."""
     try: os.remove(LOCK_PATH)
     except FileNotFoundError: pass
 
 def phase0(symbol):
+    """Fetch data and run verification for the given symbol."""
     print(f"[Phase 0] 拉取 {symbol} 数据...")
     r = run("data_agent", [symbol])
     if r.returncode == 2:
@@ -60,9 +64,10 @@ def phase0(symbol):
     return True
 
 def phase1(symbol):
+    """Run all 6 analysis agents in parallel and collect their findings."""
     print(f"[Phase 1] 并行启动 6 个分析 agent...")
     os.makedirs(FINDINGS_DIR, exist_ok=True)
-    open(BOARD_PATH, "w").close()
+    open(BOARD_PATH, "w", encoding="utf-8").close()
 
     procs = []
     for agent in ANALYSIS_AGENTS:
@@ -80,17 +85,14 @@ def phase1(symbol):
     for agent in ANALYSIS_AGENTS:
         path = os.path.join(FINDINGS_DIR, f"{AGENT_NAMES[agent]}.json")
         if os.path.exists(path):
-            msg = json.load(open(path))
+            msg = json.load(open(path, encoding="utf-8"))
             if msg:
                     atomic_append_jsonl(msg, BOARD_PATH)
     print("[Phase 1] 完成")
 
 
 def phase1_5(symbol):
-    """
-    Persona 层：7位大师读取所有 Domain Agent 报告，
-    通过 evaluate_with_questions 输出初始立场。
-    """
+    """Run the persona layer to collect master stances from domain findings."""
     print("[Phase 1.5] 大师层分析...")
     try:
         from agents.debate_engine import collect_domain_findings, collect_persona_stances
@@ -112,6 +114,7 @@ def phase1_5(symbol):
 
 
 def check_consensus(board):
+    """Check if the board has reached majority consensus with no unanswered challenges."""
     _AGENTS = ["TechAgent","FundAgent","MacroAgent","SentimentAgent","CommunityAgent","RiskAgent"]
     latest = {}
     for msg in board:
@@ -133,6 +136,7 @@ def check_consensus(board):
     return True
 
 def phase2(symbol):
+    """Run the debate phase with up to 2 rounds of agent challenges."""
     print("[Phase 2] 开始辩论...")
     for round_num in range(1, 3):
         print(f"[Phase 2] 第 {round_num} 轮")
@@ -155,7 +159,7 @@ def phase2(symbol):
                 continue
 
             if os.path.exists(out_path):
-                msg = json.load(open(out_path))
+                msg = json.load(open(out_path, encoding="utf-8"))
                 if not msg: continue
                 atomic_append_jsonl(msg, BOARD_PATH)
 
@@ -177,7 +181,7 @@ def phase2(symbol):
                             # 被质疑方的普通输出路径
                             normal_out = os.path.join(FINDINGS_DIR, f"{target_agent}_r{round_num}.json")
                             if os.path.exists(normal_out):
-                                resp = json.load(open(normal_out))
+                                resp = json.load(open(normal_out, encoding="utf-8"))
                                 if resp:
                                     atomic_append_jsonl(resp, BOARD_PATH)
                         except subprocess.TimeoutExpired:
@@ -195,14 +199,14 @@ def phase2(symbol):
                         pass
                     vout = os.path.join(FINDINGS_DIR, f"verifier_r{round_num}_{field}.json")
                     if os.path.exists(vout):
-                        vmsg = json.load(open(vout))
+                        vmsg = json.load(open(vout, encoding="utf-8"))
                     else:
                         vmsg = {"msg_type": "verify_response", "from": "VerifierAgent",
                                 "target_field": field, "result": "unresolvable",
                                 "reason": "timeout", "timestamp": datetime.now(timezone.utc).isoformat()}
                     atomic_append_jsonl(vmsg, BOARD_PATH)
 
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()]
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()]
         if check_consensus(board):
             print(f"[Phase 2] 共识达成，提前结束（第 {round_num} 轮）")
             break
@@ -211,9 +215,7 @@ def phase2(symbol):
 
 
 def phase2_persona(symbol, stances, question_type="日内/短线交易"):
-    """
-    Persona 层辩论协议：矛盾识别 + 定向回应（最多1轮）+ 加权裁决
-    """
+    """Run persona-layer debate: detect contradictions, targeted responses, and weighted synthesis."""
     if not stances:
         print("[Phase 2-Persona] 无大师立场数据，跳过")
         return {}
@@ -255,6 +257,7 @@ def phase2_persona(symbol, stances, question_type="日内/短线交易"):
 
 
 def main():
+    """Parse args and run the CIO analysis pipeline."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--phases", default="0123")
@@ -286,7 +289,7 @@ def main():
         if "3" in args.phases:
             print("[Phase 3] 安全检查...")
             from agents.safety_filter import check_all, print_report
-            data = json.load(open(VERIFIED_PATH))
+            data = json.load(open(VERIFIED_PATH, encoding="utf-8"))
             fields = data.get("fields", {})
             blocked, report = check_all(fields, args.symbol)
             print_report(report)

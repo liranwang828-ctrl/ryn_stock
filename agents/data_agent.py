@@ -1,4 +1,4 @@
-# agents/data_agent.py
+﻿# agents/data_agent.py
 """Usage: data_agent.py <symbol> [--light] [--full]"""
 import sys, os, json, argparse
 from datetime import datetime, timezone
@@ -24,17 +24,20 @@ def _to_python(v):
     return v
 
 def load_quota():
+    """Load today's API quota usage, resetting if date has changed."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if os.path.exists(QUOTA_PATH):
-        q = json.load(open(QUOTA_PATH))
+        q = json.load(open(QUOTA_PATH, encoding="utf-8"))
         if q.get("date") == today:
             return q
     return {"date": today, "used": 0}
 
 def save_quota(q):
+    """Persist current API quota state to disk."""
     atomic_write_json(q, QUOTA_PATH)
 
 def fetch_primary(symbol, light=False):
+    """Fetch all primary data from yfinance: price history, fundamentals, and indicators."""
     t = yf.Ticker(symbol)
     hist = fetch_with_retry(lambda: t.history(period="2y"))
     if hist.empty:
@@ -106,6 +109,7 @@ def fetch_primary(symbol, light=False):
 
         # VCP: last 3 five-day windows price range shrinking
         def vcp_check(h):
+            """Detect Volatility Contraction Pattern via shrinking 5-day ranges."""
             if len(h) < 15: return False
             r1 = float(h["High"].iloc[-5:].max()   - h["Low"].iloc[-5:].min())
             r2 = float(h["High"].iloc[-10:-5].max() - h["Low"].iloc[-10:-5].min())
@@ -192,7 +196,7 @@ def fetch_primary(symbol, light=False):
         fields["community_bull_pct"]= 0.5   # default; overwritten by CommunityAgent
         # Macro config from watchlist.json (user-configurable)
         try:
-            wl = json.load(open(os.path.join(BASE, "watchlist.json")))
+            wl = json.load(open(os.path.join(BASE, "watchlist.json"), encoding="utf-8"))
             mc = wl.get("macro_config", {})
         except Exception:
             mc = {}
@@ -262,6 +266,7 @@ def fetch_secondary(symbol, quota):
         return None, quota
 
 def main():
+    """Parse args, fetch primary and secondary data, and write raw data JSONs."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--light", action="store_true")

@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -10,11 +10,13 @@ PRICE_THRESHOLD  = 0.005
 VOLUME_THRESHOLD = 0.05
 
 def pct_delta(a, b):
+    """Return absolute percentage difference between two values."""
     if b == 0:
         return float("inf")
     return abs(a - b) / abs(b)
 
 def verify_fields(primary_fields, secondary_fields):
+    """Cross-validate primary fields against secondary source, flagging disputes."""
     result = {}
     for field, pdata in primary_fields.items():
         val_a = pdata["value"]
@@ -35,13 +37,14 @@ def verify_fields(primary_fields, secondary_fields):
     return result
 
 def main():
+    """Parse args, verify fields against secondary source, and write verified JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--field", default=None)
     parser.add_argument("--round", type=int, default=0)
     args = parser.parse_args()
 
-    primary   = json.load(open(os.path.join(BASE, "data_raw_primary.json")))
-    secondary = json.load(open(os.path.join(BASE, "data_raw_secondary.json")))
+    primary   = json.load(open(os.path.join(BASE, "data_raw_primary.json"), encoding="utf-8"))
+    secondary = json.load(open(os.path.join(BASE, "data_raw_secondary.json"), encoding="utf-8"))
     sec_avail = secondary.get("secondary_available", False)
     sec_fields = secondary["fields"] if sec_avail else {}
 

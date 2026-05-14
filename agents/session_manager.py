@@ -1,4 +1,4 @@
-"""
+﻿"""
 session_manager.py — 工作流编排器
 节点状态 / A轨道提醒队列 / 自然语言文本路由
 
@@ -28,20 +28,24 @@ NODE_NAMES = {
 }
 
 def _state_path(date_str=None):
+    """Return the file path for the session state JSON of the given date."""
     d = date_str or datetime.now().strftime("%Y%m%d")
     return os.path.join(BASE, f"session_state_{d}.json")
 
 def _load_state(date_str=None):
+    """Load the session state dict for the given date, or return defaults."""
     p = _state_path(date_str)
     if os.path.exists(p):
-        return json.load(open(p))
+        return json.load(open(p, encoding="utf-8"))
     return {"node": 1, "active_symbols": [], "alert_queue": []}
 
 def _save_state(state, date_str=None):
+    """Write the session state dict to its date-keyed JSON file."""
     p = _state_path(date_str)
     atomic_write_json(state, p, indent=2)
 
 def advance_node(node: int, date_str=None) -> str:
+    """Advance the workflow node and persist the new state."""
     if node < 1 or node > 6:
         raise ValueError(f"node must be 1-6, got {node}")
     state = _load_state(date_str)
@@ -50,6 +54,7 @@ def advance_node(node: int, date_str=None) -> str:
     return f"节点推进 → {NODE_NAMES[node]}"
 
 def get_status(date_str=None) -> dict:
+    """Return a dict with current node, active symbols, and pending alert count."""
     state = _load_state(date_str)
     return {
         "node":           state["node"],
@@ -59,6 +64,7 @@ def get_status(date_str=None) -> dict:
     }
 
 def add_symbol(sym: str, date_str=None):
+    """Add a symbol to the active watchlist for the session."""
     state = _load_state(date_str)
     syms = state.setdefault("active_symbols", [])
     if sym not in syms:
@@ -70,6 +76,7 @@ BOARD_FILE = "discussion_board.jsonl"
 
 def push_alert(type_: str, symbol: str, message: str, data: dict,
                date_str=None):
+    """Push an alert to both the discussion board log and the in-memory alert queue."""
     now = datetime.now(timezone.utc)
     entry = {
         "time":    now.strftime("%H:%M"),
@@ -80,7 +87,7 @@ def push_alert(type_: str, symbol: str, message: str, data: dict,
     }
     # 1. 写入 discussion_board.jsonl（永久日志）
     board = os.path.join(BASE, BOARD_FILE)
-    with open(board, "a") as f:
+    with open(board, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     # 2. 加入待读队列
     state = _load_state(date_str)
@@ -120,11 +127,7 @@ except ImportError:
 
 
 def handle_text(text: str, date_str=None):
-    """
-    路由用户文本：
-    - 以交易动词开头 → 调用 entry_guard.handle_trade_text
-    - 其他 → 返回 None（正常对话）
-    """
+    """Route user text to entry_guard if it starts with a trade verb, otherwise return None."""
     if _TRADE_PATTERN.match(text.strip()):
         if handle_trade_text:
             return handle_trade_text(text.strip(), date_str)
@@ -149,10 +152,7 @@ NODE_NEXT_PROMPTS = {
 
 
 def run_node(node: int, symbols=None, date_str=None) -> str:
-    """
-    执行当前节点的自动脚本，返回输出摘要 + 下一步提示。
-    节点转换由用户确认后调用。
-    """
+    """Execute the current node's automated script and return output summary with next prompt."""
     state = _load_state(date_str)
     if symbols:
         state["active_symbols"] = list(symbols)

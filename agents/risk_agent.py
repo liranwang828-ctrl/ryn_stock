@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
 log = get_logger(__name__)
@@ -6,6 +6,7 @@ from agents.protocol import (BASE, VERIFIED_PATH, BOARD_PATH, FINDINGS_DIR,
                               make_finding, make_revision, compute_phase2_response)
 
 def analyze(symbol, fields):
+    """Score risk metrics (beta, ATR, RSI, short interest) and compute stop-loss."""
     close = fields.get("close", {}).get("value", 0)
     beta  = fields.get("beta",  {}).get("value")
     lo52  = fields.get("52w_low",  {}).get("value")
@@ -70,23 +71,24 @@ def analyze(symbol, fields):
     return signal, confidence, points, refs, analysis, conclusion, stop_loss
 
 def main():
+    """Parse args, run risk analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
     args = parser.parse_args()
-    data = json.load(open(VERIFIED_PATH))
+    data = json.load(open(VERIFIED_PATH, encoding="utf-8"))
     signal, conf, points, refs, analysis, conclusion, stop_loss = analyze(args.symbol, data["fields"])
     os.makedirs(FINDINGS_DIR, exist_ok=True)
     from agents.protocol import apply_persona
     _data = {k: v.get("value") if isinstance(v, dict) else v for k, v in data["fields"].items()}
     if args.round is None:
-        _board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        _board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = make_finding("RiskAgent", args.symbol, signal, conf, points, refs, analysis=analysis, conclusion=conclusion)
         msg["stop_loss"] = stop_loss
         msg = apply_persona(msg, _data, "RiskAgent", _board)
         atomic_write_json(msg, os.path.join(FINDINGS_DIR, "RiskAgent.json"), indent=2)
     else:
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = compute_phase2_response("RiskAgent", args.symbol, board,
                                       signal, conf, points, refs, _data)
         if not msg:

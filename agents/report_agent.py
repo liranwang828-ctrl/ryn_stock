@@ -1,5 +1,6 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 from datetime import datetime, timezone
+sys.stdout.reconfigure(encoding='utf-8')
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from agents.protocol import BASE, STRATEGY_PATH, BOARD_PATH
 from jinja2 import Environment, FileSystemLoader
@@ -9,18 +10,22 @@ SIGNAL_COLOR = {"bullish": "🟢", "bearish": "🔴", "neutral": "🟡"}
 W = 62   # report width
 
 def hr(char="─", w=W):
+    """Return a horizontal rule string of the given character and width."""
     return char * w
 
 def section(title):
+    """Return a centered section header string."""
     pad = (W - len(title) - 2) // 2
     return f"{'─'*pad} {title} {'─'*(W - pad - len(title) - 2)}"
 
 def fmt_ts(ts):
+    """Format an ISO timestamp for display (YYYY-MM-DD HH:MM UTC)."""
     return ts[:16].replace("T", " ") + " UTC" if ts else ""
 
 def load_board():
+    """Read and parse the discussion board JSONL file."""
     if os.path.exists(BOARD_PATH):
-        return [json.loads(l) for l in open(BOARD_PATH) if l.strip()]
+        return [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()]
     return []
 
 def latest_per_agent(board):
@@ -35,7 +40,7 @@ def latest_per_agent(board):
     return latest
 
 def render_agent_block(agent, msg, label="参与评分"):
-    """渲染单个 agent 的完整分析块。"""
+    """Render a single agent's full analysis block for terminal output."""
     lines = []
     name   = agent.replace("Agent", "")
     master = msg.get("master", "")
@@ -61,7 +66,7 @@ def render_agent_block(agent, msg, label="参与评分"):
     return lines
 
 def render_news(board, agent_msgs):
-    """从 SentimentAgent 的 key_points 中提取新闻。"""
+    """Extract news items from SentimentAgent key_points for display."""
     lines = []
     sent_msg = agent_msgs.get("SentimentAgent", {})
     # 搜集含 📈/📉/📰 的新闻行
@@ -79,7 +84,7 @@ def render_news(board, agent_msgs):
     return lines
 
 def render_debate(board):
-    """把讨论板按时间线渲染成对话格式，突出 challenge ↔ 回应链。"""
+    """Render the debate board as a chronological conversation highlighting challenge-response chains."""
     debate_msgs = [m for m in board
                    if m.get("msg_type") in
                    ("challenge","revision","endorsement","data_challenge","verify_response")]
@@ -172,6 +177,7 @@ def render_debate(board):
     return lines
 
 def terminal_summary(result, board=None):
+    """Build the full terminal-formatted analysis report string."""
     if board is None:
         board = load_board()
 
@@ -294,6 +300,7 @@ def terminal_summary(result, board=None):
     return "\n".join(lines)
 
 def write_html(result, board=None):
+    """Render the analysis report as HTML using the Jinja2 template."""
     if board is None:
         board = load_board()
     env    = Environment(loader=FileSystemLoader(os.path.join(BASE, "templates")))
@@ -301,18 +308,19 @@ def write_html(result, board=None):
     ts_tag = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H")
     os.makedirs(os.path.join(BASE, "reports"), exist_ok=True)
     path   = os.path.join(BASE, "reports", f"{ts_tag}.html")
-    open(path, "w").write(tmpl.render(**result, board=board,
+    open(path, "w", encoding="utf-8").write(tmpl.render(**result, board=board,
                                       agent_msgs=latest_per_agent(board)))
     return path
 
 def main():
+    """Load strategy results, render HTML report, and print terminal summary."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     args   = parser.parse_args()
-    result = json.load(open(STRATEGY_PATH))
+    result = json.load(open(STRATEGY_PATH, encoding="utf-8"))
     board  = load_board()
-    print(terminal_summary(result, board))
     path = write_html(result, board)
+    print(terminal_summary(result, board))
     print(f"[报告] 已保存: {path}")
 
 if __name__ == "__main__":

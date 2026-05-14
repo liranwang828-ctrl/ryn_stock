@@ -24,6 +24,7 @@ QUESTION_PATTERNS = {
 }
 
 def classify_question(question: str, symbols: list = None) -> dict:
+    """Classify a user question into a type and assign primary/jury masters."""
     symbols = symbols or _extract_symbols(question)
     if symbols and len(symbols) >= 2:
         q_type = "比较分析"
@@ -42,10 +43,12 @@ def classify_question(question: str, symbols: list = None) -> dict:
             "primary_masters": cfg["primary"], "jury_masters": cfg["jury"]}
 
 def get_primary_masters(question_type: str) -> list:
+    """Return the list of primary master names for a given question type."""
     cfg = QUESTION_TYPE_MASTERS.get(question_type, QUESTION_TYPE_MASTERS["日内/短线交易"])
     return cfg["primary"]
 
 def _extract_symbols(question: str) -> list:
+    """Extract stock ticker symbols from a question string."""
     matches = re.findall(r'\b([A-Z]{2,5})\b', question)
     stop_words = {"AI","ETF","US","OK","RS","T1","T2","T3","MA","RSI","ATR","VIX","SPY","QQQ","VWAP"}
     return [m for m in matches if m not in stop_words]

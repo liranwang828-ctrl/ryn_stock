@@ -1,4 +1,4 @@
-# agents/protocol.py
+﻿# agents/protocol.py
 import os
 from datetime import datetime, timezone
 
@@ -15,9 +15,11 @@ LOCK_PATH     = os.path.join(BASE, "run.lock")
 QUOTA_PATH    = os.path.join(BASE, "av_quota.json")
 
 def _now():
+    """Return the current UTC timestamp as an ISO string."""
     return datetime.now(timezone.utc).isoformat()
 
 def make_finding(agent, symbol, signal, confidence, key_points, data_refs, revision=0, analysis=None, conclusion=None):
+    """Build an initial_finding message dict."""
     return {"msg_type": "initial_finding", "from": agent, "symbol": symbol,
             "signal": signal, "confidence": confidence, "revision": revision,
             "key_points": key_points, "data_refs": data_refs, "timestamp": _now(),
@@ -25,31 +27,36 @@ def make_finding(agent, symbol, signal, confidence, key_points, data_refs, revis
             "conclusion": conclusion or {"judgment": "", "boundary": "", "anticipated_challenge": ""}}
 
 def make_revision(agent, symbol, signal, confidence, key_points, data_refs, revision, analysis=None, conclusion=None):
+    """Build a revision message dict from a finding."""
     msg = make_finding(agent, symbol, signal, confidence, key_points, data_refs, revision, analysis, conclusion)
     msg["msg_type"] = "revision"
     return msg
 
 def make_challenge(from_agent, target, content, data_refs):
+    """Build a challenge message dict."""
     return {"msg_type": "challenge", "from": from_agent, "target": target,
             "content": content, "data_refs": data_refs, "timestamp": _now()}
 
 def make_endorsement(from_agent, target, content):
+    """Build an endorsement message dict."""
     return {"msg_type": "endorsement", "from": from_agent, "target": target,
             "content": content, "timestamp": _now()}
 
 def make_data_challenge(from_agent, target_field, reason):
+    """Build a data_challenge message dict."""
     return {"msg_type": "data_challenge", "from": from_agent,
             "target_field": target_field, "reason": reason, "timestamp": _now()}
 
 import glob as _glob
 
 def find_persona(agent_name, persona_dir=None):
+    """Find the persona JSON assigned to the given agent name."""
     if persona_dir is None:
         persona_dir = os.path.join(BASE, "personas")
     import json as _json
     for path in _glob.glob(os.path.join(persona_dir, "*.json")):
         try:
-            p = _json.load(open(path))
+            p = _json.load(open(path, encoding="utf-8"))
             if p.get("assigned_to") == agent_name:
                 return p
         except Exception:
@@ -57,6 +64,7 @@ def find_persona(agent_name, persona_dir=None):
     return None
 
 def apply_persona(msg, data, agent_name, board=None, persona_dir=None):
+    """Apply persona rules to a message, overlaying master signal and confidence."""
     import json as _json
     from agents.persona_engine import PersonaEngine
     persona = find_persona(agent_name, persona_dir)
@@ -88,13 +96,7 @@ _ANALYSIS_AGENTS = ["TechAgent","FundAgent","MacroAgent","SentimentAgent","Commu
 
 def compute_phase2_response(agent_name, symbol, board,
                              signal, confidence, points, data_refs, data_dict):
-    """
-    Phase 2 决策：
-    - 若被质疑且未回应 → 写回应型 revision
-    - 若有 debate_challenge 且存在对立 agent → 写 challenge 消息
-    - 否则 → 普通 revision
-    返回消息 dict，空 dict 表示跳过（revision 已达上限）。
-    """
+    """Build a Phase 2 response message (revision, challenge, or endorsement) based on board state."""
     own_msgs = [m for m in board if m.get("from") == agent_name
                 and m.get("msg_type") in ("initial_finding", "revision")]
     own_revision = max((m.get("revision", 0) for m in own_msgs), default=0)

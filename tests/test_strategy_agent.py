@@ -1,4 +1,4 @@
-import json, os, shutil, subprocess
+﻿import json, os, shutil, subprocess
 PYTHON  = "/tool/pandora/bin/python3.12"
 BASE    = "/home/lirawang/stock_team"
 FIXTURE = f"{BASE}/tests/fixtures"
@@ -11,7 +11,7 @@ def test_strategy_agent_writes_result():
     r = subprocess.run([PYTHON, f"{BASE}/agents/strategy_agent.py", "AMD"],
                        capture_output=True, text=True, cwd=BASE)
     assert r.returncode == 0
-    result = json.load(open(f"{BASE}/strategy_result.json"))
+    result = json.load(open(f"{BASE}/strategy_result.json", encoding="utf-8"))
     assert result["symbol"] == "AMD"
     assert result["signal"] in ("bullish", "bearish", "neutral")
     assert 0 <= result["confidence"] <= 100
@@ -21,7 +21,7 @@ def test_strategy_agent_writes_result():
 def test_strategy_weighted_score_bullish_majority():
     setup()
     subprocess.run([PYTHON, f"{BASE}/agents/strategy_agent.py", "AMD"], cwd=BASE)
-    result = json.load(open(f"{BASE}/strategy_result.json"))
+    result = json.load(open(f"{BASE}/strategy_result.json", encoding="utf-8"))
     assert result["signal"] == "bullish"
 
 def test_strategy_excludes_veto_agent():
@@ -40,7 +40,7 @@ def test_strategy_excludes_veto_agent():
         for m in new_board:
             f.write(json.dumps(m) + "\n")
     subprocess.run([PYTHON, f"{BASE}/agents/strategy_agent.py", "AMD"], cwd=BASE)
-    result = json.load(open(f"{BASE}/strategy_result.json"))
+    result = json.load(open(f"{BASE}/strategy_result.json", encoding="utf-8"))
     assert "veto_agents" in result
     assert "TechAgent" in result["veto_agents"]
 
@@ -56,5 +56,5 @@ def test_strategy_handles_null_stop_loss():
         for m in board:
             f.write(json.dumps(m) + "\n")
     subprocess.run([PYTHON, f"{BASE}/agents/strategy_agent.py", "AMD"], cwd=BASE)
-    result = json.load(open(f"{BASE}/strategy_result.json"))
+    result = json.load(open(f"{BASE}/strategy_result.json", encoding="utf-8"))
     assert "stop_loss" in result  # key exists, may be None

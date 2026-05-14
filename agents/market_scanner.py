@@ -1,4 +1,4 @@
-"""
+﻿"""
 市场扫描器 — 5维分析矩阵
 维度：个股信号 × 板块热度 × 板块内地位 × 催化剂 × 拥挤度
 
@@ -128,6 +128,7 @@ def score_sector_position(stock_ret_m1, sector_rel_m1):
         return "显著落后", "📉", 1
 
 def _spy_m1():
+    """Return SPY one-month return, cached."""
     if "SPY" not in SPY_CACHE:
         SPY_CACHE["SPY"] = yf.Ticker("SPY").history(period="90d")
     h = SPY_CACHE["SPY"]
@@ -154,7 +155,7 @@ def score_catalyst(sym, news_headlines=None):
         profile = {}
         if os.path.exists(COMPANY_CFG):
             try:
-                profiles = json.load(open(COMPANY_CFG))
+                profiles = json.load(open(COMPANY_CFG, encoding="utf-8"))
                 profile  = profiles.get(sym, {})
             except: pass
 
@@ -377,7 +378,7 @@ def scan_all_sectors(symbols=None, verbose=True):
     扫描所有板块标的，输出5维评估表
     symbols: 指定标的列表，None则扫描全部
     """
-    cfg = json.load(open(SECTOR_CFG)) if os.path.exists(SECTOR_CFG) else {"sectors": {}}
+    cfg = json.load(open(SECTOR_CFG, encoding="utf-8")) if os.path.exists(SECTOR_CFG) else {"sectors": {}}
     overlap = cfg.get("sector_overlap_map", {})
 
     # 构建 sym→sector_etf 映射
@@ -415,6 +416,7 @@ def scan_all_sectors(symbols=None, verbose=True):
     return results
 
 def _print_scan_results(results):
+    """Pretty-print the 5-dimension scan results to console."""
     now = datetime.now(timezone.utc)
     et  = (now.hour - 4) % 24
     print(f"\n{'═'*72}")

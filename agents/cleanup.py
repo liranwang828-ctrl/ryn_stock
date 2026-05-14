@@ -17,13 +17,16 @@ BASE    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DRY_RUN = "--dry-run" in sys.argv
 
 def log(msg):
+    """Print a cleanup action with DRY/DEL prefix."""
     print(f"  {'[DRY]' if DRY_RUN else '[DEL]'} {msg}")
 
 def rm(path):
+    """Remove a file unless in dry-run mode."""
     if not DRY_RUN:
         os.remove(path)
 
 def cutoff(days):
+    """Return the cutoff date string N days ago."""
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
 
 freed = 0
@@ -84,13 +87,13 @@ for acct in ["strict","base","loose"]:
         continue
     size = os.path.getsize(evo)
     if size > MAX_EVO_MB * 1024 * 1024:
-        with open(evo) as f:
+        with open(evo, encoding="utf-8") as f:
             lines = f.readlines()
         keep = lines[-KEEP_LINES:]
         log(f"paper_trading/{acct}/evolution.jsonl 轮转  "
             f"({size//1024//1024}MB → 保留{KEEP_LINES}条)")
         if not DRY_RUN:
-            with open(evo, "w") as f:
+            with open(evo, "w", encoding="utf-8") as f:
                 f.writelines(keep)
         freed += size - sum(len(l) for l in keep)
 

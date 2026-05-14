@@ -1,4 +1,4 @@
-"""
+﻿"""
 统一轮询脚本 — 集成快照记录 + ATR止损建议 + RS双轨分析 + 盘初场景框架
 用法：python3.12 agents/poll.py AAOI RKLB SNXX INTC [--lev AAOX:2]
 """
@@ -55,7 +55,7 @@ def read_quick_debate(sym):
     if not os.path.exists(path):
         return None
     try:
-        data = json.load(open(path))
+        data = json.load(open(path, encoding="utf-8"))
         # 只显示最近10分钟内的结果
         t_str = data.get("time", "")
         now   = datetime.now(timezone.utc)
@@ -332,7 +332,7 @@ def load_premarket(date_str):
     """读取盘前预测，返回 (stocks_dict, full_data)"""
     path = PREMARKET_PATH_TPL.format(date_str)
     if os.path.exists(path):
-        data = json.load(open(path))
+        data = json.load(open(path, encoding="utf-8"))
         return data.get("stocks", {}), data
     return {}, {}
 
@@ -345,7 +345,7 @@ def update_premarket_obs(date_str, sym, updates):
     if not os.path.exists(path):
         return
     try:
-        data = json.load(open(path))
+        data = json.load(open(path, encoding="utf-8"))
         if sym in data.get("stocks", {}):
             for k, v in updates.items():
                 if v is not None:
@@ -499,7 +499,7 @@ def classify_pattern(a, spy_chg, sector_chg=None):
 def load_daily_scenarios(date_str):
     path = SCENARIO_PATH_TPL.format(date_str)
     if os.path.exists(path):
-        return json.load(open(path))
+        return json.load(open(path, encoding="utf-8"))
     return {}
 
 def save_daily_scenarios(date_str, data):
@@ -928,7 +928,7 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
             from datetime import date as _date
             pm_file = os.path.join(_STOCK_BASE, f"premarket_analysis_{_date.today()}.json")
             if os.path.exists(pm_file):
-                _pm = json.load(open(pm_file))
+                _pm = json.load(open(pm_file, encoding="utf-8"))
                 pm_catalyst = _pm.get("stocks",{}).get(sym,{}).get("catalyst_strength",1)
         except Exception:
             pass
@@ -1009,7 +1009,7 @@ def load_config():
     cfg_dir = os.path.join(BASE, "config")
 
     # 轮询配置
-    poll_cfg = json.load(open(os.path.join(cfg_dir, "poll_config.json")))
+    poll_cfg = json.load(open(os.path.join(cfg_dir, "poll_config.json"), encoding="utf-8"))
     symbols   = poll_cfg.get("default_symbols", [])
     sector_map = poll_cfg.get("sector_map", {})
 
@@ -1017,7 +1017,7 @@ def load_config():
     lev_map = {}
     lev_cfg_path = os.path.join(cfg_dir, "leveraged_pairs.json")
     if os.path.exists(lev_cfg_path):
-        lev_cfg = json.load(open(lev_cfg_path))
+        lev_cfg = json.load(open(lev_cfg_path, encoding="utf-8"))
         for base, info in lev_cfg.items():
             if base.startswith("_"): continue
             lev_map[base] = (info["sym"], info["leverage"])
@@ -1026,7 +1026,7 @@ def load_config():
     cost_map = {}
     pos_path = os.path.join(cfg_dir, "positions.json")
     if os.path.exists(pos_path):
-        pos_cfg = json.load(open(pos_path))
+        pos_cfg = json.load(open(pos_path, encoding="utf-8"))
         for sym, info in pos_cfg.get("positions", {}).items():
             cost_map[sym] = float(info["cost"])
 
@@ -1047,7 +1047,7 @@ def update_position(sym, cost, shares=None, date=None):
     """更新持仓配置（供外部调用）"""
     _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     pos_path = os.path.join(_base, "config", "positions.json")
-    pos_cfg = json.load(open(pos_path))
+    pos_cfg = json.load(open(pos_path, encoding="utf-8"))
     pos_cfg["positions"][sym] = {
         "cost": cost,
         "shares": shares or 0,
@@ -1060,7 +1060,7 @@ def remove_position(sym):
     """清除持仓（止损/止盈出场后调用）"""
     _base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     pos_path = os.path.join(_base, "config", "positions.json")
-    pos_cfg = json.load(open(pos_path))
+    pos_cfg = json.load(open(pos_path, encoding="utf-8"))
     if sym in pos_cfg["positions"]:
         del pos_cfg["positions"][sym]
         json.dump(pos_cfg, open(pos_path, "w"), indent=2)

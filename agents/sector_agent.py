@@ -1,4 +1,4 @@
-"""SectorAgent — 自动识别板块、找同行标的、计算相对强弱"""
+﻿"""SectorAgent — 自动识别板块、找同行标的、计算相对强弱"""
 import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
@@ -302,6 +302,7 @@ def fetch_relative_strength(symbol, peers, etf, period="10d"):
     return results
 
 def analyze(symbol):
+    """Identify sector, compute relative strength vs ETF and peers, rank within sector."""
     t    = yf.Ticker(symbol)
     info = fetch_with_retry(lambda: t.info)
 
@@ -443,6 +444,7 @@ def analyze(symbol):
     }, analysis, conclusion
 
 def main():
+    """Parse args, run sector analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
@@ -452,9 +454,9 @@ def main():
     signal, conf, points, refs, extra, analysis, conclusion = analyze(args.symbol)
     _data = {}
     if os.path.exists(VERIFIED_PATH):
-        raw = json.load(open(VERIFIED_PATH)).get("fields", {})
+        raw = json.load(open(VERIFIED_PATH, encoding="utf-8")).get("fields", {})
         _data = {k: v.get("value") if isinstance(v, dict) else v for k, v in raw.items()}
-    board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+    board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
 
     if args.round is None:
         msg = make_finding("SectorAgent", args.symbol, signal, conf, points, refs,

@@ -1,4 +1,4 @@
-import json, os, subprocess, sys, tempfile
+﻿import json, os, subprocess, sys, tempfile
 PYTHON = "/tool/pandora/bin/python3.12"
 BASE   = "/home/lirawang/stock_team"
 
@@ -15,7 +15,7 @@ def test_data_agent_writes_primary_json():
     assert r.returncode == 0
     path = f"{BASE}/data_raw_primary.json"
     assert os.path.exists(path)
-    data = json.load(open(path))
+    data = json.load(open(path, encoding="utf-8"))
     assert data["symbol"] == "AMD"
     assert "close" in data["fields"]
     assert "volume" in data["fields"]
@@ -27,7 +27,7 @@ def test_data_agent_invalid_symbol_exits_2():
 def test_data_agent_full_mode_has_persona_fields():
     r = run_agent(["AMD"])
     assert r.returncode == 0
-    data = json.load(open(f"{BASE}/data_raw_primary.json"))
+    data = json.load(open(f"{BASE}/data_raw_primary.json", encoding="utf-8"))
     fields = data["fields"]
     for required in ["ma50", "ma150", "ma200", "volume_breakout_ratio",
                      "p_fcf", "de_ratio", "gross_margin", "price_chg_3m",

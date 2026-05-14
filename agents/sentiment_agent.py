@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
 log = get_logger(__name__)
@@ -10,6 +10,7 @@ class VADERSentiment:
     """Compact VADER sentiment analyzer. Falls back to financial lexicon if NLTK unavailable."""
 
     def __init__(self):
+        """Initialize with VADER from NLTK if available, otherwise use fallback."""
         self._analyzer = None
         try:
             from nltk.sentiment import SentimentIntensityAnalyzer
@@ -23,6 +24,7 @@ class VADERSentiment:
             pass
 
     def compound(self, text):
+        """Return VADER compound score for text, falling back to financial lexicon."""
         if not text or not isinstance(text, str):
             return 0.0
         if self._analyzer:
@@ -30,6 +32,7 @@ class VADERSentiment:
         return self._fallback(text)
 
     def _fallback(self, text):
+        """Score text using hardcoded financial bullish/bearish word lists."""
         text_l = text.lower()
         pos = {'beat', 'raise', 'upgrade', 'growth', 'profit', 'record', 'strong',
                'positive', 'outperform', 'buyback', 'dividend', 'bull', 'long',
@@ -59,6 +62,7 @@ _vader = None
 
 
 def _get_vader():
+    """Return cached VADERSentiment singleton."""
     global _vader
     if _vader is None:
         _vader = VADERSentiment()
@@ -85,6 +89,7 @@ def analyze_news(headlines):
     return news_points, int(score)
 
 def analyze(symbol, fields):
+    """Score analyst ratings, target price, and news sentiment into a signal with confidence."""
     rec_val  = fields.get("analyst_rec",  {}).get("value")
     rec_v    = fields.get("analyst_rec",  {}).get("verified", False)
     tgt_val  = fields.get("target_price", {}).get("value")
@@ -176,12 +181,13 @@ def analyze(symbol, fields):
     return signal, confidence, points or ["机构数据不足"], refs, analysis, conclusion
 
 def main():
+    """Parse args, run sentiment analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
     args = parser.parse_args()
 
-    data   = json.load(open(VERIFIED_PATH))
+    data   = json.load(open(VERIFIED_PATH, encoding="utf-8"))
     fields = data["fields"]
     _data  = {k: v.get("value") if isinstance(v, dict) else v for k, v in fields.items()}
     signal, conf, points, refs, analysis, conclusion = analyze(args.symbol, fields)
@@ -189,12 +195,12 @@ def main():
 
     if args.round is None:
         msg = make_finding("SentimentAgent", args.symbol, signal, conf, points, refs, analysis=analysis, conclusion=conclusion)
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         from agents.protocol import apply_persona
         msg = apply_persona(msg, _data, "SentimentAgent", board)
         atomic_write_json(msg, os.path.join(FINDINGS_DIR, "SentimentAgent.json"), indent=2)
     else:
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = compute_phase2_response("SentimentAgent", args.symbol, board,
                                       signal, conf, points, refs, _data)
         if not msg:

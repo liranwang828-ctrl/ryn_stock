@@ -1,4 +1,4 @@
-"""
+﻿"""
 模拟盘交易引擎 — 自我进化平台（三账号A/B测试版）
 
 账号：strict（严格≥8.0）/ base（基准≥7.5）/ loose（宽松≥6.5）
@@ -22,6 +22,7 @@ ACCT_CFG  = os.path.join(PT_DIR, "accounts.json")
 ACCOUNTS  = ["strict", "base", "loose"]
 
 def _paths(acct):
+    """Return the file paths dict for a paper trading account."""
     d = os.path.join(PT_DIR, acct)
     return {
         "portfolio":  os.path.join(d, "portfolio.json"),
@@ -30,8 +31,9 @@ def _paths(acct):
     }
 
 def _load_acct_cfg(acct):
+    """Load account configuration, falling back to defaults."""
     if os.path.exists(ACCT_CFG):
-        return json.load(open(ACCT_CFG)).get(acct, {})
+        return json.load(open(ACCT_CFG, encoding="utf-8")).get(acct, {})
     defaults = {"strict":{"entry_score_threshold":8.0,"entry_rs_threshold":2.0,"max_positions":4},
                 "base":  {"entry_score_threshold":7.5,"entry_rs_threshold":1.5,"max_positions":6},
                 "loose": {"entry_score_threshold":5.0,"entry_rs_threshold":0.8,"max_positions":6}}
@@ -39,40 +41,48 @@ def _load_acct_cfg(acct):
 
 # ── 组合读写 ────────────────────────────────────────────────
 def load_portfolio(acct="base"):
+    """Load portfolio from disk, returning a default if missing."""
     p = _paths(acct)
     if os.path.exists(p["portfolio"]):
-        return json.load(open(p["portfolio"]))
+        return json.load(open(p["portfolio"], encoding="utf-8"))
     return {"account":acct,"cash":100000,"initial_cash":100000,
             "positions":{},"shadow_positions":{}}
 
 def save_portfolio(port, acct="base"):
+    """Atomically write portfolio to disk."""
     atomic_write_json(port, _paths(acct)["portfolio"], indent=2)
 
 def log_trade(record, acct="base"):
+    """Append a trade record to the account's trades JSONL file."""
     with open(_paths(acct)["trades"],"a") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 def log_evolution(record, acct="base"):
+    """Append an evolution record to the account's evolution JSONL file."""
     with open(_paths(acct)["evolution"],"a") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 # ── 仓位计算 ────────────────────────────────────────────────
 def calc_stop(cur, vwap, atr14):
+    """Calculate stop-loss price: VWAP minus ATR buffer with anti-crowding noise."""
     noise = round(random.uniform(0.003, 0.008), 4)
     return round((vwap - atr14 * 0.3) * (1 - noise), 2)
 
 def calc_targets(cur, atr14, mode="intraday"):
+    """Calculate target1 and target2 based on price and ATR for the given mode."""
     if mode == "swing":
         return round(cur + atr14, 2), round(cur + atr14 * 2, 2)
     return round(cur + atr14 * 0.5, 2), round(cur + atr14, 2)
 
 def portfolio_equity(portfolio, live_prices):
+    """Compute total portfolio equity: cash plus mark-to-market positions."""
     eq = portfolio["cash"]
     for sym, pos in portfolio["positions"].items():
         eq += pos["shares"] * live_prices.get(sym, pos["cost"])
     return eq
 
 def calc_shares(portfolio, cur, stop, live_prices, acct="base"):
+    """Determine share size based on risk and position cap rules."""
     cfg    = _load_acct_cfg(acct)
     equity = portfolio_equity(portfolio, live_prices)
     risk   = equity * cfg.get("risk_per_trade_pct", 0.01)
@@ -276,6 +286,7 @@ def try_add_tranche(sym, cur, vwap, vol_ratio, rsi3, hist, qqq_5m,
 
 # ── 出场 ────────────────────────────────────────────────────
 def check_exits(sym, cur, hi=None, lo=None, acct="base"):
+    """Check and execute stop-loss, target1, or target2 exits for a position."""
     portfolio = load_portfolio(acct)
     pos  = portfolio["positions"].get(sym)
     if not pos:
@@ -365,6 +376,7 @@ def eod_close_all(live_prices, acct="base"):
 
 # ── 状态显示 ────────────────────────────────────────────────
 def get_status(live_prices=None, accounts=None):
+    """Return a formatted multi-account portfolio status string."""
     lp    = live_prices or {}
     accts = accounts or ACCOUNTS
     lines = ["── 模拟盘状态 ──"]
@@ -404,7 +416,7 @@ def get_autonomous_watchlist(user_active=True, user_symbols=None, max_auto=3):
     cfg_path = os.path.join(BASE, "config", "poll_config.json")
     if not os.path.exists(cfg_path):
         return []
-    cfg  = json.load(open(cfg_path))
+    cfg  = json.load(open(cfg_path, encoding="utf-8"))
     pool = cfg.get("default_symbols", [])
 
     # 读盘前分析，过滤掉F场景（跳水），选RS强的
@@ -412,7 +424,7 @@ def get_autonomous_watchlist(user_active=True, user_symbols=None, max_auto=3):
     pm_path = os.path.join(BASE, f"premarket_analysis_{today}.json")
     candidates = []
     if os.path.exists(pm_path):
-        pm = json.load(open(pm_path)).get("stocks", {})
+        pm = json.load(open(pm_path, encoding="utf-8")).get("stocks", {})
         for sym in pool:
             r = pm.get(sym, {})
             if r.get("pred_scene") == "F":
@@ -428,6 +440,7 @@ def get_autonomous_watchlist(user_active=True, user_symbols=None, max_auto=3):
     return pool[:max_auto]
 
 def load_trade_history(n=5, acct="base"):
+    """Load the last n trade records for an account."""
     path = _paths(acct)["trades"]
     if not os.path.exists(path):
         return []
@@ -443,12 +456,13 @@ def weekly_evolution_report():
       - 日内 vs 波段效果对比
       - 参数调整建议
     """
-    if not os.path.exists(TRADE_LOG):
+    trade_path = _paths("base")["trades"]
+    if not os.path.exists(trade_path):
         return "暂无交易记录"
 
     cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     trades = []
-    with open(TRADE_LOG) as f:
+    with open(trade_path) as f:
         for line in f:
             t = json.loads(line)
             if t.get("time","") >= cutoff and "pnl_pct" in t:

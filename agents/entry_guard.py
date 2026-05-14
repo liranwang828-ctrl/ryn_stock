@@ -248,7 +248,7 @@ def _load_positions() -> dict:
     """读取 positions.json；若不存在返回空骨架。原子写入保障数据一致性。"""
     path = os.path.join(BASE, "config", "positions.json")
     if os.path.exists(path):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {"cash": 0, "positions": {}}
 

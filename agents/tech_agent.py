@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
 log = get_logger(__name__)
@@ -6,10 +6,12 @@ from agents.protocol import (BASE, VERIFIED_PATH, BOARD_PATH, FINDINGS_DIR,
                               make_finding, make_revision, compute_phase2_response)
 
 def get_field(fields, name, default=None):
+    """Extract value and verified flag from a fields dict entry."""
     entry = fields.get(name, {})
     return entry.get("value", default), entry.get("verified", False)
 
 def analyze(symbol, fields):
+    """Score technical indicators (MACD, RSI, volume, price) into a signal with confidence."""
     close, _       = get_field(fields, "close")
     prev, _        = get_field(fields, "prev_close", close)
     volume, _      = get_field(fields, "volume")
@@ -139,17 +141,18 @@ def analyze(symbol, fields):
     return signal, min(confidence, 95), points, data_refs, analysis, conclusion
 
 def main():
+    """Parse args, run technical analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
     args = parser.parse_args()
 
-    data   = json.load(open(VERIFIED_PATH))
+    data   = json.load(open(VERIFIED_PATH, encoding="utf-8"))
     fields = data["fields"]
     signal, conf, points, refs, analysis, conclusion = analyze(args.symbol, fields)
     _data  = {k: v.get("value") if isinstance(v, dict) else v for k, v in fields.items()}
     os.makedirs(FINDINGS_DIR, exist_ok=True)
-    board  = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+    board  = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
 
     if args.round is None:
         from agents.protocol import apply_persona

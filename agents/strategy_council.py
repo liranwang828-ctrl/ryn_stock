@@ -32,6 +32,7 @@ STRATEGY_KEYWORDS = {
 
 
 def parse_strategy(text: str) -> dict:
+    """Parse user strategy text into structured type, conditions, and metadata."""
     strategy_type = "入场条件"
     for stype, patterns in STRATEGY_KEYWORDS.items():
         for p in patterns:
@@ -56,6 +57,7 @@ def parse_strategy(text: str) -> dict:
 
 
 def _master_evaluate(master_name: str, strategy: dict) -> dict:
+    """Run a single master's rule-based review on a parsed strategy."""
     text  = strategy["raw_text"]
     conds = strategy["core_conditions"]
     support_points, concerns, suggestion = [], [], ""
@@ -117,6 +119,7 @@ def _master_evaluate(master_name: str, strategy: dict) -> dict:
 
 
 def evaluate_strategy(strategy: dict) -> dict:
+    """Run multi-master review on a strategy and return kept/improved/pending items."""
     stype   = strategy["strategy_type"]
     masters = STRATEGY_TYPE_MASTERS.get(stype, ["minervini", "marks", "taleb"])
 
@@ -144,6 +147,7 @@ def evaluate_strategy(strategy: dict) -> dict:
 
 
 def format_review_output(review: dict, title: str = "") -> str:
+    """Format strategy review results into a markdown report string."""
     lines = [
         f"## 策略评审：{title or review['strategy']['strategy_type']}",
         f"原始陈述：{review['strategy']['raw_text']}", "",
@@ -175,6 +179,7 @@ def format_review_output(review: dict, title: str = "") -> str:
 
 def confirm_and_update(review: dict, user_confirmed_improvements: list = None,
                        rule_number: int = None) -> str:
+    """Append confirmed strategy improvements to the trading methodology file."""
     strategy    = review["strategy"]
     improvements = user_confirmed_improvements or [i["suggestion"] for i in review.get("improved", [])]
     now          = datetime.now(timezone.utc).strftime("%Y-%m-%d")

@@ -1,4 +1,4 @@
-"""
+﻿"""
 盘前分析模块 — 每天 9:00-9:25 ET 运行
 输出：~/stock_team/premarket_analysis_{date}.json
   每只股票：gap幅度/原因/板块联动/期货方向/预测场景/入场区间/入场确认条件
@@ -358,6 +358,7 @@ def fetch_month_context(sym, tick, hd60, spy_pre_chg=0):
 
 
 def analyze_stock(sym, sector_ref, spy_pre_chg, futures_chg):
+    """Run full premarket analysis for a single stock."""
     tick = yf.Ticker(sym)
     info = tick.info
 
@@ -466,11 +467,12 @@ def analyze_stock(sym, sector_ref, spy_pre_chg, futures_chg):
     }
 
 def run(symbols=None):
+    """Execute premarket analysis for given symbols and write results to disk."""
     date_str = datetime.now().strftime("%Y-%m-%d")
     out_path = OUT_TPL.format(date_str)
 
     # 读取配置
-    cfg = json.load(open(os.path.join(CFG_DIR, "poll_config.json")))
+    cfg = json.load(open(os.path.join(CFG_DIR, "poll_config.json"), encoding="utf-8"))
     sector_map = cfg.get("sector_map", {})
     if not symbols:
         symbols = cfg.get("default_symbols", [])

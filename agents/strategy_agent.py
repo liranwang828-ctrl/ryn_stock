@@ -1,27 +1,16 @@
 import sys, os, json, argparse
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from utils import get_logger, fetch_with_retry, atomic_write_json
+from utils import get_logger, atomic_write_json
 log = get_logger(__name__)
-from agents.protocol import BASE, BOARD_PATH, STRATEGY_PATH, EXIT_OK
-
-# 七位大师名单
-PERSONAS = [
-    "mark_minervini",
-    "stan_druckenmiller",
-    "howard_marks",
-    "nassim_taleb",
-    "george_soros",
-    "jesse_livermore",
-    "peter_lynch",
-]
+from agents.protocol import BASE, BOARD_PATH, STRATEGY_PATH
 
 ANALYSIS_AGENTS = ["TechAgent","FundAgent","MacroAgent","SentimentAgent","CommunityAgent","RiskAgent"]
-# SectorAgent 参与讨论板但不计入综合评分（纯信息层）
-SECTOR_AGENT = "SectorAgent"
+PERSONA_SYNTHESIS = os.path.join(BASE, "persona_synthesis.json")
 SIGNAL_VAL = {"bullish": 1, "neutral": 0, "bearish": -1}
 
 def latest_findings(board):
+    """Extract the latest finding per agent and separate active vs vetoed agents."""
     latest = {}
     for msg in board:
         if msg.get("msg_type") not in ("initial_finding", "revision"):
@@ -38,38 +27,45 @@ def latest_findings(board):
             "rule_signal":  m.get("rule_signal", m.get("signal", "neutral")),
             "rule_conf":    m.get("rule_confidence", m.get("confidence", 50)),
             "key_points":   m.get("key_points", []),
-            "overnight_chg": next((kp for kp in m.get("key_points", []) if "盘前" in kp or "盘后" in kp), None),
         }
         for a, m in latest.items() if m.get("master_signal") == "veto"
     }
     active = {a: m for a, m in latest.items() if m.get("master_signal") != "veto"}
     return active, veto_agents
 
-def compute_score(findings):
-    num = sum(SIGNAL_VAL[f["signal"]] * f["confidence"] for f in findings.values())
-    den = sum(f["confidence"] for f in findings.values()) or 1
-    return num / den * 100
+def load_persona_synthesis():
+    """Load the persona synthesis JSON file if it exists."""
+    if not os.path.exists(PERSONA_SYNTHESIS):
+        return None
+    return json.load(open(PERSONA_SYNTHESIS, encoding="utf-8"))
 
-# 参与 agent 越少，置信度越低（最多6个）
 COVERAGE_DECAY = {6: 1.0, 5: 0.92, 4: 0.80, 3: 0.65, 2: 0.50, 1: 0.35, 0: 0.0}
 
 def main():
+    """Compute the final strategy signal from findings, persona synthesis, and debate board."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     args = parser.parse_args()
 
-    board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+    board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
     findings, veto_agents = latest_findings(board)
+    persona = load_persona_synthesis()
 
-    if not findings:
-        print("No findings available", file=sys.stderr)
-        sys.exit(1)
-
-    score      = compute_score(findings)
-    signal     = "bullish" if score >= 15 else "bearish" if score <= -15 else "neutral"
-    raw_conf   = min(95, int(50 + abs(score) * 0.5))
-    decay      = COVERAGE_DECAY.get(len(findings), 0.3)
-    confidence = int(raw_conf * decay)
+    # 以大师层共识为最终信号
+    if persona:
+        signal     = persona["consensus_signal"]
+        confidence = persona["weighted_confidence"]
+        if persona.get("conditional_map"):
+            confidence = max(10, confidence - 10)
+        decay      = COVERAGE_DECAY.get(len(findings), 0.3)
+        confidence = int(confidence * decay)
+    else:
+        # 无大师层时回退到领域Agent加权
+        num = sum(SIGNAL_VAL[f["signal"]] * f["confidence"] for f in findings.values())
+        den = sum(f["confidence"] for f in findings.values()) or 1
+        score  = num / den * 100
+        signal = "bullish" if score >= 15 else "bearish" if score <= -15 else "neutral"
+        confidence = int(min(95, 50 + abs(score) * 0.5) * COVERAGE_DECAY.get(len(findings), 0.3))
 
     key_points = []
     for agent, f in findings.items():
@@ -77,22 +73,20 @@ def main():
             key_points.append(f"[{agent.replace('Agent','')}] {kp}")
 
     risk_f    = findings.get("RiskAgent", {})
-    # stop_loss is a price ($430); stop_loss_pct is a ratio (0.07) — don't confuse them
-    stop_loss = risk_f.get("stop_loss")  # price value from RiskAgent.analyze()
+    stop_loss = risk_f.get("stop_loss")
 
     disputes = []
     challenges = [m for m in board if m.get("msg_type") == "challenge"]
     for ch in challenges:
         frm, tgt = ch.get("from"), ch.get("target")
-        resolved  = any(m.get("from") == tgt and m.get("revision", 0) > 0
-                        and m["timestamp"] > ch["timestamp"] for m in board)
+        resolved = any(m.get("from") == tgt and m.get("revision", 0) > 0
+                       and m["timestamp"] > ch["timestamp"] for m in board)
         if not resolved:
-            disputes.append(f"{frm}→{tgt}: {ch.get('content','')[:80]}")
+            disputes.append(f"{frm}->{tgt}: {ch.get('content','')[:80]}")
 
     verified_refs   = [ref for f in findings.values() for ref in f.get("data_refs", []) if ref.get("verified")]
     unverified_refs = [ref for f in findings.values() for ref in f.get("data_refs", []) if not ref.get("verified")]
 
-    # 提取 SectorAgent 信息（不计入评分）
     sector_msgs = [m for m in board if m.get("from") == "SectorAgent"
                    and m.get("msg_type") in ("initial_finding", "revision")]
     sector_info = {}
@@ -108,7 +102,6 @@ def main():
         "timestamp":    datetime.now(timezone.utc).isoformat(),
         "signal":       signal,
         "confidence":   confidence,
-        "score":        round(score, 2),
         "key_points":   key_points,
         "stop_loss":    stop_loss,
         "disputes":     disputes,
@@ -118,7 +111,8 @@ def main():
                           for a, f in findings.items()},
         "veto_agents":    veto_agents,
         "active_count":   len(findings),
-        "coverage_decay": decay,
+        "coverage_decay": COVERAGE_DECAY.get(len(findings), 0.3),
+        "persona_synthesis": persona,
         "sector_info":    sector_info,
     }
     atomic_write_json(result, STRATEGY_PATH, indent=2)

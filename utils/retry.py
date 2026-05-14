@@ -13,22 +13,7 @@ RETRYABLE = (ConnectionError, TimeoutError, OSError)
 
 
 def fetch_with_retry(func, max_retries=3, base_delay=1.0, backoff=2.0, jitter=True):
-    """
-    Call func() with exponential backoff retry.
-
-    Args:
-        func: callable that makes the network request
-        max_retries: total attempts (1 original + N retries)
-        base_delay: initial delay in seconds
-        backoff: multiplier for each subsequent delay
-        jitter: add random jitter (0-50% of delay)
-
-    Returns:
-        func() result on success
-
-    Raises:
-        The last exception if all retries fail
-    """
+    """Call func() with exponential backoff retry."""
     last_exc = None
     for attempt in range(max_retries):
         try:

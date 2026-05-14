@@ -1,5 +1,5 @@
-"""多标的并行分析 + 比较辩论"""
-import os, json, subprocess
+﻿"""多标的并行分析 + 比较辩论"""
+import os, sys, json, subprocess
 from concurrent.futures import ThreadPoolExecutor
 
 BASE    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -65,6 +65,6 @@ def _run_phase01(symbol: str) -> dict:
     for name in ["TechAgent","FundAgent","MacroAgent","SentimentAgent","RiskAgent","SectorAgent"]:
         fp = os.path.join(findings_dir, f"{name}.json")
         if os.path.exists(fp):
-            try: findings[name] = json.load(open(fp))
+            try: findings[name] = json.load(open(fp, encoding="utf-8"))
             except: pass
     return {"symbol": symbol, "findings": findings}

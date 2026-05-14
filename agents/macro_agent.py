@@ -1,4 +1,4 @@
-import sys, os, json, argparse
+﻿import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils import get_logger, fetch_with_retry, atomic_write_json
 log = get_logger(__name__)
@@ -7,6 +7,7 @@ from agents.protocol import (BASE, VERIFIED_PATH, BOARD_PATH, FINDINGS_DIR,
 import yfinance as yf
 
 def analyze(symbol):
+    """Fetch SPY/QQQ/VIX data and score macro environment into a signal with confidence."""
     points, score = [], 0
     refs = []
     spy_1d = 0
@@ -107,6 +108,7 @@ def analyze(symbol):
     return signal, confidence, points, refs, analysis, conclusion
 
 def main():
+    """Parse args, run macro analysis, and write finding JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--round", type=int, default=None)
@@ -114,15 +116,15 @@ def main():
     signal, conf, points, refs, analysis, conclusion = analyze(args.symbol)
     os.makedirs(FINDINGS_DIR, exist_ok=True)
     from agents.protocol import VERIFIED_PATH, apply_persona
-    _raw = json.load(open(VERIFIED_PATH)).get("fields", {}) if os.path.exists(VERIFIED_PATH) else {}
+    _raw = json.load(open(VERIFIED_PATH, encoding="utf-8")).get("fields", {}) if os.path.exists(VERIFIED_PATH) else {}
     _data = {k: v.get("value") if isinstance(v, dict) else v for k, v in _raw.items()}
     if args.round is None:
         msg = make_finding("MacroAgent", args.symbol, signal, conf, points, refs, analysis=analysis, conclusion=conclusion)
-        _board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        _board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = apply_persona(msg, _data, "MacroAgent", _board)
         atomic_write_json(msg, os.path.join(FINDINGS_DIR, "MacroAgent.json"), indent=2)
     else:
-        board = [json.loads(l) for l in open(BOARD_PATH) if l.strip()] if os.path.exists(BOARD_PATH) else []
+        board = [json.loads(l) for l in open(BOARD_PATH, encoding="utf-8") if l.strip()] if os.path.exists(BOARD_PATH) else []
         msg = compute_phase2_response("MacroAgent", args.symbol, board,
                                       signal, conf, points, refs, _data)
         if not msg:
