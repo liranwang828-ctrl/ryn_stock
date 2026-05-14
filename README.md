@@ -1,4 +1,4 @@
-# Agent Team v2.0 — 多智能体股票交易系统
+# Ryn Stock Team v2.0 — 多智能体股票交易系统
 
 9-Agent + 2 System Role 的 AI 交易团队，基于 DeepSeek 大模型，覆盖从盘前到盘后的完整交易流程。
 
@@ -115,7 +115,7 @@ python engine/dashboard.py
 ## 项目结构
 
 ```
-agent-team/
+ryn_stock_team/
 ├── config/              (13个YAML配置文件)
 │   ├── MASTER_CONFIG.yaml          ← 入口配置
 │   ├── agent_definitions.yaml      ← Agent定义

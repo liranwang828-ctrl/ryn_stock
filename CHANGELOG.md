@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Agent Team project.
+All notable changes to the Ryn Stock Team project.
 
 ## [2.0.0] — 2026-05-14
 
