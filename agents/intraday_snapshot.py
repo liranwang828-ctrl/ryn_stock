@@ -227,12 +227,20 @@ def set_cooldown(sym: str, poll_state_path: str) -> str:
 
 def append_snapshot(sym: str, date: str, record: dict,
                     find_dir: str = FIND_DIR) -> str:
-    """追加一条 JSONL 记录，返回文件路径"""
+    """追加一条 JSONL 记录，并写入 SQLite 高性能数据库"""
     os.makedirs(find_dir, exist_ok=True)
     fname = f"intraday_snapshot_{date}_{sym.upper()}.jsonl"
     path  = os.path.join(find_dir, fname)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        
+    # 双写进入 SQLite WAL 数据库，提升盘中并发读取稳定性
+    try:
+        from agents.data_hub import write_snapshot_db
+        write_snapshot_db(record)
+    except Exception:
+        pass
+        
     return path
 
 

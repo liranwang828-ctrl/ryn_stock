@@ -71,7 +71,15 @@ def load_premarket_summaries(date: str, symbols: list[str],
 
 def load_intraday_latest(date: str, symbols: list[str],
                           find_dir: str = FIND_DIR) -> dict:
-    """返回 {sym: 最新一条 JSONL 记录}"""
+    """优先从 SQLite WAL 数据库读取最新快照，若失败或无数据则回退至 JSONL 碎文件"""
+    try:
+        from agents.data_hub import query_latest_snapshots
+        db_res = query_latest_snapshots(date, symbols)
+        if db_res:
+            return db_res
+    except Exception:
+        pass
+
     result = {}
     for sym in symbols:
         path = os.path.join(find_dir, f"intraday_snapshot_{date}_{sym}.jsonl")
@@ -83,7 +91,15 @@ def load_intraday_latest(date: str, symbols: list[str],
 
 def load_intraday_events(date: str, symbols: list[str],
                           find_dir: str = FIND_DIR) -> list[dict]:
-    """返回所有 llm_triggered=True 的 JSONL 记录（按时间排序）"""
+    """优先从 SQLite WAL 数据库读取今日决策事件流，若失败或无数据则回退至 JSONL 碎文件"""
+    try:
+        from agents.data_hub import query_llm_events
+        db_evs = query_llm_events(date, symbols)
+        if db_evs:
+            return db_evs
+    except Exception:
+        pass
+
     events = []
     for sym in symbols:
         path = os.path.join(find_dir, f"intraday_snapshot_{date}_{sym}.jsonl")

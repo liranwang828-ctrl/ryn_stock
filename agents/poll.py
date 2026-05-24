@@ -2806,6 +2806,14 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
 
         # ── 全局否决检查（替代 strategy_gate 的黄金否决权）────────────────
         _veto = _global_veto(a, vc, vt, qqq5m, macro_state, et_h, et_m)
+        # 板块联动龙头破位否决检查
+        try:
+            from agents.sector_leadership import is_leader_broken
+            _ldr_broken, _ldr_desc = is_leader_broken(sym, stocks)
+            if _ldr_broken:
+                _veto = f"板块龙头破位否决 ({_ldr_desc})"
+        except Exception:
+            pass
         if _veto:
             print(f"│ 🚫 全局否决: {_veto}")
 
@@ -2841,7 +2849,7 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
 
         for _acct in ACCOUNTS:
             # 止损/止盈检查（始终执行，不受否决影响）
-            _exit = check_exits(sym, a["cur"], hi=a["hi"], lo=a["lo"], acct=_acct)
+            _exit = check_exits(sym, a["cur"], hi=a["hi"], lo=a["lo"], acct=_acct, stocks=stocks)
             if _exit:
                 print(f"│ 📊{_exit}")
                 try:
@@ -2976,6 +2984,13 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
             }
             with open(_ms_log, "a", encoding="utf-8") as _f:
                 _f.write(json.dumps(_entry, ensure_ascii=False) + "\n")
+                
+            # 双写进入 SQLite WAL 数据库，防范高频 IO 并发锁冲突
+            try:
+                from agents.data_hub import write_master_score_db
+                write_master_score_db(_date_str, _time_str, _entry)
+            except Exception:
+                pass
         except Exception:
             pass
 
