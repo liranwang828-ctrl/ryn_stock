@@ -1,0 +1,20 @@
+{
+  "date": "2026-05-19",
+  "generated_at": "2026-05-19T12:19:08.290174",
+  "symbols": {
+    "NVDA": {
+      "sym": "NVDA",
+      "date": "2026-05-19",
+      "has_position": true,
+      "position_type": "thesis",
+      "thesis_status": "intact",
+      "daily_action": "B",
+      "flex_min": null,
+      "flex_max": null,
+      "node1": null,
+      "node2": null,
+      "node3": null,
+      "node_state": "B"
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "sym": "IAU",
+  "long_name": "iShares Gold Trust",
+  "generated_at": "2026-05-21T08:01:31.811649+00:00",
+  "sector": "",
+  "industry": "",
+  "country": null,
+  "employees": null,
+  "website": null,
+  "business_summary": "The Trust seeks to reflect such performance before payment of the Trust’s expenses and liabilities. It is not actively managed. The Trust does not engage in any activities designed to obtain a profit from, or to ameliorate losses caused by, changes in the price of gold. The advisor intends to constitute a simple and cost-effective means of making an investment similar to an investment in gold. An investment in physical gold requires expensive and sometimes complicated arrangements in connection ",
+  "business_summary_full": "The Trust seeks to reflect such performance before payment of the Trust’s expenses and liabilities. It is not actively managed. The Trust does not engage in any activities designed to obtain a profit from, or to ameliorate losses caused by, changes in the price of gold. The advisor intends to constitute a simple and cost-effective means of making an investment similar to an investment in gold. An investment in physical gold requires expensive and sometimes complicated arrangements in connection with the assay, transportation, warehousing and insurance of the metal.",
+  "competitive_moat": [
+    "实物黄金 ETF：直接持有金条，成本最低（0.25%）的黄金敞口工具",
+    "流动性最强的黄金 ETF 之一：日均成交额高，机构和散户均可高效配置"
+  ],
+  "growth_drivers": [
+    "AI基础设施需求爆发，超大规模云厂商Capex持续创新高",
+    "通胀/地缘风险环境下黄金避险需求，央行持续增储",
+    "央行购金加速：新兴市场央行持续增加黄金储备，去美元化长期趋势",
+    "地缘风险溢价：中东/俄乌冲突持续推升避险需求",
+    "实际利率下行预期：美联储降息周期黄金表现通常优于股票"
+  ],
+  "competitors": [
+    {
+      "sym": "GLD",
+      "name": "SPDR Gold ETF",
+      "angle": "最大黄金ETF，费率0.40% vs IAU 0.25%"
+    },
+    {
+      "sym": "SGOL",
+      "name": "Aberdeen Gold ETF",
+      "angle": "实物黄金存储在瑞士"
+    },
+    {
+      "sym": "GDX",
+      "name": "VanEck Gold Miners",
+      "angle": "黄金矿业股ETF，杠杆效应更强"
+    }
+  ],
+  "peers_pe": {
+    "PHYS": 2.9
+  },
+  "valuation_anchors": {
+    "pe_ttm": null,
+    "pe_fwd": null,
+    "peg": null,
+    "sector_pe": null,
+    "pe_premium_pct": null,
+    "analyst_target": null,
+    "analyst_upside_pct": null,
+    "rec_key": "",
+    "n_analysts": null
+  },
+  "key_risks": [
+    "美联储鹰派延续：高利率抑制无息资产吸引力，实际利率上行是黄金最大压力",
+    "美元走强：美元指数上涨时黄金通常承压"
+  ],
+  "bull_case": [
+    "央行去美元化趋势：全球央行持续净购金，中国/印度/波兰等增持黄金已是结构性趋势",
+    "降息周期受益：美联储降息→实际利率下行→黄金持有成本降低，历史上黄金大涨",
+    "地缘风险长期化：中东/俄乌冲突推升避险溢价，黄金替代美债成为全球避险资产"
+  ],
+  "bear_case": [
+    "高利率延续：美联储鹰派超预期时实际利率上升，黄金无息资产承压",
+    "美元指数走强：美元走强时黄金价格通常承压，二者负相关性约-0.6",
+    "MACD死叉(-0.8)，空头占优",
+    "RSI-14=39.9 中性区间"
+  ],
+  "web_enhanced": true,
+  "revenue_breakdown": [],
+  "latest_catalysts": []
+}

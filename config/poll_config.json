@@ -1,0 +1,123 @@
+{
+  "_comment": "轮询配置，工具自动读取",
+  "trading_mode": "constrained",
+  "trading_window": {
+    "start_et_hhmm": "0930",
+    "end_et_hhmm": "1030"
+  },
+  "post_window_poll_interval_min": 30,
+  "watchlist": [
+    "IREN",
+    "OXY",
+    "AAOI",
+    "AAPL",
+    "META",
+    "RKLB",
+    "MMM",
+    "GOOGL",
+    "AMZN",
+    "TTD",
+    "TLRY",
+    "BABA",
+    "AMD",
+    "FN",
+    "TSLA",
+    "BBAI",
+    "HOOD",
+    "MU",
+    "MRVL",
+    "OKLO",
+    "LITE",
+    "CRWV",
+    "SNDK",
+    "INTC",
+    "RGTI",
+    "MXL",
+    "QCOM",
+    "FLNC",
+    "PONY",
+    "NVDA",
+    "MSFT",
+    "IAU",
+    "MSTR",
+    "MARA",
+    "QBTS",
+    "COIN",
+    "AR"
+  ],
+  "portfolio_symbols": [
+    "PONY",
+    "BABA",
+    "NVDA",
+    "IAU",
+    "MSFT"
+  ],
+  "default_symbols": [
+    "LITE",
+    "MRVU",
+    "ANEL",
+    "MRVL",
+    "RKLB",
+    "AAOI",
+    "BABA",
+    "AR",
+    "RGTI",
+    "NVDA",
+    "AMD"
+  ],
+  "sector_map": {
+    "AAOI": {
+      "ref": "LITE",
+      "ref_name": "光学LITE"
+    },
+    "RKLB": {
+      "ref": "ITA",
+      "ref_name": "航天ITA"
+    },
+    "SNXX": {
+      "ref": "SNDK",
+      "ref_name": "SNDK"
+    },
+    "INTC": {
+      "ref": "SOXX",
+      "ref_name": "半导体SOXX"
+    },
+    "AMD": {
+      "ref": "SOXX",
+      "ref_name": "半导体SOXX"
+    },
+    "NVDA": {
+      "ref": "SOXX",
+      "ref_name": "半导体SOXX"
+    },
+    "MRVL": {
+      "ref": "SOXX",
+      "ref_name": "半导体SOXX"
+    },
+    "SNDK": {
+      "ref": "SOXX",
+      "ref_name": "半导体SOXX"
+    },
+    "FN": {
+      "ref": "LITE",
+      "ref_name": "光学LITE"
+    },
+    "MSFT": {
+      "ref": "IGV",
+      "ref_name": "软件IGV"
+    },
+    "OXY": {
+      "ref": "XOP",
+      "ref_name": "油气XOP"
+    },
+    "IREN": {
+      "ref": "MARA",
+      "ref_name": "算力MARA"
+    }
+  },
+  "interval_minutes": 2,
+  "conservative_rs_threshold": 1.5,
+  "aggressive_rs_threshold": 0.5,
+  "chinese_adrs_excluded": true,
+  "chinese_adrs_note": "不买中概股，BABA仅跟踪不推荐"
+}

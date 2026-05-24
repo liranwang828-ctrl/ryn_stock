@@ -1,0 +1,23 @@
+{
+  "focus_stocks": [
+    "MRVL",
+    "LITE",
+    "RGTI",
+    "NVDA",
+    "BABA",
+    "AMD"
+  ],
+  "_note": "每日固定关注5只，第5只待定。持仓底层标的必须在列。每天产出完整观察记录供盘后配对学习。",
+  "_slots": {
+    "position_base": [
+      "NBIS",
+      "MRVL"
+    ],
+    "key_candidate": [
+      "ANET",
+      "GLOB",
+      "LITE"
+    ],
+    "sector_ref": "待定（建议SOXX/QQQ或同板块领头羊）"
+  }
+}

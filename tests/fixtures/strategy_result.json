@@ -1,0 +1,16 @@
+{
+  "symbol": "AMD", "timestamp": "2026-05-12T13:40:00Z",
+  "signal": "bullish", "confidence": 72, "score": 44.5,
+  "stop_loss": 430.0,
+  "key_points": ["[Tech] MACD金叉", "[Sentiment] 分析师看多"],
+  "disputes": ["TechAgent→SentimentAgent: RSI超买与机构乐观存在分歧"],
+  "verified_data_count": 8, "unverified_data_count": 2,
+  "agent_signals": {
+    "TechAgent":      {"signal": "bullish", "confidence": 72},
+    "FundAgent":      {"signal": "neutral",  "confidence": 60},
+    "MacroAgent":     {"signal": "bullish",  "confidence": 65},
+    "SentimentAgent": {"signal": "bullish",  "confidence": 80},
+    "CommunityAgent": {"signal": "bullish",  "confidence": 70},
+    "RiskAgent":      {"signal": "neutral",  "confidence": 65}
+  }
+}

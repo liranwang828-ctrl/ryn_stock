@@ -1,0 +1,57 @@
+{
+  "date": "2026-05-15",
+  "sym": "NBIS",
+  "pattern": "A-B-C反转",
+  "day_high": {
+    "time": "09:55",
+    "price": 228.09,
+    "rs": 4.17
+  },
+  "day_low": {
+    "time": "12:48",
+    "price": 212.17,
+    "rs": -3.19
+  },
+  "close": {
+    "price": 219.94,
+    "rs": -0.09
+  },
+  "masters": {
+    "Livermore": {
+      "verdict": "不完整反转，收盘太接近止损线",
+      "tomorrow_key": "开盘守$215且30min内回$220",
+      "condition_str": "NBIS明日收盘 > $220"
+    },
+    "Minervini": {
+      "verdict": "RS全天从+4%回落到-0.09%，尾盘强度消退",
+      "tomorrow_key": "放量阳线或长下影线重建信心",
+      "condition_str": "NBIS明日 RS > +1% 且有量"
+    },
+    "Marks": {
+      "verdict": "真实止损$203（今低-ATR/2），现在安全",
+      "tomorrow_key": "守$218.58则持有，破$211.8止损",
+      "condition_str": "NBIS明日不破$211.8"
+    },
+    "Taleb": {
+      "verdict": "三次测试守住，买盘有序，不是恐慌",
+      "tomorrow_key": "开盘$218+守住→安全，破$212→止损",
+      "condition_str": "NBIS明日开盘 >= $218"
+    },
+    "Druckenmiller": {
+      "verdict": "大盘拖累为主，NBIS论点未变，中立偏多",
+      "tomorrow_key": "QQQ反弹则NBIS跟涨，LITE纳入带动光板块",
+      "condition_str": "NBIS明日 RS > 0（独立于大盘）"
+    },
+    "Soros": {
+      "verdict": "底部无恐慌性抛售，反身性偏正面",
+      "tomorrow_key": "持有，等LITE纳入后资金回流",
+      "condition_str": "NBIS明日收盘 > 今收$219.94"
+    },
+    "Lynch": {
+      "verdict": "基本面未变，短期波动噪音，持有",
+      "tomorrow_key": "无负面新闻则继续持有",
+      "condition_str": "无分析师下调或负面财报"
+    }
+  },
+  "generated_at": "2026-05-15T16:29:55.787239"
+}

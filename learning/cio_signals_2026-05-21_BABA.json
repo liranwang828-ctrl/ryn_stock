@@ -1,0 +1,27 @@
+{
+  "sym": "BABA",
+  "date": "2026-05-21",
+  "signal": "bullish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "bullish",
+      "confidence": 90
+    },
+    "FundAgent": {
+      "signal": "neutral",
+      "confidence": 55
+    },
+    "MacroAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    },
+    "SentimentAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "RiskAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    }
+  }
+}

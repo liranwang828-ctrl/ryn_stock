@@ -1,0 +1,456 @@
+{
+  "symbol": "AMD",
+  "timestamp": "2026-05-23T18:44:08.339535+00:00",
+  "secondary_available": false,
+  "fields": {
+    "close": {
+      "value": 467.510009765625,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "volume": {
+      "value": 34661300,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "post_market_price": {
+      "value": 462.75,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "has_extended_price": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "overnight_chg": {
+      "value": -0.010181621069485372,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "extended_session": {
+      "value": "post",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "prev_close": {
+      "value": 449.5899963378906,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "vol_ma20": {
+      "value": 42390425.0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "macd": {
+      "value": 43.3349752641588,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "rsi14": {
+      "value": 72.84038886702592,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "pe_ratio": {
+      "value": 156.35786,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "pb_ratio": {
+      "value": 11.82163,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "market_cap": {
+      "value": 762322092032,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "revenue": {
+      "value": 37454000128,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "eps": {
+      "value": 2.99,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "analyst_rec": {
+      "value": 1.4902,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "target_price": {
+      "value": 472.16666,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "beta": {
+      "value": 2.399,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "52w_high": {
+      "value": 481.41,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "52w_low": {
+      "value": 108.62,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "long_name": {
+      "value": "Advanced Micro Devices, Inc.",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "sector": {
+      "value": "Technology",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "industry": {
+      "value": "Semiconductors",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "description": {
+      "value": "Advanced Micro Devices, Inc. operates as a semiconductor company internationally. It operates in three segments: Data Center, Client and Gaming, and Embedded. The company offers artificial intelligence (AI) accelerators, microprocessors, and graphics processing units (GPUs) as standalone devices or ",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "employees": {
+      "value": 31000,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "country": {
+      "value": "United States",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "pe_fwd": {
+      "value": 36.07458,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "peg": {
+      "value": 1.12,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "price_to_book": {
+      "value": 11.82163,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "rev_growth_pct": {
+      "value": 37.8,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "gross_margin": {
+      "value": 0.5306,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "operating_margin": {
+      "value": 14.4,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "roe": {
+      "value": 8.1,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fcf_B": {
+      "value": 7.17,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "short_pct": {
+      "value": 2.2,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "n_analysts": {
+      "value": 48,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "rec_key": {
+      "value": "strong_buy",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "inst_pct": {
+      "value": 72.1,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "hi52": {
+      "value": 481.41,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fcf": {
+      "value": 7173374976,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "ma50": {
+      "value": 303.1888003540039,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "ma150": {
+      "value": 249.5182666015625,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "ma200": {
+      "value": 230.8763498687744,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "volume_breakout_ratio": {
+      "value": 0.8176681408596399,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "vcp_detected": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "price_chg_3m": {
+      "value": 1.186260838813839,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "hist_max_drawdown": {
+      "value": 0.5748532494558934,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "spy_above_ma200": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "correlation_with_spy": {
+      "value": 0.599539987975566,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "rs_vs_market": {
+      "value": 1.0357863177478863,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "sector_inflow_positive": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "sector_healthy": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "vix": {
+      "value": 16.700000762939453,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "vix_trend": {
+      "value": "falling",
+      "verified": true,
+      "note": "no secondary"
+    },
+    "vix_percentile": {
+      "value": 0.38492063492063494,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "cash_ratio": {
+      "value": 12346999808.0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "de_ratio": {
+      "value": 0.0600291268540167,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "revenue_growth": {
+      "value": 0.378,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "insider_pct": {
+      "value": 0.00413,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "institutional_ownership_pct": {
+      "value": 0.72088,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "p_fcf": {
+      "value": 106.27105417090695,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "roe5y_avg": {
+      "value": 0.08063,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "operating_cashflow": {
+      "value": 9724999680,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fcf_capex_driven": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fcf_healthy": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "upside_pct": {
+      "value": 0.009960535896781076,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "downside_pct": {
+      "value": 0.08,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "stop_loss_defined": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "position_pct": {
+      "value": 0.0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "pe_percentile_30y": {
+      "value": 15.0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "pe_percentile_90y": {
+      "value": 35.0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "community_bull_pct": {
+      "value": 0.5,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fed_hiking": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fed_easing": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fed_pause": {
+      "value": true,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "fed_cut_this_month": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "treasury10y_monthly_delta": {
+      "value": 0.05,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "yield_curve_inverted": {
+      "value": false,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "curve_inverted_months": {
+      "value": 0,
+      "verified": true,
+      "note": "no secondary"
+    },
+    "news_headlines": {
+      "value": [
+        {
+          "title": "What CEO Sanjay Mehrota Just Said Shows Why Micron Is About to Become a $1,000 Stock",
+          "publisher": "24/7 Wall St.",
+          "time": "2026-05-23",
+          "summary": "The AI boom was supposed to slow down by now. At least that was the theory. Data centers are straining electric grids, u"
+        },
+        {
+          "title": "This Artificial Intelligence (AI) Stock Will Beat Nvidia, AMD, Broadcom, and Intel to Become the Biggest Winner in AI Inference",
+          "publisher": "Motley Fool",
+          "time": "2026-05-23",
+          "summary": "Arm Holdings' business model makes the stock a solid investment for those looking to capitalize on the growing demand fo"
+        },
+        {
+          "title": "Cathie Wood's ARK Sells Chip Giants, Buys The Dip In Crypto Exchange Bullish And Two Others",
+          "publisher": "Stocktwits",
+          "time": "2026-05-23",
+          "summary": "The company also bought 105,810 shares of Twist Bioscience for ARKK, its largest single-stock transaction over the past "
+        },
+        {
+          "title": "AMD: Strong AI Sales, But the Win Is Already Priced In",
+          "publisher": "GuruFocus.com",
+          "time": "2026-05-23",
+          "summary": "AMD's Data Center franchise is delivering real results, but at roughly 78 times forward earnings the market has already "
+        },
+        {
+          "title": "How The Advanced Micro Devices (AMD) Story Is Shifting With AI Optimism And Valuation Concerns",
+          "publisher": "Simply Wall St.",
+          "time": "2026-05-23",
+          "summary": "The base case fair value estimate for Advanced Micro Devices has shifted from about US$289.61 to about US$472.17 per sha"
+        },
+        {
+          "title": "Alphabet, AMD Removed From Value Stock Status as Russell Reconstitutes Indexes",
+          "publisher": "Barrons.com",
+          "time": "2026-05-23",
+          "summary": "FTSE Russell announced a preliminary list of changes to its indexes on Friday after the market closed\u2014and some Big Tech "
+        },
+        {
+          "title": "Meet the Biggest Threat to Intel's Stunning Stock Market Rally",
+          "publisher": "Motley Fool",
+          "time": "2026-05-22",
+          "summary": "AMD continues to chip away at Intel's server CPU market share."
+        },
+        {
+          "title": "Stock Market Today: S&P 500, Nasdaq Score Weekly Wins As Dow Logs Record High",
+          "publisher": "Investor's Business Daily",
+          "time": "2026-05-22",
+          "summary": "Stock Market Today: The Dow Jones index rises Friday as yields slip. AMD stock rallies near record highs."
+        }
+      ],
+      "verified": true,
+      "note": "no secondary"
+    }
+  }
+}

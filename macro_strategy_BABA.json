@@ -1,0 +1,144 @@
+{
+  "sym": "BABA",
+  "generated_at": "2026-05-21T07:59:00.733868+00:00",
+  "market_data_date": "2026-05-21",
+  "nodes": {
+    "entry_invalidation": {
+      "price": 143.72,
+      "basis": "entry_base(141.0) + 0.5×ATR14"
+    },
+    "add1": {
+      "price": 130.33,
+      "basis": "结构低点=130.33（优先于max=161.71，差距>2.71）",
+      "conditions": [
+        "论点 intact",
+        "vol_ratio < 0.8",
+        "催化剂窗口外"
+      ],
+      "invalidation": "放量跌破 MA50 → 取消 Add1"
+    },
+    "add2": null,
+    "re_entry": {
+      "price": 133.58,
+      "basis": "MA50(131.95) + 0.3×ATR14(5.43)",
+      "conditions": [
+        "thesis_status = intact",
+        "距止损出场 ≥ 3天"
+      ],
+      "invalidation": "距止损出场不足3天 或 论点转 weakening → 取消"
+    },
+    "dynamic_stop": {
+      "price": 126.52,
+      "basis": "max(MA50=131.95, 近14日结构低点=130.33) − 1.0×ATR14(5.43) = 126.52",
+      "trail_activation": {
+        "breakeven_trigger_pct": 8,
+        "ma20_trail_trigger_pct": 15
+      },
+      "invalidation": "收盘反回 stop+0.5×ATR(129.23) 且缩量 → 假突破",
+      "gap_rule": "开盘直接低于此价 → 市价出场"
+    },
+    "force_exit": {
+      "price_bear": 119.85,
+      "price_catalyst": 130.14,
+      "basis_bear": "memo.scenarios.bear.price_target",
+      "basis_catalyst": "entry(141.0) − 2.0×ATR14(5.43)",
+      "gap_rule": "开盘低于此价 → 市价执行"
+    },
+    "tp1": {
+      "price": 180.19,
+      "basis": "近90日高点区域 swing_high=181.1",
+      "reduce_pct": 30,
+      "gap_rule": "开盘高于 TP1 → 按开盘价执行"
+    },
+    "tp2": {
+      "price": 171.95,
+      "basis": "分析师目标$191.05394 × 0.9 = 171.95",
+      "reduce_pct": 100,
+      "invalidation": "分析师目标下调超10% → 重算",
+      "analyst_stale": false,
+      "analyst_raw": 191.05394
+    },
+    "flex_reduce": {
+      "note": "盘中动态，--refresh 每日更新",
+      "max_reduce_pct": 15,
+      "basis": "VWAP 偏离 + RSI > 70"
+    },
+    "scenario_downgrade": {
+      "bull_to_base": {
+        "price": 132.66,
+        "basis": "MA20(135.38) − 0.5×ATR14(5.43)"
+      },
+      "base_to_bear": {
+        "price": 126.52,
+        "basis": "MA50(131.95) − 1.0×ATR14(5.43)"
+      }
+    },
+    "catalyst_framework": {
+      "pre_reduce_active": false,
+      "pre_reduce_days": 3,
+      "pre_reduce_pct": 20,
+      "post_add_trigger": null,
+      "post_force_exit": null,
+      "next_catalyst": {
+        "event": "policy",
+        "date": "unknown",
+        "importance": "high"
+      }
+    },
+    "time_stop": {
+      "type": "standard",
+      "review_date": "2026-06-20",
+      "condition": "持仓超30天且未向TP1移动5%",
+      "decay_stop": null
+    }
+  },
+  "market_inputs": {
+    "price": 134.47,
+    "ma20": 135.38,
+    "ma50": 131.95,
+    "ma200": 134.47,
+    "atr14": 5.43,
+    "atr21": 4.86,
+    "fib_382": 161.71,
+    "fib_618": 149.72,
+    "swing_high_90d": 181.1,
+    "swing_low_90d": 117.93,
+    "swing_low_14d": 130.33,
+    "rsi14": 66.8,
+    "volume_ratio": 1.11,
+    "analyst_target": 191.05394,
+    "sentiment_score": 0.85
+  },
+  "memo_inputs": {
+    "strategic_stance": "hold_reduced",
+    "unified_confidence": 3,
+    "next_catalyst": {
+      "event": "policy",
+      "date": "unknown",
+      "importance": "high"
+    },
+    "scenario_bear_price": 119.85,
+    "scenario_base_price": 166.38,
+    "scenario_bull_price": 191.03708
+  },
+  "evolution": {
+    "rule_version": "1.0",
+    "k1": 1.0,
+    "k2": 0.2,
+    "k3": 0.0,
+    "k4": 0.9,
+    "k5": 0.5,
+    "k6": 1.0,
+    "k_reentry": 0.3,
+    "fe_catalyst": 2.0,
+    "c1": 0.5,
+    "c2": 1.5,
+    "Z_pre_reduce_pct": 20,
+    "N_time_stop": 30,
+    "D_decay_stop": 14,
+    "M_decay_min_pct": 5.0,
+    "last_backtest_date": null,
+    "backtest_score": null,
+    "outcomes_count": 0
+  }
+}

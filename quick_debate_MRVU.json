@@ -1,0 +1,57 @@
+{
+  "sym": "MRVU",
+  "time": "14:31:54",
+  "consensus": "🟡观望",
+  "majority": "等",
+  "vote_count": {
+    "等": 3
+  },
+  "avg_score": 5.0,
+  "votes": {
+    "Minervini": "等",
+    "Marks": "等",
+    "Druckenmiller": "等"
+  },
+  "results": {
+    "Minervini": {
+      "persona": "Minervini",
+      "vote": "等",
+      "score": 4,
+      "reason": "RS+17.0%极强、站VWAP上方、缩量（回踩健康）；但MACD柱仍负",
+      "pros": [
+        "RS+17.0%极强",
+        "站VWAP上方",
+        "缩量（回踩健康）"
+      ],
+      "cons": [
+        "MACD柱仍负"
+      ]
+    },
+    "Marks": {
+      "persona": "Marks",
+      "vote": "等",
+      "score": 5,
+      "reason": "VIX18中性、VIX下行，情绪改善、RSI3=37健康；但距日高仅1.5%，盈亏比差",
+      "pros": [
+        "VIX18中性",
+        "VIX下行，情绪改善",
+        "RSI3=37健康"
+      ],
+      "cons": [
+        "距日高仅1.5%，盈亏比差"
+      ]
+    },
+    "Druckenmiller": {
+      "persona": "Druckenmiller",
+      "vote": "等",
+      "score": 6,
+      "reason": "大盘顺风SPY+0.7%/QQQ+1.1%、RS+17.0%领涨市场，主题极强",
+      "pros": [
+        "大盘顺风SPY+0.7%/QQQ+1.1%",
+        "RS+17.0%领涨市场，主题极强"
+      ],
+      "cons": []
+    }
+  },
+  "formatted": "╔════════════════════════════════════════════════════╗\n║  ⚡ MRVU 快速辩论  14:31:54  综合5.0/10  🟡观望         ║\n╠════════════════════════════════════════════════════╣\n║  🟡等  Minervini         4/10  RS+17.0%极强、站VWAP上方、缩量（回踩健康）；║\n║  🟡等  Marks             5/10  VIX18中性、VIX下行，情绪改善、RSI3=37健康║\n║  🟡等  Druckenmiller     6/10  大盘顺风SPY+0.7%/QQQ+1.1%、RS+17.║\n╚════════════════════════════════════════════════════╝"
+}

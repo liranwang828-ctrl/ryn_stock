@@ -1,0 +1,26 @@
+{
+  "master": "Mark Minervini",
+  "assigned_to": "TechAgent",
+  "core_philosophy": "只在最完美的时机出手",
+  "veto_conditions": [
+    {"condition": "data['close'] < data['ma200']", "reason": "不在Stage 2上升趋势"},
+    {"condition": "data['ma50'] < data['ma150']", "reason": "均线排列不健康"},
+    {"condition": "data['volume_breakout_ratio'] < 1.4", "reason": "突破量不足"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['close'] > data['ma200'] and data['ma50'] > data['ma150']", "weight": 30, "insight": "[Minervini] Stage 2上升趋势确认"},
+    {"condition": "data['vcp_detected']", "weight": 25, "insight": "[Minervini] VCP形态确认"},
+    {"condition": "data['volume'] > data['vol_ma20'] * 1.4", "weight": 20, "insight": "[Minervini] 放量突破确认"},
+    {"condition": "(data['hi52'] - data['close']) / data['hi52'] < 0.10", "weight": 15, "insight": "[Minervini] 接近52周高点，强势形态"},
+    {"condition": "50 < data['rsi14'] < 70", "weight": 10, "insight": "[Minervini] RSI健康区间"}
+  ],
+  "market_insight_checks": [
+    {"name": "overbought", "condition": "data['rsi14'] > 80", "signal_override": "neutral", "confidence_delta": -20, "priority": 1, "insight": "[Minervini] 超买区追涨成功率<40%，等回调"},
+    {"name": "perfect_breakout", "condition": "data['vcp_detected'] and data['volume_breakout_ratio'] > 1.5 and data['rsi14'] < 70", "signal_override": "bullish", "confidence_delta": 20, "priority": 2, "insight": "[Minervini] 教科书级VCP突破，SEPA标准买点"}
+  ],
+  "position_sizing": {"max_pct": 10, "logic": "满足全部条件时满仓"},
+  "exit_logic": {"hard_stop_pct": 0.08, "never_do": ["跌破止损后持仓观望"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['rsi14'] > 80", "insight": "RSI超买而多个agent看涨：超买区追涨历史成功率低于40%"}
+  ]
+}

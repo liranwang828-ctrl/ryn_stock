@@ -1,0 +1,23 @@
+{
+  "sym": "AR",
+  "date": "2026-05-22",
+  "signal": "bearish",
+  "agent_signals": {
+    "MacroAgent": {
+      "signal": "bullish",
+      "confidence": 95
+    },
+    "SentimentAgent": {
+      "signal": "bearish",
+      "confidence": 80
+    },
+    "RiskAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    },
+    "CommunityAgent": {
+      "signal": "bearish",
+      "confidence": 90
+    }
+  }
+}

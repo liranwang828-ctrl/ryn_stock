@@ -1,0 +1,31 @@
+{
+  "sym": "NBIS",
+  "date": "2026-05-19",
+  "signal": "bullish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "bearish",
+      "confidence": 75
+    },
+    "FundAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "MacroAgent": {
+      "signal": "bearish",
+      "confidence": 75
+    },
+    "SentimentAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "CommunityAgent": {
+      "signal": "bullish",
+      "confidence": 80
+    },
+    "RiskAgent": {
+      "signal": "neutral",
+      "confidence": 65
+    }
+  }
+}

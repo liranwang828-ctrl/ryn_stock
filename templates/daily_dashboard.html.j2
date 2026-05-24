@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Dashboard {{ date }}</title>
+  <!-- Chart.js CDN for Asset Curve Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% include "styles.css.j2" %}
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h1>📊 Trading Dashboard</h1>
+      <div class="meta">
+        <span>生成时间: <b style="color:#fff;">{{ generated_at }}</b></span>
+        <span>每 30 秒自动刷新</span>
+        {% if daily_plan and daily_plan.get('market_context') %}
+          <span>环境: <b style="color:#fff;">{{ daily_plan.market_context.get('env','—') }}</b></span>
+          {% if daily_plan.market_context.get('vix_level') %}
+            <span>VIX: <b style="color:#fff;">{{ '%.1f' % daily_plan.market_context.vix_level }}</b></span>
+          {% endif %}
+        {% endif %}
+        <span id="data-health-meta-span" style="display: inline-flex; align-items: center; gap: 4px;">
+          数据信道: <span id="data-health-badge" class="badge {% if data_health and data_health.status == 'restricted' %}badge-pulse-red{% else %}badge-green{% endif %}" style="font-size:0.75rem; padding:1px 6px; cursor:pointer;" onclick="toggleDataHealthPanel()">{% if data_health and data_health.status == 'restricted' %}⚠️ 受限{% else %}📊 稳定{% endif %}</span>
+        </span>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: var(--text-secondary); font-weight: 600;">📅 选择历史日期:</span>
+      <select id="dashboard-date-select" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-family:'Outfit'; font-weight:700; border-color:var(--primary);" onchange="switchDashboardDate(this.value)">
+        {% for d in available_dates %}
+          <option value="{{ d }}" {% if d == date %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </header>
+
+  <!-- ── Data Health Alert Panel ── -->
+  <div id="data-health-alert-panel" style="display: {% if data_health and data_health.status == 'restricted' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 158, 11, 0.03) 100%); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 1.2rem; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.08); animation: borderGlow 3s infinite;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+      <span style="font-family:'Outfit', sans-serif; font-weight:700; font-size:0.95rem; color:var(--red); display:flex; align-items:center; gap:6px;">
+        ⚠️ Yahoo Finance 数据信道受阻 (Data Connection Restricted)
+      </span>
+      <button class="json-link" style="border-color:var(--red); color:var(--red); padding:2px 8px; font-size:0.75rem; cursor:pointer;" onclick="toggleDataHealthPanel()">✕ 关闭提示</button>
+    </div>
+    <div style="font-size:0.82rem; line-height:1.5; color:var(--text-muted);">
+      <p style="margin-bottom:0.6rem;">系统检测到当前针对 Yahoo Finance 数据抓取信道频发失败。这通常是由于网络请求超时、SSL 握手受阻或频繁拉取被限频所致。</p>
+      <div style="background:rgba(0,0,0,0.3); padding:0.8rem; border-radius:8px; border:1px solid rgba(255,255,255,0.04); font-family:'JetBrains Mono', monospace; font-size:0.78rem; max-height:150px; overflow-y:auto;" id="data-health-errors-list">
+        {% if data_health and data_health.errors %}
+          {% for err in data_health.errors %}
+            <div style="margin-bottom:0.3rem;"><span style="color:var(--text-secondary);">[{{ err.ts[-13:-4] }}]</span> <span style="color:var(--red); font-weight:bold;">{{ err.sym }}</span>: {{ err.msg }}</div>
+          {% endfor %}
+        {% else %}
+          <div style="color:var(--text-muted);">暂无具体错误日志</div>
+        {% endif %}
+      </div>
+      <p style="margin-top:0.6rem; color:var(--yellow); font-size:0.8rem;">💡 建议措施：1. 确认控制中心网络连接是否具备稳定的海外代理；2. 数据信道将在 2 小时无异常发生后自动恢复为稳定状态。</p>
+    </div>
+  </div>
+
+  <!-- ── Next Action Banner ── -->
+  {% if session_state and session_state.get('next_action') %}
+    {% set na = session_state.next_action %}
+    <div class="banner {{ 'banner-immediate' if na.priority == 'immediate' else 'banner-normal' }}">
+      {% if na.priority == 'immediate' %}
+        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--red); box-shadow: 0 0 8px var(--red);"></span>
+        <b>IMMEDIATE ACTION required:</b>
+      {% else %}
+        <span>→</span>
+      {% endif %}
+      {{ na.instruction }}
+    </div>
+  {% endif %}
+
+  <!-- ── Tab Bar ── -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('overview', this)">📋 总览 Overview</button>
+    <button class="tab-btn" onclick="showTab('intraday', this)">📈 盘中详情 Intraday</button>
+    <button class="tab-btn" onclick="showTab('paper-trading', this)">📈 模拟账户 Paper Trading</button>
+    <button class="tab-btn" onclick="showTab('events', this)">⚡ LLM 事件 Events</button>
+    <button class="tab-btn" onclick="showTab('postmarket', this)">🌙 盘后复盘 Postmarket</button>
+    <button class="tab-btn" onclick="showTab('research', this)">🔬 研报中心 Research</button>
+    <button class="tab-btn" onclick="showTab('command', this)" id="btn-command">🎛️ 控制中心 Command Hub</button>
+  </div>
+
+  <!-- ═══════════════ TAB: 总览 ═══════════════ -->
+    <div id="tab-overview" class="tab-pane active">
+    <div class="overview-grid">
+      <!-- Left Column: Real Asset Allocation, Today's Focus Table, Inflow Hub -->
+      <div class="grid-left-col">
+        <!-- 1. Real Holdings Asset Allocation Table -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>💼 实盘持仓与资产分配 (Real Asset Allocation)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <button onclick="openTradeModal()" style="background: var(--primary-gradient); border: none; color: #ffffff; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); transition: all 0.2s;">
+                ➕ 录入实际交易
+              </button>
+              <span class="badge badge-green">Real Portfolio</span>
+            </div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>标的 Symbol</th>
+                  <th>类别 Tranche</th>
+                  <th>持股 Shares</th>
+                  <th>成本 Cost</th>
+                  <th>现价 Price</th>
+                  <th>市值 Value</th>
+                  <th>权重 Weight</th>
+                  <th>盈亏 PnL</th>
+                  <th>持股天数 Held</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if portfolio and portfolio.positions_detail %}
+                  {% for p in portfolio.positions_detail %}
+                    {% set sym = p.sym %}
+                    {% set tranche = positions_config.positions.get(sym, {}).get('tranche', '—') %}
+                    {% set p_type = positions_config.positions.get(sym, {}).get('position_type', '—') %}
+                    {% set pnl_val = (p.cur_price - p.cost) * p.shares %}
+                    {% set pnl_pct = (p.cur_price - p.cost) / p.cost * 100 if p.cost else 0.0 %}
+                    {% set weight = p.market_value / nav * 100 if nav else 0.0 %}
+                    <tr>
+                      <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">{{ sym }}</td>
+                      <td>
+                        <span class="badge {% if tranche == 'long_term' %}badge-blue{% elif tranche == 'T1' %}badge-yellow{% else %}badge-gray{% endif %}" style="font-size: 0.7rem; padding: 1px 5px;">
+                          {{ tranche }} / {{ p_type }}
+                        </span>
+                      </td>
+                      <td style="font-family:'JetBrains Mono', monospace;">{{ p.shares }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace;">${{ '%.2f'%p.cost }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">${{ '%.2f'%p.cur_price }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#fff;">${{ '%.2f'%p.market_value }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary);">{{ '%.1f'%weight }}%</td>
+                      <td class="{{ 'green' if pnl_val >= 0 else 'red' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                        {{ '%+.2f'%pnl_val }} ({{ '%+.1f'%pnl_pct }}%)
+                      </td>
+                      <td style="font-family:'JetBrains Mono', monospace; color:var(--text-muted);">{{ p.days_held }}天</td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+                <!-- Cash Row -->
+                <tr>
+                  <td style="font-family:'Outfit', sans-serif; font-weight:700; color:var(--text-secondary);">CASH 现金</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#fff;">${{ '%.2f'%cash }}</td>
+                  <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary);">{{ '%.1f'%(cash / nav * 100) if nav else 0.0 }}%</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                </tr>
+                <!-- Total Row -->
+                <tr style="border-top: 2px solid rgba(255,255,255,0.1); background: rgba(255, 255, 255, 0.02);">
+                  <td style="font-family:'Outfit', sans-serif; font-weight:800; color:#fff;">TOTAL NET ASSET</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="color:var(--text-muted);">—</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:800; color:var(--primary);">${{ '%.2f'%nav }}</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:800; color:#fff;">100.0%</td>
+                  {% set total_pnl_pct = portfolio.totals.total_unrealized_pnl_pct if portfolio and portfolio.totals else 0.0 %}
+                  <td class="{{ 'green' if total_pnl_pct >= 0 else 'red' }}" style="font-family:'JetBrains Mono', monospace; font-weight:800;">
+                    {{ '%+.1f'%total_pnl_pct }}%
+                  </td>
+                  <td style="color:var(--text-muted);">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Today's Focus Table (Loops focus_list) -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>🎯 今日关注列表仪表盘 (Today's Focus List)</span>
+            </div>
+            <span class="badge badge-blue">Focus Actions</span>
+          </div>
+          <div style="overflow-x: auto;">
+            {% if focus_list %}
+          {% set report_status = report_status|default({}) %}
+          {% set macro_nodes = macro_nodes|default({}) %}
+          {% set premarket_details = premarket_details|default({}) %}
+          <div style="margin-bottom:0.8rem; display:flex; gap:8px; align-items:center;">
+            <button class="action-btn" onclick="generateAllFocusReports()"
+                    style="background:rgba(99,102,241,0.1); border-color:rgba(99,102,241,0.3); color:#a5b4fc;">
+              ⚡ 一键生成全部缺失报告
+            </button>
+            <span style="font-size:0.75rem; color:var(--text-muted);">将自动补全 CIO 辩论 + 策略备忘录 + 宏观节点</span>
+          </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>标的 Symbol</th>
+                  <th>行动 Action</th>
+                  <th>最新价 Price</th>
+                  <th>距止损 Distance</th>
+                  <th>Flex 加仓</th>
+                  <th>Flex 减仓</th>
+                  <th>逻辑 Thesis</th>
+                  <th>闸门 Gate</th>
+                  <th>GTC</th>
+                  <th>操作 Options</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sym in focus_list %}
+                {% set pm = premarket.get(sym, {}) or {} %}
+                {% set it = intraday.get(sym, {}) or {} %}
+                {% set nodes = macro_nodes.get(sym, {}) or {} %}
+                {% set pm_d = premarket_details.get(sym, {}) or {} %}
+                {% set sc = (pm_d.get('strategic_context', {}) or {}) if pm_d else {} %}
+                {% set dp_sym = daily_plan.get('per_symbol', {}).get(sym, {}) if daily_plan else {} %}
+                {% set pm_entry_ov = pm.get('entry', {}) or {} %}
+                {% set action = dp_sym.get('action_now', pm_entry_ov.get('decision', sc.get('strategic_stance', '—'))) %}
+                {% set price = it.get('price_now', {}).get('price') %}
+                {% set pvn = it.get('plan_vs_now', {}) %}
+                {% set ds = nodes.get('dynamic_stop', {}) or {} %}
+                {% set add1 = nodes.get('add1', {}) or {} %}
+                {% set fr_node = nodes.get('flex_reduce', {}) or {} %}
+                {% set flex_reduce_price = (fr_node or {}).get('price') or ((pm or {}).get('exit') or {}).get('flex_reduce_level') or ((pm_d or {}).get('exit') or {}).get('flex_reduce_level') %}
+                {% set dist_stop = pvn.get('dist_to_stop_pct') %}
+                {% set dist_fa = pvn.get('dist_to_flex_add_pct') %}
+                {% set dist_fr = pvn.get('dist_to_flex_reduce_pct') %}
+                {% set thesis = pvn.get('thesis_signal') or sc.get('thesis_lifecycle', '—') %}
+                {% set gate = it.get('price_now', {}).get('gate_status', '—') %}
+                {% set gtc_ok = sym not in (session_state.get('gtc_status', {}).get('missing', []) if session_state else []) %}
+                {% set has_memo = sym in has_memo_syms %}
+                <tr>
+                  <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">
+                    <div style="display: inline-flex; align-items: center; gap: 4px;">
+                      {{ sym }}
+                      {% if sym in watchlist %}
+                        <span class="btn-watch-active">⭐ 自选</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    {% if action == 'exit' %}<span class="badge badge-red">🚨 exit</span>
+                    {% elif action == 'reduce' %}<span class="badge badge-yellow">⬇️ reduce</span>
+                    {% elif action == 'enter' %}<span class="badge badge-green">✅ enter</span>
+                    {% elif action == 'watch' %}<span class="badge badge-blue">👁️ watch</span>
+                    {% elif action == 'hold' %}<span class="badge badge-blue">🔵 hold</span>
+                    {% else %}<span class="badge badge-gray">{{ action or '—' }}</span>{% endif %}
+                  </td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {{ '$%.2f'%price if price else '—' }}
+                  </td>
+                  <td class="{{ 'red' if dist_stop is not none and dist_stop<3 else 'yellow' if dist_stop is not none and dist_stop<5 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {% if dist_stop is not none %}{{ '%.1f'%dist_stop }}%{% elif ds.get('price') %}${{ '%.0f'%ds.price }}{% else %}—{% endif %}
+                  </td>
+                  <td class="{{ 'green' if dist_fa is not none and dist_fa<2 else '' }}" style="font-family:'JetBrains Mono', monospace;">
+                    {% if dist_fa is not none %}{{ '%.1f'%dist_fa }}%{% elif add1.get('price') %}${{ '%.0f'%add1.price }}{% else %}—{% endif %}
+                  </td>
+                  <td class="{{ 'yellow' if dist_fr is not none and dist_fr<2 else '' }}" style="font-family:'JetBrains Mono', monospace;">
+                    {% if dist_fr is not none %}{{ '%.1f'%dist_fr }}%{% elif flex_reduce_price %}${{ '%.2f'%flex_reduce_price }}{% else %}—{% endif %}
+                  </td>
+                  <td>
+                    {% if thesis == 'breach' %}<span class="red">💀</span>
+                    {% elif thesis == 'warning' or thesis == 'late' %}<span class="yellow">⚠️</span>
+                    {% elif thesis == 'intact' or thesis == 'mid' or thesis == 'early' %}<span class="green">✅</span>
+                    {% else %}<span class="gray">{{ thesis }}</span>{% endif %}
+                    <span style="font-size:0.8rem; font-weight:600;">{{ thesis }}</span>
+                  </td>
+                  <td>
+                    <span class="badge {% if gate == '通过' %}badge-green{% elif gate == '未通过' %}badge-red{% else %}badge-gray{% endif %}" style="padding:1px 5px; font-size:0.7rem;">
+                      {{ gate }}
+                    </span>
+                  </td>
+                  <td>
+                    <span style="font-size:1.15rem;">{{ '🟢' if gtc_ok else '🔴⚠️' }}</span>
+                  </td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                      {% set rs = report_status.get(sym, {}) %}
+                      {% if rs.get('has_cio') %}
+                        <a class="json-link" href="../reports/{{ date }}_{{ sym }}.html" style="border-color:var(--green); color:#6ee7b7;" target="_blank" title="CIO 深度辩论报告">✅CIO</a>
+                      {% else %}
+                        <span class="json-link" style="border-color:var(--yellow); color:var(--yellow); cursor:pointer" title="生成 CIO 深度辩论报告 + 策略备忘录" onclick="generateReportForFocus('{{ sym }}')">⚠️待生成</span>
+                      {% endif %}
+                      {% if sym in research_reports %}
+                        <a class="json-link" href="../reports/research_{{ sym }}.html" style="border-color:var(--blue); color:#93c5fd;" target="_blank">✅研报</a>
+                      {% else %}
+                        <span class="json-link" style="border-color:var(--gray-border); color:var(--text-muted); cursor:default">—</span>
+                      {% endif %}
+                      {% if rs.get('has_macro_nodes') %}
+                        <span class="json-link" style="border-color:var(--green-border); color:var(--green); cursor:default">✅节点</span>
+                      {% else %}
+                        <span class="json-link" style="border-color:var(--gray-border); color:var(--text-muted); cursor:default">—</span>
+                      {% endif %}
+                      <span class="btn-watch-active" style="background:rgba(244,63,94,0.15); color:var(--red); border:1px solid rgba(244,63,94,0.3); padding:2px 6px; cursor:pointer;" onclick="removeFromFocus('{{ sym }}')">❌</span>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div style="text-align:center; padding:3rem 2rem; color:var(--text-muted); font-size:0.95rem;">
+              <div style="font-size:2rem; margin-bottom:0.8rem;">🎯</div>
+              今日关注列表暂空。请从下方<strong>【选股流入中心】</strong>或直接搜索股票加入关注！<br>
+              <span style="font-size:0.82rem; color:var(--text-muted);">只有加入今日关注的股票，才会在【盘中详情】展示深度监控。</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 3. Inflow Hub (选股流入中心) -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📥 选股流入中心 (Stock Focus Inflow Hub)</span>
+            </div>
+            <span class="badge badge-blue">Inflow Hub</span>
+          </div>
+          
+          <!-- Manual Search and Add Row -->
+          <div style="display:flex; gap:10px; margin-bottom:1.2rem; align-items:center;">
+            <input type="text" id="manual-focus-input" placeholder="输入美股代码 (e.g. NVDA, RGTI)" style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); border-radius:6px; padding:8px 12px; color:#fff; font-family:'JetBrains Mono', monospace; font-size:0.9rem; flex:1; outline:none; transition: border-color 0.2s;" onkeydown="if(event.key === 'Enter') searchAndAddFocus()">
+            <button class="action-btn active" style="padding:8px 16px; font-size:0.88rem; border-radius:6px; border:none; cursor:pointer;" onclick="searchAndAddFocus()">➕ 盘前分析并加入关注</button>
+          </div>
+
+          <div class="grid-2" style="gap:1.2rem; align-items: stretch; grid-template-columns: 1.2fr 0.8fr;">
+            <!-- Column 1: Premarket Scan Candidates -->
+            <div style="background:rgba(0,0,0,0.15); padding:1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.02);">
+              <h3 style="font-size:0.95rem; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                <span>🔥 今日自动扫描推荐 (Premarket Scan)</span>
+                <button class="json-link" style="font-size:0.75rem; border-color:var(--primary); cursor:pointer;" onclick="runTask('scan')">🔄 重新扫描</button>
+              </h3>
+              {% if candidates_list %}
+                <div style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; padding-right:4px;">
+                  {% for c in candidates_list %}
+                    {% set c_sym = c.sym %}
+                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-radius:6px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+                      <div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                          <strong style="color:#fff; font-family:'Outfit', sans-serif;">{{ c_sym }}</strong>
+                          <span class="badge {% if c.score >= 20 %}badge-red{% else %}badge-yellow{% endif %}" style="font-size:0.65rem; padding:0 4px;">Score: {{ c.score }}</span>
+                          <span style="font-size:0.75rem; color:var(--text-secondary); font-family:'JetBrains Mono', monospace;">
+                            {{ '%+.1f'%c.recent_2d if c.recent_2d is not none else '0.0' }}% (2d)
+                          </span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                          {{ c.reasons | join(', ') }}
+                        </div>
+                      </div>
+                      <div>
+                        {% if c_sym in focus_list %}
+                          <span style="font-size:0.75rem; color:var(--green); font-weight:600; padding:4px 8px; background:var(--green-bg); border-radius:4px; border:1px solid var(--green-border);">已关注</span>
+                        {% else %}
+                          <button class="json-link" style="border-color:var(--primary); color:#fff; font-size:0.75rem; padding:4px 8px; cursor:pointer;" onclick="addToFocus('{{ c_sym }}')">➕ 关注</button>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted); font-size:0.82rem;">
+                  暂无今日盘前自动扫描数据。<br>
+                  <span style="color:var(--primary); cursor:pointer; text-decoration:underline;" onclick="runTask('scan')">点击运行【选股扫描】任务</span> 以生成推荐。
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Column 2: Watchlist & Holdings Quick Inflow -->
+            <div style="background:rgba(0,0,0,0.15); padding:1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column;">
+              <h3 style="font-size:0.95rem; margin-bottom:0.8rem;">⭐ 自选与持仓快速流入</h3>
+              <div style="flex:1; max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;">
+                <!-- Real holdings list -->
+                {% if portfolio and portfolio.positions_detail %}
+                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:2px;">实盘持仓 (Real Holdings)</div>
+                  {% for p in portfolio.positions_detail %}
+                    {% set h_sym = p.sym %}
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.01); padding:4px 6px; border-radius:4px;">
+                      <span style="font-family:'Outfit', sans-serif; font-weight:600; font-size:0.85rem; color:#fff;">{{ h_sym }}</span>
+                      {% if h_sym in focus_list %}
+                        <span style="font-size:0.7rem; color:var(--green); font-weight:600;">已关注</span>
+                      {% else %}
+                        <span class="btn-watch" style="font-size:0.7rem; padding:1px 6px; cursor:pointer;" onclick="addToFocus('{{ h_sym }}')">➕ 关注</span>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% endif %}
+
+                <!-- Watchlist list -->
+                {% if watchlist %}
+                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:6px; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:2px;">自选列表 (Watchlist)</div>
+                  {% for w_sym in watchlist %}
+                    {# Skip if already rendered in holdings #}
+                    {% set in_holdings = portfolio and portfolio.positions_detail and (w_sym in portfolio.positions_detail | map(attribute='sym')) %}
+                    {% if not in_holdings %}
+                      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.01); padding:4px 6px; border-radius:4px;">
+                        <span style="font-family:'Outfit', sans-serif; font-weight:600; font-size:0.85rem; color:#fff;">{{ w_sym }}</span>
+                        {% if w_sym in focus_list %}
+                          <span style="font-size:0.7rem; color:var(--green); font-weight:600;">已关注</span>
+                        {% else %}
+                          <span class="btn-watch" style="font-size:0.7rem; padding:1px 6px; cursor:pointer;" onclick="addToFocus('{{ w_sym }}')">➕ 关注</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Risk Metrics, NAV Chart, Decision Schedule, Real Trades Ledger -->
+      <div class="grid-right-col">
+        <!-- 1. Risk Metrics Card -->
+        <div class="card" style="margin-bottom: 0;">
+          <div class="card-title">
+            <div class="title-left">
+              <span>🛡️ 组合风险控制与度量 (Risk Metrics)</span>
+            </div>
+            <button class="action-btn" onclick="refreshPortfolio()" title="根据最新持仓和实时价格重建组合快照" style="font-size:0.78rem;">🔄 刷新组合</button>
+          </div>
+          {% if portfolio and portfolio.get('totals') %}
+            {% set t = portfolio.totals %}
+            <div class="grid-2" style="gap: 0.8rem; margin-bottom: 1rem;">
+              <div class="metric">
+                <div class="label">组合总资产 NAV</div>
+                <div class="value" style="color:var(--primary); font-family:'JetBrains Mono', monospace;">${{ '%.2f'%nav }}</div>
+              </div>
+              <div class="metric">
+                <div class="label">可用现金 Cash</div>
+                <div class="value" style="color:#ffffff; font-family:'JetBrains Mono', monospace;">${{ '%.2f'%cash }}</div>
+              </div>
+              <div class="metric">
+                <div class="label">股票市值 MV</div>
+                <div class="value" style="color:#ffffff; font-family:'JetBrains Mono', monospace;">${{ '%.2f'%t.holdings_value }}</div>
+              </div>
+              <div class="metric">
+                <div class="label">当前杠杆率 Leverage</div>
+                <div class="value {{ 'red' if t.leverage_ratio > 1.8 else 'yellow' if t.leverage_ratio > 1.4 else 'green' }}">
+                  {{ '%.2f'%t.leverage_ratio }}x
+                </div>
+              </div>
+              <div class="metric">
+                <div class="label">组合浮动盈亏 PnL</div>
+                {% set total_pnl_pct = t.total_unrealized_pnl_pct if t.total_unrealized_pnl_pct is not none else 0.0 %}
+                <div class="value {{ 'green' if total_pnl_pct >= 0 else 'red' }}">
+                  {{ '%+.1f'%total_pnl_pct }}%
+                </div>
+              </div>
+              <div class="metric">
+                <div class="label">组合风险值 VaR (5%)</div>
+                <div class="value {{ 'red' if t.var_5pct_pct > 4.5 else 'yellow' if t.var_5pct_pct > 3.0 else 'green' }}">
+                  ${{ '%.0f'%t.var_5pct_loss }} ({{ '%.1f'%t.var_5pct_pct }}%)
+                </div>
+              </div>
+            </div>
+            
+            {% if portfolio.warnings %}
+              <div style="display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
+                {% for w in portfolio.warnings %}
+                  <div class="alert-card alert-{{ 'red' if w.level=='high' else 'yellow' if w.level=='medium' else 'info' }}" style="padding: 0.4rem 0.6rem; font-size: 0.78rem; margin: 0.15rem 0;">
+                    <b>🛡️ RISK:</b> {{ w.msg }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% else %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+              暂无组合风险数据。请先执行【资产剖析】。
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- 2. NAV History Trend Chart -->
+        <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; margin-bottom: 0;">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📈 组合净资产历史变动走势 (NAV Timeline)</span>
+            </div>
+            <span class="badge badge-blue">Timeline</span>
+          </div>
+          <div style="position:relative; width:100%; height:200px; background:rgba(0,0,0,0.15); border-radius:8px; padding:10px; border:1px solid rgba(255,255,255,0.02); flex:1;">
+            <canvas id="portfolioHistoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 3. Decision Schedule -->
+        {% if daily_plan and daily_plan.get('schedule') %}
+          <div class="card">
+            <div class="card-title">📅 盘中决策日程表</div>
+            <div style="overflow-x: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时段 Node</th>
+                    <th>任务 Name</th>
+                    <th>执行 Window</th>
+                    <th>状态 Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in daily_plan.schedule %}
+                  <tr>
+                    <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary); font-weight:600; font-size:0.8rem;">{{ s.node }}</td>
+                    <td style="font-weight:700; color:#fff; font-size:0.85rem;">{{ s.name }}</td>
+                    <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary); font-size:0.8rem;">{{ s.window }}</td>
+                    <td>
+                      {% if s.status=='done' %}<span class="badge badge-green" style="font-size:0.68rem; padding:1px 4px;">done</span>
+                      {% elif s.status=='active' %}<span class="badge badge-yellow" style="font-size:0.68rem; padding:1px 4px;">active</span>
+                      {% elif s.status=='auto' %}<span class="badge badge-gray" style="font-size:0.68rem; padding:1px 4px;">auto</span>
+                      {% else %}<span class="badge badge-gray" style="opacity:0.5; font-size:0.68rem; padding:1px 4px;">pend</span>{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- 4. Real Trades Ledger (Loops real_trades) -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📜 实盘历史交易台账 (Real Trades Ledger)</span>
+            </div>
+            <span class="badge badge-green">Real Trades</span>
+          </div>
+          {% if real_trades %}
+            <div style="overflow-y: auto; max-height: 250px; padding-right:4px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间 Time</th>
+                    <th>标的 Symbol</th>
+                    <th>方向 Action</th>
+                    <th>数量 Qty</th>
+                    <th>价格 Price</th>
+                    <th>交易额 Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in real_trades %}
+                    {% set time_str = t.get('time') or t.get('ts') or t.get('timestamp') or t.get('date') or '—' %}
+                    {% set type_str = t.get('type') or t.get('action') or '—' %}
+                    {% set is_buy = type_str in ['buy', 'ENTER', 'ADD', '买入', '加仓'] %}
+                    {% set sym_val = t.get('sym') or t.get('symbol') or '—' %}
+                    {% set qty_val = t.get('qty') or t.get('shares') or 0 %}
+                    {% set price_val = t.get('price') or 0 %}
+                    <tr>
+                      <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary); font-size:0.75rem;">
+                        {{ time_str[5:16] if time_str and time_str|length>=16 else time_str }}
+                      </td>
+                      <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">{{ sym_val }}</td>
+                      <td>
+                        {% if is_buy %}
+                          <span class="badge badge-green" style="font-size:0.65rem; padding:1px 4px;">BUY/买入</span>
+                        {% else %}
+                          <span class="badge badge-red" style="font-size:0.65rem; padding:1px 4px;">SELL/卖出</span>
+                        {% endif %}
+                      </td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">{{ qty_val }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">${{ '%.2f'%price_val }}</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--primary);">${{ '%.2f'%(qty_val * price_val) }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+              暂无实盘交易记录（成交日志暂空）
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div><!-- /tab-overview -->
+
+  <!-- ═══════════════ TAB: 盘中详情 ═══════════════ -->
+  <div id="tab-intraday" class="tab-pane">
+    <!-- 盘前策略节点（Pre-market Strategy Nodes） -->
+    {% set macro_nodes = macro_nodes|default({}) %}
+    {% set premarket_details = premarket_details|default({}) %}
+    <div class="card">
+      <div class="card-title">
+        <div class="title-left">
+          <span>🎯 盘前策略节点 (Premarket Strategy Nodes)</span>
+        </div>
+        <span class="badge badge-blue">Macro Strategy</span>
+      </div>
+      {% if macro_nodes %}
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>标的</th>
+              <th>动态止损</th>
+              <th>目标价 TP1</th>
+              <th>Flex 加仓</th>
+              <th>Flex 减仓</th>
+              <th>情景降级</th>
+              <th>论点状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sym in focus_list %}
+            {% set nodes = macro_nodes.get(sym, {}) or {} %}
+            {% set pm_d = premarket_details.get(sym, {}) or {} %}
+            {% set sc = (pm_d.get('strategic_context', {}) or {}) if pm_d else {} %}
+            <tr>
+              <td style="font-family:'Outfit',sans-serif; font-weight:700; color:#fff;">{{ sym }}</td>
+              <td style="font-family:'JetBrains Mono',monospace;">
+                {{ '$%.2f'|format(nodes.get('dynamic_stop', {}).get('price', 0)) if nodes.get('dynamic_stop', {}).get('price') else '—' }}
+              </td>
+              <td style="font-family:'JetBrains Mono',monospace; color:var(--green);">
+                {{ '$%.2f'|format(nodes.get('tp1', {}).get('price', 0)) if nodes.get('tp1', {}).get('price') else '—' }}
+              </td>
+              <td style="font-family:'JetBrains Mono',monospace; color:var(--blue);">
+                {{ '$%.2f'|format(nodes.get('add1', {}).get('price', 0)) if nodes.get('add1', {}).get('price') else '—' }}
+              </td>
+              <td style="font-family:'JetBrains Mono',monospace; color:var(--yellow);">
+                {% set fr = nodes.get('flex_reduce', {}) or {} %}
+                {{ '$%.2f'|format(fr.price) if fr.get('price') else '—' }}
+              </td>
+              <td>
+                {% set sd = nodes.get('scenario_downgrade', {}) or {} %}
+                {% if sd.get('price') %}
+                <span class="badge badge-yellow">{{ '$%.2f'|format(sd.price) }}</span>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% set lifecycle = sc.get('thesis_lifecycle', '') %}
+                {% set stance = sc.get('strategic_stance', '') %}
+                {% if lifecycle == 'early' %}<span class="badge badge-blue">🌱 {{ stance }}</span>
+                {% elif lifecycle == 'mid' %}<span class="badge badge-green">✅ {{ stance }}</span>
+                {% elif lifecycle == 'late' %}<span class="badge badge-yellow">⚠️ {{ stance }}</span>
+                {% elif lifecycle == 'end' %}<span class="badge badge-red">❌ {{ stance }}</span>
+                {% else %}<span class="badge badge-gray">{{ stance or '—' }}</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+        尚未生成策略节点。请在控制中心运行「盘前决策汇总」以自动生成。<br>
+        <span style="font-size:0.8rem;">（CIO → macro_strategy → premarket_summary 全链路）</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if focus_list %}
+      {% for sym in focus_list %}
+      {% set pm = premarket.get(sym, {}) %}
+      {% set it = intraday.get(sym, {}) %}
+      {% set dp_sym = daily_plan.get('per_symbol', {}).get(sym, {}) if daily_plan else {} %}
+      {% set pn = it.get('price_now', {}) %}
+      {% set pvn = it.get('plan_vs_now', {}) %}
+      {% set pm_entry = pm.get('entry', {}) or {} %}
+      {% set pm_exit = pm.get('exit', {}) or {} %}
+      {% set pm_adj = pm.get('post_open_adj', {}) or {} %}
+      {# key_levels #}
+      {% set kl_dp = dp_sym.get('key_levels', {}) or {} %}
+      {% set kl = {
+        'entry_base':  kl_dp.get('entry_base')  or pm_adj.get('entry_base_adj')  or pm_entry.get('entry_base'),
+        'hard_stop':   kl_dp.get('hard_stop')   or pm_adj.get('hard_stop_adj')   or pm_exit.get('hard_stop'),
+        'flex_add':    kl_dp.get('flex_add')    or pm_adj.get('flex_add_adj')    or pm_exit.get('flex_add_level'),
+        'flex_reduce': kl_dp.get('flex_reduce') or pm_adj.get('flex_reduce_adj') or pm_exit.get('flex_reduce_level'),
+        'target':      kl_dp.get('target')      or pm_adj.get('target_adj')      or pm_exit.get('target_price') or pm_entry.get('target_price'),
+      } %}
+      {% set ss = pm.get('stock_snapshot', {}) %}
+      {% set thesis_data = pm.get('thesis', {}) %}
+      {% set has_memo = sym in has_memo_syms %}
+
+      <div class="card">
+        <!-- 标题行 + 链接 -->
+        <div class="card-title" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.8rem; margin-bottom: 1rem;">
+          <div class="title-left">
+            <span style="font-family:'Outfit', sans-serif; font-size:1.35rem; font-weight:800; color:#fff;">{{ sym }}</span>
+            {% if sym in watchlist %}
+              <span class="btn-watch-active" style="margin-left: 2px;">⭐ 已关注</span>
+            {% else %}
+              <span id="watch-btn-intraday-{{ sym }}" class="btn-watch" style="margin-left: 2px;" onclick="addToWatchlist('{{ sym }}')">➕ 关注</span>
+            {% endif %}
+            {% if pn.get('price') %}
+              <span style="font-family:'JetBrains Mono', monospace; font-size:1.25rem; font-weight:700;">${{ '%.2f'%pn.price }}</span>
+              <span class="badge {% if (pn.get('chg_pct') or 0)>=0 %}badge-green{% else %}badge-red{% endif %}" style="font-size:0.75rem; padding: 1px 6px;">
+                {{ '%+.2f'%(pn.get('chg_pct') or 0) }}%
+              </span>
+            {% endif %}
+            <!-- 板块 -->
+            {% if ss.get('sector_ref') %}
+              <span style="color:var(--text-secondary); font-size:0.78rem; display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.02); padding: 2px 8px; border-radius: 6px; border:1px solid rgba(255,255,255,0.04);">
+                🏭 {{ ss.sector_ref }} {{ '%+.1f'%ss.sector_gap_pct if ss.get('sector_gap_pct') is not none else '' }}%
+                | RS板比 {{ '%+.1f'%ss.rs_vs_sector if ss.get('rs_vs_sector') is not none else '?' }}%
+              </span>
+            {% endif %}
+            <!-- 风险标记 -->
+            {% if ss.get('risk_flag') %}
+              <span class="badge badge-red" style="font-size: 0.7rem; padding: 1px 6px;">⚠️ RISK: {{ ss.risk_note }}</span>
+            {% endif %}
+          </div>
+          
+          <div style="display:flex; gap: 4px;">
+            <a href="../findings/premarket_summary_{{ date }}_{{ sym }}.json" target="_blank">📄 盘前</a>
+            {% if sym in research_reports %}
+              <a href="../reports/research_{{ sym }}.html" style="border-color:var(--primary); color:#a5b4fc;" target="_blank">🔬 深度研报</a>
+            {% elif has_memo %}
+              <a href="../strategic_memo_{{ sym }}.json" target="_blank">🔬 深度Memo</a>
+            {% endif %}
+            {% if sym in cio_reports %}
+              <a href="../reports/{{ date }}_{{ sym }}.html" style="border-color:var(--green); color:#6ee7b7;" target="_blank">📊 CIO报告</a>
+            {% else %}
+              <span style="opacity:0.35; font-size:0.8rem; border: 1px solid rgba(255,255,255,0.05); padding:2px 8px; border-radius:6px;" title="今日无CIO报告">📊 CIO</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- 左列：实时价格 + 技术 -->
+          <div>
+            <h3>📡 Intraday Realtime Signals</h3>
+            <table>
+              <tbody>
+                <tr>
+                  <td style="color:var(--text-secondary); width:35%;">VWAP 偏离率</td>
+                  <td class="{% if (pn.get('vwap_dist_pct') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
+                    {{ '%+.2f'%pn.vwap_dist_pct+'%' if pn.get('vwap_dist_pct') is not none else '—' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">相对强度 (RS vs SPY)</td>
+                  <td class="{% if (pn.get('rs_vs_spy') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {{ '%+.2f'%pn.rs_vs_spy+'%' if pn.get('rs_vs_spy') is not none else '—' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">相对强度 (RS vs 板块)</td>
+                  <td class="{% if (pn.get('rs_vs_sector') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {{ '%+.2f'%pn.rs_vs_sector+'%' if pn.get('rs_vs_sector') is not none else '—' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">大师评分共识</td>
+                  <td>
+                    <span style="font-weight:700; color:#fff;">{{ '%.1f'%pn.master_avg if pn.get('master_avg') else '—' }}/10</span>
+                    <span class="badge {% if pn.get('master_consensus')=='buy' %}badge-green{% elif pn.get('master_consensus')=='no_buy' %}badge-red{% else %}badge-gray{% endif %}" style="font-size:0.7rem; padding: 1px 5px; margin-left:5px;">
+                      {{ pn.get('master_consensus','—') }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">入场闸门检测 Gate</td>
+                  <td>
+                    {% if pn.get('gate_pass') %}
+                      {% for g in pn.gate_pass %}<span class="gate-tag gate-pass">{{ g }}</span>{% endfor %}
+                    {% endif %}
+                    {% if pn.get('gate_block') %}
+                      {% for g in pn.gate_block %}<span class="gate-tag gate-fail">{{ g }}</span>{% endfor %}
+                    {% endif %}
+                    {% if not pn.get('gate_pass') and not pn.get('gate_block') %}—{% endif %}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- 入场条件进度 -->
+            {% set met = pvn.get('entry_conditions_met', 0) %}
+            {% set total = pvn.get('entry_conditions_total', 0) %}
+            {% if total > 0 %}
+              <div style="margin-top: 1rem; padding: 0.8rem; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:2px;">
+                  <span style="color:var(--text-secondary);">入场量化触发条件进展</span>
+                  <b style="color:#fff;">{{ met }} / {{ total }}</b>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:{{ (met/total*100)|int }}%"></div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- 右列：计划 vs 现实 + Flex -->
+          <div>
+            <h3>📐 Strategy Decision Nodes</h3>
+            <table>
+              <tbody>
+                <tr>
+                  <td style="color:var(--text-secondary); width:35%;">计划建仓位</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:#fff;">
+                    {{ '$%.2f'%kl.entry_base if kl.get('entry_base') else '—' }}
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
+                      {{ '(%+.1f%%)'%pvn.dist_to_entry_pct if pvn.get('dist_to_entry_pct') is not none else '' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">硬止损线 (Hard Stop)</td>
+                  <td class="{{ 'red' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<3 else 'yellow' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<5 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
+                    {{ '$%.2f'%kl.hard_stop if kl.get('hard_stop') else '—' }}
+                    <span style="font-size:0.78rem; font-weight:600;">
+                      {{ '(%.1f%%)'%pvn.dist_to_stop_pct if pvn.get('dist_to_stop_pct') is not none else '' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">战略止盈目标 (Target)</td>
+                  <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--green);">
+                    {{ '$%.2f'%kl.target if kl.get('target') else '—' }}
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
+                      {{ '(%.1f%%)'%pvn.dist_to_target_pct if pvn.get('dist_to_target_pct') is not none else '' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">Flex 缩量加仓价</td>
+                  <td class="{{ 'green' if pvn.get('dist_to_flex_add_pct') is not none and pvn.dist_to_flex_add_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {{ '$%.2f'%kl.flex_add if kl.get('flex_add') else '—' }}
+                    <span style="font-size:0.78rem;">
+                      {{ '(%.1f%%)'%pvn.dist_to_flex_add_pct if pvn.get('dist_to_flex_add_pct') is not none else '' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">Flex 超买减仓价</td>
+                  <td class="{{ 'yellow' if pvn.get('dist_to_flex_reduce_pct') is not none and pvn.dist_to_flex_reduce_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                    {{ '$%.2f'%kl.flex_reduce if kl.get('flex_reduce') else '—' }}
+                    <span style="font-size:0.78rem;">
+                      {{ '(%.1f%%)'%pvn.dist_to_flex_reduce_pct if pvn.get('dist_to_flex_reduce_pct') is not none else '' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">核心逻辑信号 Thesis</td>
+                  <td class="{% if pvn.get('thesis_signal')=='breach' %}red{% elif pvn.get('thesis_signal')=='warning' %}yellow{% else %}green{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
+                    {{ pvn.get('thesis_signal','—') }}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-secondary);">入场窗口状态 Window</td>
+                  <td class="{% if pvn.get('entry_go_status')=='go' %}green{% elif pvn.get('entry_go_status')=='abort' %}red{% else %}gray{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
+                    {{ pvn.get('entry_go_status','—') }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 今日证伪条件 -->
+        {% set falsif = thesis_data.get('today_falsification', []) if thesis_data else [] %}
+        {% if falsif %}
+          <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 0.8rem;">
+            <h4 style="font-size:0.78rem; text-transform:uppercase; color:var(--text-secondary); margin-bottom:0.4rem; letter-spacing:0.04em;">🛡️ 今日盘中核心逻辑证伪条件</h4>
+            <div style="background:rgba(255,255,255,0.005); border:1px solid rgba(255,255,255,0.02); border-radius:8px; padding:0.6rem 0.8rem;">
+              {% for f in falsif %}
+                <div class="falsif-item">
+                  <span style="color:var(--yellow);">🔒</span>
+                  <span>{{ f }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- action_now -->
+        {% if it.get('action_now') %}
+          {% set ac = it.action_now %}
+          <div class="alert-card alert-{{ 'red' if ac.get('urgency')=='immediate' else 'info' }}" style="margin-top: 1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+              <b style="font-size:0.9rem;">→ 执行指令: {{ ac.get('conclusion','?') }}</b>
+              {% if ac.get('urgency') %}
+                <span class="badge {% if ac.urgency=='immediate' %}badge-red{% else %}badge-gray{% endif %}" style="font-size:0.65rem; padding:1px 5px;">
+                  {{ ac.urgency }}
+                </span>
+              {% endif %}
+            </div>
+            <p style="color:var(--text-secondary); font-size:0.82rem;">{{ ac.get('note','') }}</p>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    {% else %}
+      <div class="card" style="text-align:center; padding:4rem 2rem; color:var(--text-muted); font-size:1rem;">
+        <div style="font-size:3rem; margin-bottom:1rem;">📡</div>
+        今日暂无关注股票。请在<strong>【总览】</strong>中选择关注股票以查看实时盘中信号与警报！
+      </div>
+    {% endif %}
+  </div><!-- /tab-intraday -->
+
+  <!-- ═══════════════ TAB: 模拟交易 Paper Trading ═══════════════ -->
+  <div id="tab-paper-trading" class="tab-pane">
+    <div class="overview-grid">
+      <!-- Left Column: Simulated Portfolios -->
+      <div class="grid-left-col">
+        <!-- 1. Benchmark Simulated Portfolio -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📈 模拟盘: 基准/主账户持仓 (Benchmark Portfolio)</span>
+            </div>
+            <span class="badge badge-blue">Benchmark</span>
+          </div>
+          {% if benchmark_portfolio %}
+            {% set b_cash = benchmark_portfolio.get('cash', 100000.0) %}
+            {% set b_initial = benchmark_portfolio.get('initial_cash', 100000.0) %}
+            {% set b_pos = benchmark_portfolio.get('positions', {}) %}
+            
+            <div style="display:flex; gap:1.5rem; margin-bottom:1rem; padding: 10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <div>
+                <span style="color:var(--text-secondary); font-size:0.8rem; display:block;">当前现金 Cash</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; font-weight:700; color:#fff;">${{ '%.2f'%b_cash }}</span>
+              </div>
+              <div>
+                <span style="color:var(--text-secondary); font-size:0.8rem; display:block;">初始资金 Initial</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; font-weight:700; color:var(--text-muted);">${{ '%.2f'%b_initial }}</span>
+              </div>
+            </div>
+
+            {% if b_pos %}
+              <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>标的</th>
+                      <th>持股</th>
+                      <th>成本</th>
+                      <th>止损</th>
+                      <th>目标1 / 2</th>
+                      <th>买入时间</th>
+                      <th>模式/原因</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sym, pos in b_pos.items() %}
+                      <tr>
+                        <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">{{ sym }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace;">{{ pos.shares }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace;">${{ '%.2f'%pos.cost }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--red);">${{ '%.2f'%pos.stop }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--green);">
+                          ${{ '%.2f'%pos.target1 }} / ${{ '%.2f'%pos.target2 }}
+                        </td>
+                        <td style="font-size:0.75rem; color:var(--text-secondary);">{{ pos.entry_time }}</td>
+                        <td style="font-size:0.78rem; color:var(--text-muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ pos.mode_reason }}">
+                          [{{ pos.mode }}] {{ pos.mode_reason }}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+                暂无基准模拟持仓（空仓中）
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- 2. Loose Simulated Portfolio -->
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📈 模拟盘: 宽松账户持仓 (Loose Portfolio)</span>
+            </div>
+            <span class="badge badge-yellow">Loose</span>
+          </div>
+          {% if loose_portfolio %}
+            {% set l_cash = loose_portfolio.get('cash', 100000.0) %}
+            {% set l_initial = loose_portfolio.get('initial_cash', 100000.0) %}
+            {% set l_pos = loose_portfolio.get('positions', {}) %}
+            
+            <div style="display:flex; gap:1.5rem; margin-bottom:1rem; padding: 10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <div>
+                <span style="color:var(--text-secondary); font-size:0.8rem; display:block;">当前现金 Cash</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; font-weight:700; color:#fff;">${{ '%.2f'%l_cash }}</span>
+              </div>
+              <div>
+                <span style="color:var(--text-secondary); font-size:0.8rem; display:block;">初始资金 Initial</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:1.1rem; font-weight:700; color:var(--text-muted);">${{ '%.2f'%l_initial }}</span>
+              </div>
+            </div>
+
+            {% if l_pos %}
+              <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>标的</th>
+                      <th>持股</th>
+                      <th>成本</th>
+                      <th>止损</th>
+                      <th>目标1 / 2</th>
+                      <th>买入时间</th>
+                      <th>模式/原因</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sym, pos in l_pos.items() %}
+                      <tr>
+                        <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">{{ sym }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace;">{{ pos.shares }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace;">${{ '%.2f'%pos.cost }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--red);">${{ '%.2f'%pos.stop }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--green);">
+                          ${{ '%.2f'%pos.target1 }} / ${{ '%.2f'%pos.target2 }}
+                        </td>
+                        <td style="font-size:0.75rem; color:var(--text-secondary);">{{ pos.entry_time }}</td>
+                        <td style="font-size:0.78rem; color:var(--text-muted); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ pos.mode_reason }}">
+                          [{{ pos.mode }}] {{ pos.mode_reason }}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+                暂无宽松模拟持仓（空仓中）
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right Column: Simulated Trades Ledger -->
+      <div class="grid-right-col">
+        <div class="card">
+          <div class="card-title">
+            <div class="title-left">
+              <span>📜 模拟账户成交日志 (Simulated Trade Ledger)</span>
+            </div>
+            <span class="badge badge-blue">Sim Logs</span>
+          </div>
+          {% if trades_history %}
+            <div style="overflow-y: auto; max-height: 600px; padding-right:4px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>账户</th>
+                    <th>标的</th>
+                    <th>方向</th>
+                    <th>交易额</th>
+                    <th>原因</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in trades_history %}
+                    {% set time_str = t.get('time') or t.get('timestamp') or '—' %}
+                    {% set type_str = t.get('type') or t.get('action') or '—' %}
+                    {% set is_buy = type_str in ['buy', 'ENTER', 'ADD', '买入', '加仓'] %}
+                    <tr>
+                      <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary); font-size:0.75rem;">
+                        {{ time_str[5:16] if time_str and time_str|length>=16 else time_str }}
+                      </td>
+                      <td>
+                        <span class="badge {% if t.acct_label == '基准/主账户' %}badge-blue{% else %}badge-gray{% endif %}" style="font-size:0.65rem; padding:1px 4px;">
+                          {{ '基准' if t.acct_label == '基准/主账户' else '宽松' }}
+                        </span>
+                      </td>
+                      <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">
+                        {{ t.get('symbol') or t.get('sym') or '—' }}
+                      </td>
+                      <td>
+                        {% if is_buy %}
+                          <span class="badge badge-green" style="font-size:0.65rem; padding:1px 4px;">买入</span>
+                        {% else %}
+                          <span class="badge badge-red" style="font-size:0.65rem; padding:1px 4px;">卖出</span>
+                        {% endif %}
+                      </td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--primary);">
+                        {% if t.get('qty') is not none and t.get('price') is not none %}
+                          ${{ '%.1f'%(t.qty * t.price) }}
+                        {% elif t.get('shares') is not none and t.get('price') is not none %}
+                          ${{ '%.1f'%(t.shares * t.price) }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td style="color:var(--text-secondary); font-size:0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ t.get('reason') or t.get('thesis') or '—' }}">
+                        {{ t.get('reason') or t.get('thesis') or '—' }}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">
+              暂无模拟账户交易台账记录
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- ═══════════════ TAB: 事件 ═══════════════ -->
+  <div id="tab-events" class="tab-pane">
+    <div class="card">
+      <div class="card-title">⚡ 今日 LLM 触发决策事件流水线</div>
+      {% if events %}
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>时间 Time</th>
+                <th>标的 Symbol</th>
+                <th>触发事件 Event</th>
+                <th>量化结论 Conclusion</th>
+                <th>紧急度 Urgency</th>
+                <th>指令备注 Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ev in events %}
+              {% set meta = ev.get('meta', {}) %}
+              {% set ac = ev.get('action_now') or {} %}
+              {% set trigger = meta.get('llm_trigger', '—') %}
+              <tr>
+                <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary);">{{ ev.get('ts','—') }}</td>
+                <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">{{ meta.get('sym','—') }}</td>
+                <td>
+                  <span class="badge {% if trigger in ['hard_stop_breach','vix_spike'] %}badge-red{% elif trigger in ['gate_flip','consensus_shift','thesis_breach'] %}badge-yellow{% else %}badge-gray{% endif %}" style="font-size:0.7rem; padding: 1px 5px;">
+                    {{ trigger }}
+                  </span>
+                </td>
+                <td style="font-weight:600; color:#fff;">{{ ac.get('conclusion','—') }}</td>
+                <td class="{% if ac.get('urgency')=='immediate' %}red{% else %}gray{% endif %}" style="font-weight:700; text-transform:uppercase; font-size:0.78rem;">
+                  {{ ac.get('urgency','—') }}
+                </td>
+                <td style="color:var(--text-secondary); font-size:0.8rem; line-height:1.4;">{{ ac.get('note','') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.9rem;">
+          今日盘中暂无实时 LLM 决策或警报触发事件
+        </div>
+      {% endif %}
+    </div>
+  </div><!-- /tab-events -->
+
+  <!-- ═══════════════ TAB: 盘后 ═══════════════ -->
+  <div id="tab-postmarket" class="tab-pane">
+    {% if postmarket_day and postmarket_day.get('portfolio') %}
+      {% set port = postmarket_day.portfolio %}
+      <div class="card">
+        <div class="card-title">今日持仓组合收盘表现</div>
+        <div class="grid-3">
+          <div class="metric">
+            <div class="label">加权日收益率 Day Return</div>
+            <div class="value {{ 'green' if (port.total_day_ret_pct or 0)>=0 else 'red' }}">
+              {{ '%+.2f'%port.total_day_ret_pct if port.total_day_ret_pct is not none else '—' }}%
+            </div>
+          </div>
+          <div class="metric">
+            <div class="label">今日最佳表现标的 Best</div>
+            <div class="value green" style="font-size:1.15rem; font-family:'Outfit', sans-serif;">{{ port.best_performer or '—' }}</div>
+          </div>
+          <div class="metric">
+            <div class="label">今日最差表现标的 Worst</div>
+            <div class="value red" style="font-size:1.15rem; font-family:'Outfit', sans-serif;">{{ port.worst_performer or '—' }}</div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if postmarket_day and postmarket_day.get('llm_review') %}
+      <div class="card">
+        <div class="card-title">🌙 多智能体盘后深度复盘与评估</div>
+        <p style="white-space:pre-wrap; line-height:1.7; font-size:0.92rem; color:var(--text-secondary); padding: 0.5rem 0;">{{ postmarket_day.llm_review }}</p>
+      </div>
+    {% endif %}
+
+    {% if postmarket_day and (postmarket_day.get('pending_suggestions_count',0) or 0) > 0 %}
+      <div class="card" style="border-color: rgba(245,158,11,0.15); background: rgba(245,158,11,0.01);">
+        <div class="card-title" style="color:var(--yellow);">⏳ 盘后策略待确认项 ({{ postmarket_day.pending_suggestions_count }} 条)</div>
+        <p style="color:var(--text-secondary); font-size:0.88rem;">
+          系统已生成次日仓位/阈值优化建议，将在明晨盘前（morning.py 节点）供您逐一审查和应用确认。
+        </p>
+      </div>
+    {% endif %}
+
+    {% if postmarket_day and postmarket_day.get('tomorrow_risk_calendar') %}
+      <div class="card">
+        <div class="card-title">📅 明日大盘/个股高影响事件日历</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          {% for ev in postmarket_day.tomorrow_risk_calendar %}
+            <div class="alert-card alert-yellow">
+              <b>EVENT RISK ALERT:</b> {{ ev }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if not postmarket_day %}
+      <div class="card" style="text-align:center; padding:2.5rem 2rem;">
+        <div style="color:var(--text-muted); font-size:0.92rem; margin-bottom:1.5rem; line-height:1.6;">
+          🌙 盘后深度复盘与组合清算数据尚未生成。将在美国东部时间 16:00 (北京时间次日 04:00) 盘后核算结束时自动就绪。
+        </div>
+        <button class="btn btn-primary" style="margin: 0 auto; display: inline-block; padding: 0.65rem 1.8rem; font-size: 0.88rem; font-weight:700; border-radius:10px; background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25); border:none; color:#fff; cursor:pointer;" onclick="showTab('command', document.getElementById('btn-command')); runTask('postmarket');">
+          ▶ 立即手动运行盘后复盘 Postmarket
+        </button>
+      </div>
+    {% endif %}
+  </div><!-- /tab-postmarket -->
+
+  <!-- ═══════════════ TAB: 研报中心 ═══════════════ -->
+  <div id="tab-research" class="tab-pane">
+    <div class="pipeline-container">
+      <!-- 左栏：长期研究报告 -->
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-title">
+          <div class="title-left">
+            <span>🔬 长期个股投研报告 (Strategic Research Memos)</span>
+          </div>
+          <span class="badge badge-blue">Long-Term Thesis</span>
+        </div>
+        {% if all_research_reports %}
+          <div style="overflow-y: auto; max-height: 500px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>标的 Symbol</th>
+                  <th>报告文件名 File</th>
+                  <th>阅读体验 Read</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in all_research_reports %}
+                  <tr>
+                    <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff; font-size: 1.05rem;">
+                      {{ r.symbol }}
+                    </td>
+                    <td style="font-family:'JetBrains Mono', monospace; color:var(--text-secondary); font-size:0.8rem;">
+                      {{ r.filename }}
+                    </td>
+                    <td>
+                      <a class="json-link" href="{{ r.path }}" target="_blank" style="border-color:var(--primary); color:#a5b4fc; font-weight:700;">阅读报告 →</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align:center; padding:3rem; color:var(--text-muted); font-size:0.9rem;">
+            暂无已生成的长期个股研究报告
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 右栏：历史 CIO 辩论对决研报 -->
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-title">
+          <div class="title-left">
+            <span>📊 历史 CIO 辩论对决研报归档 (CIO Debate Archives)</span>
+          </div>
+          <span class="badge badge-green">Daily Debates</span>
+        </div>
+        {% if all_cio_reports %}
+          <div style="overflow-y: auto; max-height: 500px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>日期 Date</th>
+                  <th>标的 Symbol</th>
+                  <th>归档文件名 File</th>
+                  <th>阅读体验 Read</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in all_cio_reports %}
+                  <tr>
+                    <td style="font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--text-secondary);">
+                      {{ r.date }}
+                    </td>
+                    <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">
+                      {{ r.symbol }}
+                    </td>
+                    <td style="font-family:'JetBrains Mono', monospace; color:var(--text-muted); font-size:0.75rem;">
+                      {{ r.filename }}
+                    </td>
+                    <td>
+                      <a class="json-link" href="{{ r.path }}" target="_blank" style="border-color:var(--green); color:#6ee7b7; font-weight:700;">阅读报告 →</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="text-align:center; padding:3rem; color:var(--text-muted); font-size:0.9rem;">
+            暂无已生成的历史 CIO 辩论对决研报
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div><!-- /tab-research -->
+
+  <!-- ═══════════════ TAB: 控制中心 Command Hub ═══════════════ -->
+  <div id="tab-command" class="tab-pane">
+    <div class="pipeline-container">
+      
+      <!-- SOP 每日交易作业程序引导 -->
+      <div class="card" style="margin-bottom: 1.2rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1px solid rgba(99, 102, 241, 0.2); box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50px; right: -50px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+        <div class="card-title" style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.8rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📅 每日交易标准作业程序引导 (Daily Trading SOP Guide)</span>
+          <span class="badge badge-blue" style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">PRO LOGIC</span>
+        </div>
+        
+        <div class="sop-timeline" style="display: flex; flex-direction: column; gap: 0.9rem; position: relative; padding-left: 0.5rem;">
+          <!-- Timeline line -->
+          <div style="position: absolute; left: 16px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(to bottom, var(--indigo) 0%, rgba(99, 102, 241, 0.2) 100%);"></div>
+          
+          <!-- Step 1 -->
+          <div class="sop-step" style="display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+            <div id="sop-step-1-dot" class="sop-dot {% if candidates_list %}sop-dot-green{% endif %}" style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; z-index: 1;">1</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="sop-name" style="font-family: 'Outfit'; font-weight: 700; font-size: 0.88rem; color: #fff;">1. 盘前行情扫描 (Candidate Scan)</span>
+                <span id="sop-step-1-badge" class="badge {% if candidates_list %}badge-green{% else %}badge-gray{% endif %}">
+                  {% if candidates_list %}✓ 已锁定 ({{ candidates_list|length }} 只){% else %}待扫描{% endif %}
+                </span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                美东时间 08:00 - 08:30 | 运行行情扫描，挑选超卖反弹与盘前异动候选股进入今日推荐池。
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="sop-step" style="display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+            <div id="sop-step-2-dot" class="sop-dot {% if daily_plan %}sop-dot-green{% endif %}" style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; z-index: 1;">2</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="sop-name" style="font-family: 'Outfit'; font-weight: 700; font-size: 0.88rem; color: #fff;">2. 盘前决策与焦点筛选 (Premarket Decision)</span>
+                <span id="sop-step-2-badge" class="badge {% if daily_plan %}badge-green{% else %}badge-gray{% endif %}">
+                  {% if daily_plan %}✓ 已锁定{% else %}待计划{% endif %}
+                </span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                美东时间 08:30 - 09:15 | 将焦点股加入“今日关注”，分析宏观环境并生成主基调及点位预案。
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="sop-step" style="display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+            <div id="sop-step-3-dot" class="sop-dot {% if cio_reports %}sop-dot-green{% endif %}" style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; z-index: 1;">3</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="sop-name" style="font-family: 'Outfit'; font-weight: 700; font-size: 0.88rem; color: #fff;">3. 焦点股 CIO 深度脑暴 (CIO Debate)</span>
+                <span id="sop-step-3-badge" class="badge {% if cio_reports %}badge-green{% else %}badge-gray{% endif %}">
+                  {% if cio_reports %}✓ 已脑暴 ({{ cio_reports|length }} 只){% else %}待研判{% endif %}
+                </span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                美东时间 09:15 - 09:30 | 运行多角色辩论引擎，全面打磨特定股票的买入/卖出深度沙盘研报。
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="sop-step" style="display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+            <div id="sop-step-4-dot" class="sop-dot {% if running_tasks and running_tasks.get('poll', {}).get('running') %}sop-dot-active{% endif %}" style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; z-index: 1;">4</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="sop-name" style="font-family: 'Outfit'; font-weight: 700; font-size: 0.88rem; color: #fff;">4. 盘中微观实时监测 (Intraday Polling Engine)</span>
+                <span id="sop-step-4-badge" class="badge {% if running_tasks and running_tasks.get('poll', {}).get('running') %}badge-green{% else %}badge-gray{% endif %}">
+                  {% if running_tasks and running_tasks.get('poll', {}).get('running') %}✓ 监测中{% else %}待启动{% endif %}
+                </span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                美东时间 09:30 - 16:00 | 开启高频盘中轮询监控，实时预警极端偏离与多因子突破，伴随纸黄金风控。
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="sop-step" style="display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+            <div id="sop-step-5-dot" class="sop-dot {% if postmarket_day %}sop-dot-green{% endif %}" style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; z-index: 1;">5</div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="sop-name" style="font-family: 'Outfit'; font-weight: 700; font-size: 0.88rem; color: #fff;">5. 盘后复盘反思与调优 (Postmarket Review)</span>
+                <span id="sop-step-5-badge" class="badge {% if postmarket_day %}badge-green{% else %}badge-gray{% endif %}">
+                  {% if postmarket_day %}✓ 已复盘{% else %}待收盘复盘{% endif %}
+                </span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                美东时间 16:00 - 18:00 | 复盘交易执行得失，通过多智能体协作生成今日复盘分析与参数回测调优。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 左栏：任务流水线控制 -->
+      <div class="card">
+        <div class="card-title">
+          <div class="title-left">
+            <span>⚙️ 量化交易流水线指挥调度</span>
+            <span id="poll-breathing-dot" class="terminal-dot"></span>
+          </div>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Asynchronous Process Pipelines</span>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:0.2rem;">
+          
+          <!-- Step 1: 扫描选股 -->
+          <div class="pipeline-step">
+            <div class="step-info">
+              <div class="step-number">1</div>
+              <div>
+                <div class="step-name">选股行情扫描 (Candidate Scan)</div>
+                <div class="step-desc">抓取美股标的多周期指标，匹配出强弱板块候选标的</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-primary" onclick="runTask('scan')">▶ 运行</button>
+              <button class="btn btn-secondary" onclick="syncStatusWithFeedback('scan')" style="font-size:0.75rem;">确认</button>
+            </div>
+          </div>
+          
+          <!-- Step 1.5: 确认关注列表 -->
+          <div class="pipeline-step" style="background:rgba(99,102,241,0.02); border-color:rgba(99,102,241,0.1);">
+            <div class="step-info">
+              <div class="step-number" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.3); color:#93c5fd;">1.5</div>
+              <div>
+                <div class="step-name">确认今日关注列表 (Confirm Focus List)</div>
+                <div class="step-desc">在 Overview 添加关注标的后，点击右侧按钮一键生成全部 CIO + 策略节点</div>
+              </div>
+              <button class="btn btn-primary" onclick="generateAllFocusReports()" style="background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-size:0.82rem;">⚡ 生成全部报告</button>
+              </div>
+            </div>
+          </div>
+           
+          <!-- Step 2: 盘前计划 -->
+          <div class="pipeline-step">
+            <div class="step-info">
+              <div class="step-number">2</div>
+              <div>
+                <div class="step-name">盘前决策汇总 (Premarket Summary)</div>
+                <div class="step-desc">自动补全 CIO → 宏观节点 → 汇总输出（已有报告的标的跳过）</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-primary" onclick="runTask('premarket')">▶ 运行</button>
+              <button class="btn btn-secondary" onclick="syncStatusWithFeedback('premarket')" style="font-size:0.75rem;">确认</button>
+            </div>
+          </div>
+          
+          <!-- Step 3: 盘中高频轮询 -->
+          <div class="pipeline-step" style="background: rgba(99, 102, 241, 0.03); border-color: rgba(99, 102, 241, 0.15);">
+            <div class="step-info">
+              <div class="step-number" style="background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3); color:#34d399;">3</div>
+              <div>
+                <div class="step-name" style="color:#a5b4fc;">盘中高频实盘轮询 (Intraday Polling Engine)</div>
+                <div class="step-desc">启动 poll.py 实时监测个股价格、止损 ATR，执行模拟交易</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button id="btn-poll-start" class="btn btn-primary" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16,185,129,0.2);" onclick="runTask('poll')">▶ 启动</button>
+              <button id="btn-poll-stop" class="btn btn-stop" onclick="stopTask('poll')">🛑 停止</button>
+            </div>
+          </div>
+
+          <!-- Step 4: 盘后复盘 -->
+          <div class="pipeline-step">
+            <div class="step-info">
+              <div class="step-number">4</div>
+              <div>
+                <div class="step-name">盘后复盘评估 (Postmarket Review)</div>
+                <div class="step-desc">核算今日持仓表现、生成多智能体深度盘后总结、提炼明日关注点</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="runTask('postmarket')">▶ 运行</button>
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- 右栏：实时终端控制台 -->
+      <!-- 手动 CIO 触发（独立卡片） -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-title">
+          <div class="title-left">
+            <span>🧠 手动 CIO 深度辩论</span>
+          </div>
+          <span class="badge badge-blue">独立研报入口</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="cio-symbol-select" class="btn btn-secondary"
+                  style="padding:0.35rem 0.8rem; font-weight:700;"
+                  onchange="if(this.value==='__custom__'){document.getElementById('cio-custom-input').style.display='inline-block';document.getElementById('cio-custom-input').focus();}else{document.getElementById('cio-custom-input').style.display='none';}">
+            {% for sym in symbols %}
+              <option value="{{ sym }}">{{ sym }}</option>
+            {% endfor %}
+            <option value="__custom__">+ 手动输入...</option>
+          </select>
+          <input type="text" id="cio-custom-input" placeholder="代码 (如 AAPL)"
+                 class="btn btn-secondary"
+                 style="display:none; padding:0.35rem 0.8rem; width:150px; text-transform:uppercase;" />
+          <button class="btn btn-primary" onclick="runCIOTask()">▶ 运行</button>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">
+          CIO 深度辩论已集成至 <strong>盘前决策汇总</strong>（自动补全缺失标的）。此处为手动独立入口。
+        </div>
+      </div>
+
+      <!-- 右栏：实时终端控制台 -->
+      <div class="card" style="display:flex; flex-direction:column;">
+        <div class="card-title">
+          <div class="title-left">
+            <span>💻 开发者日志控制台 (Developer Console)</span>
+          </div>
+          <span id="current-task-badge" class="badge badge-gray">IDLE</span>
+        </div>
+        
+        <div class="terminal-console">
+          <div class="terminal-header">
+            <div class="terminal-title">
+              <span id="terminal-dot-status" class="terminal-dot"></span>
+              <span id="terminal-task-name">system_log.sh</span>
+            </div>
+            <button class="json-link" onclick="clearConsole()">清空控制台</button>
+          </div>
+          <div id="terminal-body" class="terminal-body">=== 欢迎来到股票交易指挥中心开发者日志控制台 ===
+[系统] 等待任务启动以实时流式输出执行日志...
+          </div>
+        </div>
+      </div>
+      
+    </div><!-- /pipeline-container -->
+
+    <!-- 回测调优沙盒 -->
+    <div id="backtest-sandbox" class="card" style="margin-top: 1.5rem; display:none;">
+      <div class="card-title">
+        <div class="title-left">
+          <span>📊 策略回测沙盒与因子调优 (Strategy Backtesting Sandbox)</span>
+        </div>
+        <span class="badge badge-blue">CDN Chart.js Integrated</span>
+      </div>
+      
+      <div class="pipeline-container" style="grid-template-columns: 1fr 1.3fr;">
+        
+        <!-- 参数滑块 -->
+        <div>
+          <h3 style="margin-bottom:1rem; color:#fff;">🎛️ 因子数值调参</h3>
+          
+          <!-- 1. VIX 限额 -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label" title="VIX高于此值系统将强制阻断多头交易，转为防守态势">VIX 恐慌阀门 (VIX Veto Threshold)</span>
+              <span id="val-vix" class="slider-value">25</span>
+            </div>
+            <input type="range" id="slide-vix" min="15" max="35" value="25" oninput="updateSliderVal('vix', this.value)">
+          </div>
+          
+          <!-- 2. SPY 200均线距离 -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label" title="SPY距离200日均线最大偏离限额">SPY MA200 乖离否决 (MA200 Dev Veto)</span>
+              <span id="val-ma200" class="slider-value">10.0%</span>
+            </div>
+            <input type="range" id="slide-ma200" min="1.0" max="15.0" step="0.5" value="10.0" oninput="updateSliderVal('ma200', this.value)">
+          </div>
+          
+          <!-- 3. QQQ 5分钟变化 -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label" title="QQQ盘中5分钟瞬时暴跌阻断值">QQQ 5m 暴跌阻断 (QQQ 5m Veto)</span>
+              <span id="val-qqq5m" class="slider-value">-0.5%</span>
+            </div>
+            <input type="range" id="slide-qqq5m" min="-2.0" max="0.0" step="0.1" value="-0.5" oninput="updateSliderVal('qqq5m', this.value)">
+          </div>
+          
+          <!-- 4. RSI-14 超卖 -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label" title="5分钟K线RSI超卖买入线">RSI-14 5m 超卖买入点</span>
+              <span id="val-rsi" class="slider-value">35</span>
+            </div>
+            <input type="range" id="slide-rsi" min="20" max="45" value="35" oninput="updateSliderVal('rsi', this.value)">
+          </div>
+
+          <!-- 5. 最小信号 -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label" title="盘中入场所需触发的最小技术/情绪信号数量">最小确认信号数量 (Min Signals Required)</span>
+              <span id="val-minsig" class="slider-value">3</span>
+            </div>
+            <input type="range" id="slide-minsig" min="1" max="5" value="3" oninput="updateSliderVal('minsig', this.value)">
+          </div>
+          
+          <div style="margin-top:1.5rem; display:flex; gap:8px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="runBacktestSandbox()">▶ 运行沙盒回测</button>
+            <button class="btn btn-secondary" onclick="saveTunedParams()">💾 确认保存参数</button>
+          </div>
+        </div>
+        
+        <!-- 回测曲线渲染 -->
+        <div style="display:flex; flex-direction:column; justify-content:center;">
+          <h3 style="margin-bottom:0.5rem; color:#fff;">📈 策略表现期望对比 (Expected Value Visualization)</h3>
+          <div style="position:relative; width:100%; height:250px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px; border:1px solid rgba(255,255,255,0.03);">
+            <canvas id="backtestChart"></canvas>
+          </div>
+          <div id="backtest-summary" style="margin-top:0.8rem; font-size:0.8rem; color:var(--text-secondary); line-height:1.5; text-align: left;">
+            💡 运行沙盒回测后，Chart.js 会根据系统返回的因子期望值（Expected Value）和胜率动态拟合渲染出策略资产对比曲线。
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div><!-- /tab-command -->
+
+  <footer style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 2rem 0; margin-top: 1rem;">
+    ANTIGRAVITY TRADING INTEL DASHBOARD · SECURE MULTI-AGENT EXECUTION HUB
+  </footer>
+
+  <!-- ═══════════════ MODAL: 录入实际交易 ═══════════════ -->
+  <style>
+    /* 交易记录弹窗样式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-container {
+      width: 480px;
+      max-width: 90%;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.active .modal-container {
+      transform: scale(1);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(99, 102, 241, 0.03);
+    }
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(3, 7, 18, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.625rem 0.87rem;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      background: rgba(3, 7, 18, 0.6);
+    }
+    .action-selector {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .action-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      padding: 0.625rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .action-btn.active-buy {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+    }
+    .action-btn.active-sell {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--red);
+      color: var(--red);
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.1);
+    }
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: rgba(3, 7, 18, 0.2);
+    }
+    .btn-submit {
+      background: var(--primary-gradient);
+      border: none;
+      color: #ffffff;
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+      transition: all 0.2s;
+    }
+    .btn-submit:hover {
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+    }
+  </style>
+
+  <div id="trade-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>💼 录入实盘交易 Record Trade</span>
+        </div>
+        <button class="modal-close" onclick="closeTradeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="trade-form" onsubmit="submitTradeForm(event)">
+          <input type="hidden" id="trade-action" value="buy">
+          
+          <div class="form-group">
+            <label class="form-label">交易方向 Direction</label>
+            <div class="action-selector">
+              <button type="button" id="btn-buy-select" class="action-btn active-buy" onclick="setTradeAction('buy')">🟢 买入 BUY</button>
+              <button type="button" id="btn-sell-select" class="action-btn" onclick="setTradeAction('sell')">🔴 卖出 SELL</button>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label class="form-label" for="trade-symbol">股票代码 Symbol</label>
+              <input type="text" id="trade-symbol" class="form-input" placeholder="例如: NVDA" required oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <div>
+              <label class="form-label" for="trade-shares">交易股数 Shares</label>
+              <input type="number" id="trade-shares" class="form-input" placeholder="股数" required min="1" step="1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label class="form-label" for="trade-price">交易价格 Price ($)</label>
+              <input type="number" id="trade-price" class="form-input" placeholder="价格" required min="0.0001" step="0.0001">
+            </div>
+            <div>
+              <label class="form-label" for="trade-stop">止损价格 Stop (可选)</label>
+              <input type="number" id="trade-stop" class="form-input" placeholder="止损价" min="0" step="0.01">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="trade-target">目标价格 Target (可选)</label>
+            <input type="number" id="trade-target" class="form-input" placeholder="目标价" min="0" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="trade-reason">交易理由/备注 Reason / Catalyst</label>
+            <textarea id="trade-reason" class="form-input" rows="3" placeholder="录入本次交易的逻辑、板块催化剂或操作理由..."></textarea>
+          </div>
+
+          <div id="trade-error-msg" class="badge badge-red" style="width:100%; display:none; padding:8px; margin-bottom:12px; font-weight:600; text-transform:none; box-sizing:border-box;"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="closeTradeModal()">取消 Cancel</button>
+        <button type="submit" form="trade-form" class="btn-submit">确认提交 Submit</button>
+      </div>
+    </div>
+  </div>
+
+    {% include "scripts.js.j2" %}
+</body>
+</html>

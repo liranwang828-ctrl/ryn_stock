@@ -1,0 +1,45 @@
+{
+  "_comment": "微观策略参数 — 控制盘中具体入场点选择的指标权重和阈值。通过回测更新。",
+  "_version": "1.0",
+  "_last_updated": "2026-05-21",
+
+  "flex_signals": {
+    "min_signals_required": 3,
+    "rsi14_5m_oversold": 35,
+    "rsi14_5m_overbought": 75,
+    "vwap_add_threshold": -1.5,
+    "vwap_reduce_threshold": 1.5,
+    "vol_ratio_shrink": 0.7,
+    "vol_ratio_expand": 1.3,
+    "time_window_start_h": 10,
+    "time_window_end_h": 15
+  },
+
+  "add_price_gate": {
+    "add1_tolerance_pct": 2.0,
+    "cost_fallback_pct": 5.0,
+    "profit_reduce_min_pct": 10.0,
+    "analyst_target_reduce_pct": 90.0
+  },
+
+  "thesis_health": {
+    "hard_stop_near_warn_pct": 3.0,
+    "scene_downgrade_warn_pct": 2.0,
+    "time_stop_warn_days": 3,
+    "breakeven_trigger_pct": 8.0,
+    "trail_ma20_trigger_pct": 15.0
+  },
+
+  "reversal": {
+    "rsi14_5m_extreme_oversold": 25,
+    "rsi14_5m_oversold": 35,
+    "vol_ratio_exhaustion": 0.3,
+    "reversal_score_threshold": 4
+  },
+
+  "global_veto": {
+    "vix_panic": 25,
+    "qqq5m_drop": -0.5,
+    "ma20_dev_max": 10.0
+  }
+}

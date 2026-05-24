@@ -1,0 +1,138 @@
+{
+  "sym": "MRVU",
+  "analysis_date": "2026-05-20",
+  "analyst": "CIO-phases0123",
+  "foundation": {
+    "company_intro": "MRVU（MRVU）。MRVL AI芯片定制ASIC趋势，数据中心网络芯片升级周期",
+    "sector_intro": "所在板块：未知。",
+    "fundamentals_snapshot": {
+      "pe_ttm": null,
+      "pe_fwd": null,
+      "peg": null,
+      "revenue_growth_pct": null,
+      "fcf_B": null,
+      "analyst_target": null,
+      "analyst_upside_pct": null,
+      "last_updated": "2026-05-20"
+    }
+  },
+  "support_and_risk": {
+    "core_supporting_facts": [],
+    "main_risks": [],
+    "tail_risk": {
+      "max_loss_scenario": "",
+      "structural_fragility": "",
+      "estimated_max_loss_pct": 22.5
+    },
+    "macro_fit": {
+      "active_headwinds": [],
+      "active_tailwinds": [],
+      "headwind_count": 0,
+      "assessment": "neutral"
+    },
+    "liquidity_env": {
+      "fed_direction": "neutral",
+      "credit_spread_trend": "stable",
+      "institutional_flow": "neutral",
+      "note": ""
+    },
+    "technical_stage": {
+      "stage": "2",
+      "note": "技术信号偏多"
+    },
+    "sector_relative_strength": {
+      "trend": "inline",
+      "period_days": 30,
+      "note": ""
+    },
+    "next_catalyst": {
+      "event": "earnings",
+      "date": "unknown",
+      "importance": "low"
+    }
+  },
+  "judgment": {
+    "thesis_quality_score": 8,
+    "thesis_quality_note": "大师 85% 看多，基本面评分 8/10",
+    "thesis_lifecycle_stage": {
+      "stage": "early",
+      "note": "论点状态 intact"
+    },
+    "falsifiability_quality": {
+      "rating": "clear",
+      "note": "3 条可观测证伪条件"
+    },
+    "best_vehicle": {
+      "is_best_vehicle": true,
+      "alternatives": [],
+      "reason": "用户持有 MRVU，保留为当前工具"
+    },
+    "master_votes": {
+      "minervini": {
+        "supports_holding": "strong_yes",
+        "primary_concern_type": "technical",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "druckenmiller": {
+        "supports_holding": "yes",
+        "primary_concern_type": "macro",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "marks": {
+        "supports_holding": "yes",
+        "primary_concern_type": "fundamental",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "taleb": {
+        "supports_holding": "neutral",
+        "primary_concern_type": "fundamental",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "soros": {
+        "supports_holding": "yes",
+        "primary_concern_type": "macro",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "livermore": {
+        "supports_holding": "strong_yes",
+        "primary_concern_type": "technical",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "lynch": {
+        "supports_holding": "yes",
+        "primary_concern_type": "fundamental",
+        "position_direction": "hold",
+        "core_argument": "所有5个问题通过"
+      },
+      "_summary": {
+        "bullish_count": 6,
+        "neutral_count": 1,
+        "bearish_count": 0,
+        "dominant_concern": "fundamental"
+      }
+    },
+    "unified_confidence": 3
+  },
+  "synthesis": {
+    "main_tensions": [
+      "none"
+    ],
+    "resolution_logic": "fundamentals_wins",
+    "strategic_stance": "hold_reduced",
+    "confidence": 3,
+    "key_condition": "基本面论点 intact（8/10），维持持有"
+  },
+  "outlook": {
+    "exit_logic": {
+      "target_reached": "持仓达到目标收益 7.0% 时分批减仓",
+      "proactive_exit_signal": "【技术/个股弱势】MRVL 跌破 $157 且当日跑输 SOXX 超过 2%——说明市场单独抛售 MRVL，非纯板块拖累"
+    },
+    "valid_until": "next_catalyst_event"
+  }
+}

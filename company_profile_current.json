@@ -1,0 +1,108 @@
+{
+  "symbol": "AMD",
+  "profile": {
+    "full_name": "Advanced Micro Devices, Inc.",
+    "one_liner": "x86 CPU/GPU 设计公司（Fabless），正在从消费芯片转型为 AI 数据中心芯片提供商",
+    "business_model": "设计半导体芯片，委托台积电代工制造，B2B 销售为主",
+    "segments": [
+      {
+        "name": "Data Center",
+        "desc": "EPYC 服务器CPU + MI300X AI GPU，FY25 Q1营收$2.3B，同比+80%，当前核心增长引擎"
+      },
+      {
+        "name": "Client",
+        "desc": "Ryzen 消费级/笔记本CPU，PC市场回暖受益，增长平稳"
+      },
+      {
+        "name": "Gaming",
+        "desc": "GPU + 主机芯片（PS5/Xbox独家），处于主机周期末段，承压"
+      },
+      {
+        "name": "Embedded",
+        "desc": "Xilinx遗产FPGA业务，工业/汽车市场，当前低迷"
+      }
+    ],
+    "key_customers": [
+      "微软Azure（MI300X大规模部署）",
+      "Meta（AI训练集群）",
+      "Oracle Cloud",
+      "Sony PS5（专属）",
+      "Microsoft Xbox（专属）"
+    ],
+    "supply_chain": {
+      "upstream": [
+        "台积电（7nm/4nm制造）",
+        "TSMC N3（未来节点）"
+      ],
+      "downstream": [
+        "OEM服务器厂商",
+        "消费电子品牌"
+      ]
+    },
+    "ecosystem": {
+      "partners": [
+        "微软（Azure MI300X + Xbox）",
+        "Meta（开放AI生态）",
+        "Oracle"
+      ],
+      "indirect": [
+        "通过微软Azure间接服务OpenAI训练需求"
+      ],
+      "competitors": [
+        "NVDA（GPU主战场，CUDA生态护城河）",
+        "Intel（CPU份额争夺）",
+        "ARM（CPU架构授权威胁）",
+        "谷歌TPU/AWS Trainium（自研芯片威胁）"
+      ]
+    },
+    "moat": [
+      "x86 CPU 双寡头格局（AMD+Intel），高转换成本",
+      "Zen架构持续迭代，性能/功耗比领先",
+      "EPYC在HPC/云服务器的份额上升趋势"
+    ],
+    "moat_weakness": [
+      "CUDA生态护城河使NVDA在AI训练中地位难以撼动",
+      "ROCm软件生态仍落后于CUDA",
+      "高端GPU市场NVDA H100/H200主导"
+    ],
+    "milestones": [
+      {
+        "year": 2014,
+        "event": "Lisa Su 出任 CEO，股价约$3，公司濒临破产"
+      },
+      {
+        "year": 2017,
+        "event": "Ryzen CPU 发布，打破Intel垄断，股价开始腾飞"
+      },
+      {
+        "year": 2019,
+        "event": "EPYC 2代（Rome）发布，正式进攻数据中心市场"
+      },
+      {
+        "year": 2020,
+        "event": "PS5/Xbox Series X 均采用AMD定制芯片，锁定主机市场"
+      },
+      {
+        "year": 2021,
+        "event": "以$49B收购Xilinx（FPGA），进入自适应计算市场"
+      },
+      {
+        "year": 2022,
+        "event": "股价从顶部跌65%，PC市场崩溃+加密冬天"
+      },
+      {
+        "year": 2023,
+        "event": "MI300X AI GPU 发布，向NVDA AI霸主地位发起挑战"
+      },
+      {
+        "year": 2024,
+        "event": "微软Azure、Meta大规模部署MI300X，AI叙事确立"
+      },
+      {
+        "year": 2026,
+        "event": "披露持有MRVL股份，战略布局半导体生态"
+      }
+    ],
+    "narrative": "AMD 是半导体行业最成功的转型故事之一。Lisa Su 接任后用十年将一家濒临破产的公司变成市值7000亿美元的半导体巨头。当前最重要的叙事是 Data Center 的AI转型：MI300X GPU 是 NVDA 霸权的最强挑战者，微软 Azure 和 Meta 的大规模部署是关键验证信号。股价的核心驱动力从'CPU份额回升'演变为'AI算力入场券'，这个叙事的可持续性取决于MI300X是否能在软件生态上缩小与CUDA的差距。"
+  }
+}

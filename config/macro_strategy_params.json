@@ -1,0 +1,51 @@
+{
+  "_comment": "宏观策略参数 — 控制当天是否适合入场的宏观/环境判断。通过回测更新。",
+  "_version": "1.0",
+  "_last_updated": "2026-05-21",
+
+  "market_regime": {
+    "vix_panic_threshold": 25,
+    "vix_panic_dir": "↑升",
+    "vix_elevated": 20,
+    "vix_normal": 18,
+    "spy_bull_min": 0.3,
+    "spy_bear_max": -0.5,
+    "qqq5m_veto": -0.5,
+    "ma20_dev_veto_pct": 10.0,
+    "ma20_dev_warn_pct": 5.0
+  },
+
+  "observation": {
+    "obs_minutes": 30,
+    "no_trade_after_et_h": 15,
+    "no_trade_after_et_m": 30
+  },
+
+  "scene_entry_quality": {
+    "A": "high",
+    "H": "high",
+    "B": "medium",
+    "C": "low",
+    "E": "low",
+    "D": "none",
+    "F": "none",
+    "G": "none"
+  },
+
+  "catalyst_window": {
+    "pre_reduce_days": 3,
+    "post_window_days": 1,
+    "pre_reduce_pct": 20
+  },
+
+  "scenario_downgrade": {
+    "warn_within_pct": 2.0,
+    "k5_bull_to_base": 0.5,
+    "k6_base_to_bear": 1.0
+  },
+
+  "entry_plan": {
+    "add1_tolerance_pct": 2.0,
+    "add1_high_dist_pct": 5.0
+  }
+}

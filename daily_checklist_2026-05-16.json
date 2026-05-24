@@ -1,0 +1,26 @@
+{
+  "date": "2026-05-16",
+  "generated_at": "2026-05-16T01:20:57.770328",
+  "symbols": {
+    "NBIL": {
+      "sym": "NBIL",
+      "date": "2026-05-16",
+      "has_position": true,
+      "position_type": "thesis",
+      "thesis_status": "intact",
+      "daily_action": "B",
+      "flex_min": 20,
+      "flex_max": 30
+    },
+    "ANEL": {
+      "sym": "ANEL",
+      "date": "2026-05-16",
+      "has_position": true,
+      "position_type": "thesis",
+      "thesis_status": "intact",
+      "daily_action": "B",
+      "flex_min": 60,
+      "flex_max": 90
+    }
+  }
+}

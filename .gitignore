@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Logs & Diagnostics
+logs/
+*.log
+findings/exit_decision_*.lock
+findings/premarket_summary_*.lock
+
+# Temporary & Environment files
+.env
+.env.*
+*.tmp
+*.temp
+*.bak
+
+# Reports & Large compiled datasets
+reports/daily_dashboard_*.html
+reports/2026-*.html
+reports/research_*.html
+reports/preview_dashboard.html
+reports/trading_nodes_guide.html
+findings/intraday_snapshot_*.jsonl
+findings/premarket_summary_*.json
+findings/CommunityAgent_*.json
+findings/FundAgent_*.json
+findings/MacroAgent_*.json
+findings/RiskAgent_*.json
+findings/SectorAgent_*.json
+findings/SentimentAgent_*.json
+findings/TechAgent_*.json
+findings/debate_*.jsonl
+findings/narrative_*.json
+findings/portfolio_snapshot_*.json
+findings/exit_decision_*.json
+findings/order_sheet_*.json
+findings/today_focus.json
+findings/entry_decision_*.json
+learning/poll_state_*.json
+learning/decision_trace.jsonl
+learning/master_score_log_*.jsonl
+paper_trading/strict/
+paper_trading/base/
+paper_trading/loose/
+paper_trading/trades.jsonl
+paper_trading/portfolio.json
+paper_trading/loose/trades.jsonl
+paper_trading/loose/portfolio.json
+knowledge/snapshots_*.jsonl
+knowledge/trading_history.jsonl
+watchlist.json
+daily_plan_*.json
+candidates_*.json
+opening_scenarios_*.json
+premarket_analysis_*.json
+session_state_*.json
+
+# Scratch files
+scratch/
+scratch_*
+text_search.txt
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

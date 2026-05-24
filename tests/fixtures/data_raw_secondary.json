@@ -1,0 +1,7 @@
+{
+  "symbol": "AMD", "secondary_available": true,
+  "fields": {
+    "close":  {"value": 458.81},
+    "volume": {"value": 46100000}
+  }
+}

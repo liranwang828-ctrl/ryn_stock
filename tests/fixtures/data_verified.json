@@ -1,0 +1,23 @@
+{
+  "symbol": "AMD",
+  "timestamp": "2026-05-12T13:00:00Z",
+  "secondary_available": true,
+  "fields": {
+    "close":       {"value": 458.79, "source_a": 458.79, "source_b": 458.81, "verified": true},
+    "prev_close":  {"value": 445.00, "verified": true, "note": "no secondary"},
+    "volume":      {"value": 45989300, "source_a": 45989300, "source_b": 46100000, "verified": true},
+    "vol_ma20":    {"value": 47926920, "verified": true, "note": "no secondary"},
+    "macd":        {"value": 50.82,  "verified": true, "note": "no secondary"},
+    "rsi14":       {"value": 82.85,  "verified": true, "note": "no secondary"},
+    "pe_ratio":    {"value": 38.5,   "verified": true, "note": "no secondary"},
+    "pb_ratio":    {"value": 4.2,    "verified": true, "note": "no secondary"},
+    "market_cap":  {"value": 748103270400, "verified": true, "note": "no secondary"},
+    "revenue":     {"value": 25785000000, "verified": true, "note": "no secondary"},
+    "eps":         {"value": 2.08,   "verified": true, "note": "no secondary"},
+    "analyst_rec": {"value": 1.8,    "verified": true, "note": "no secondary"},
+    "target_price":{"value": 190.0,  "verified": true, "note": "no secondary"},
+    "beta":        {"value": 1.8,    "verified": true, "note": "no secondary"},
+    "52w_high":    {"value": 469.22, "verified": true, "note": "no secondary"},
+    "52w_low":     {"value": 107.67, "verified": true, "note": "no secondary"}
+  }
+}

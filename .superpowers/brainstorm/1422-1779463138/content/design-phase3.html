@@ -1,0 +1,129 @@
+<h2>Phase 3: 可维护性 + 实施路径</h2>
+<p class="subtitle">模板拆分策略 + 改动文件清单 + 实施顺序</p>
+
+<div class="section">
+  <h3>📦 模板模块化拆分</h3>
+</div>
+
+<div style="font-size:0.85rem; color:var(--text-secondary);">
+  <p>当前 <code style="color:#f43f5e;">daily_dashboard.html.j2</code> 3838 行单体文件 → 拆分为：</p>
+</div>
+
+<table style="width:100%; font-size:0.83rem;">
+<tr style="background:rgba(255,255,255,0.02);">
+  <th>文件</th><th>内容</th><th>大小估算</th>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/base.html.j2</td>
+  <td>HTML 骨架 + CSS 变量 + 通用样式 + tab bar 框架</td>
+  <td>~600行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/overview.html.j2</td>
+  <td>总览 tab：组合风险表 + 关注列表 + 净值图</td>
+  <td>~500行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/intraday.html.j2</td>
+  <td>盘中详情：策略节点 + 实时快照 + LLM 事件</td>
+  <td>~400行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/command_hub.html.j2</td>
+  <td>控制中心：pipeline 步骤 + 终端控制台 + 回测沙盒</td>
+  <td>~500行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/paper_trading.html.j2</td>
+  <td>模拟账户 + 实盘台账</td>
+  <td>~300行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/research.html.j2</td>
+  <td>研报中心：CIO 列表 + 研报列表</td>
+  <td>~200行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/postmarket.html.j2</td>
+  <td>盘后复盘 tab</td>
+  <td>~200行</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace; color:#a5b4fc;">templates/scripts.js.j2</td>
+  <td>所有 JS：runTask / logPolling / chart / trade modal / auto-refresh</td>
+  <td>~600行</td>
+</tr>
+</table>
+
+<div style="margin-top:8px; padding:8px 12px; background:rgba(99,102,241,0.05); border-radius:8px; font-size:0.8rem;">
+  <strong style="color:#a5b4fc;">Jinja2 include 机制</strong>：<br>
+  <code style="color:var(--text-secondary);">{% include 'overview.html.j2' %}</code> 在 base.html.j2 中引入各子模板。<br>
+  dashboard_writer.py 保持不变，只改模板结构。
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <h3>🔧 改动文件清单</h3>
+</div>
+
+<table style="width:100%; font-size:0.83rem;">
+<tr style="background:rgba(255,255,255,0.02);">
+  <th>文件</th><th>改动类型</th><th>涉及问题</th>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">agents/dashboard_server.py</td>
+  <td>修改</td>
+  <td>#1 #2 #4 #5 #7 — 新增 /api/refresh-portfolio、增强 premarket 任务、修复 SOP 状态检测</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">agents/dashboard_writer.py</td>
+  <td>修改</td>
+  <td>#3 #6 — 上下文增加 report_status 字段、memo 状态、macro_strategy 节点数据</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/daily_dashboard.html.j2</td>
+  <td>拆分</td>
+  <td>全部 — 拆为 9 个子模板 + 内容变更</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/base.html.j2</td>
+  <td>新增</td>
+  <td>模板骨架</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/overview.html.j2</td>
+  <td>新增</td>
+  <td>#1 #2 #3 — 刷新按钮 + 状态标签 + 批量生成</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/intraday.html.j2</td>
+  <td>新增</td>
+  <td>#6 — 盘前节点展示 + 盘中快照</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/command_hub.html.j2</td>
+  <td>新增</td>
+  <td>#4 #5 #7 — 流程重排 + SOP 状态</td>
+</tr>
+<tr>
+  <td style="font-family:'JetBrains Mono',monospace;">templates/scripts.js.j2</td>
+  <td>新增</td>
+  <td>#1 #3 #8 — 新增 JS 函数：refreshPortfolio / generateAllReports / 增强 runTask</td>
+</tr>
+</table>
+
+<div class="section" style="margin-top:20px;">
+  <h3>⚡ 实施顺序</h3>
+</div>
+
+<ol style="font-size:0.85rem; color:var(--text-secondary); line-height:1.8;">
+  <li><strong>dashboard_server.py</strong> — 后端改动优先：新增 API、增强 premarket 管道、修复 SOP</li>
+  <li><strong>dashboard_writer.py</strong> — 新增上下文字段</li>
+  <li><strong>模板拆分</strong> — 从现有单体模板中提取 9 个子模板</li>
+  <li><strong>Overview tab 内容</strong> — 刷新按钮 + 状态标签 + 批量生成</li>
+  <li><strong>Command Hub 重排</strong> — Step 1.5 + 增强 Step 2 + 移除 Step 3</li>
+  <li><strong>Intraday tab 内容</strong> — 盘前节点 + 盘中快照</li>
+  <li><strong>排查 poll 启动</strong> — #8 需调试</li>
+  <li><strong>Chart.js + 交互增强</strong> — 延后到交互优化阶段</li>
+</ol>
+
+</div>

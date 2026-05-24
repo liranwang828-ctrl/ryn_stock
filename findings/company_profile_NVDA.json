@@ -1,0 +1,81 @@
+{
+  "sym": "NVDA",
+  "long_name": "NVIDIA Corporation",
+  "generated_at": "2026-05-21T08:01:31.819371+00:00",
+  "sector": "Technology",
+  "industry": "Semiconductors",
+  "country": "United States",
+  "employees": 42000,
+  "website": "https://www.nvidia.com",
+  "business_summary": "NVIDIA Corporation operates as a data center scale AI infrastructure company. The company operates through two segments, Compute & Networking, and Graphics segments. The Compute & Networking segment provides data center accelerated computing and networking platforms and artificial intelligence solutions and software, and automotive platforms and autonomous and electric vehicle solutions, including software. The Graphics segment offers GeForce GPUs for gaming and PCs; Quadro/NVIDIA RTX GPUs for e",
+  "business_summary_full": "NVIDIA Corporation operates as a data center scale AI infrastructure company. The company operates through two segments, Compute & Networking, and Graphics segments. The Compute & Networking segment provides data center accelerated computing and networking platforms and artificial intelligence solutions and software, and automotive platforms and autonomous and electric vehicle solutions, including software. The Graphics segment offers GeForce GPUs for gaming and PCs; Quadro/NVIDIA RTX GPUs for enterprise workstation graphics. The company's products are used in gaming, professional visualization, data center, and automotive markets. The company sells its products to original equipment manufacturers, original device manufacturers, system integrators and distributors, independent software vendors, cloud service providers, add-in board manufacturers, distributors, automotive manufacturers and tier-1 automotive suppliers, and other ecosystem participants worldwide. It has a collaboration with Tech Mahindra Limited to develop artificial intelligence powered telco network operations reasoning agent. The company has a strategic partnership with Lumentum Holdings Inc. to develop optics technologies for AI and data centers. It also has a strategic partnership with Nebius Group N.V. to develop and deploy hyperscale cloud for the artificial intelligence market; and has a strategic partnership with IREN Limited to accelerate deployment of up to 5 gigawatts of infrastructure. NVIDIA Corporation was incorporated in 1993 and is headquartered in Santa Clara, California.",
+  "competitive_moat": [
+    "超高毛利率（71%），具备强定价权和差异化竞争优势",
+    "ROE=102%，资本效率极高，护城河已转化为超强盈利",
+    "营收增速+73%，大幅高于行业平均，增长护城河显著"
+  ],
+  "growth_drivers": [
+    "强劲营收增速（+73% YoY），市场对高增长给予溢价估值",
+    "盈利增速+96%，经营杠杆释放推动利润增速快于营收",
+    "AI基础设施需求爆发，超大规模云厂商Capex持续创新高",
+    "数据中心扩张驱动算力需求，云计算/AI训练/推理需求三轮驱动"
+  ],
+  "competitors": [
+    {
+      "sym": "AMD",
+      "name": "AMD",
+      "angle": "GPU/AI加速器，ROCm追赶CUDA"
+    },
+    {
+      "sym": "INTC",
+      "name": "Intel",
+      "angle": "Gaudi 3 AI加速器，以太网AI网络"
+    },
+    {
+      "sym": "GOOGL",
+      "name": "Google TPU",
+      "angle": "内部ASIC，推理优化，不对外销售"
+    },
+    {
+      "sym": "AMZN",
+      "name": "AWS Trainium/Inferentia",
+      "angle": "自研训练/推理ASIC，成本优势~20-30%"
+    }
+  ],
+  "peers_pe": {
+    "AMD": 34.6,
+    "INTC": 77.3,
+    "QCOM": 19.0
+  },
+  "valuation_anchors": {
+    "pe_ttm": 34.22205,
+    "pe_fwd": 19.18647,
+    "peg": 0.71,
+    "sector_pe": 38.8,
+    "pe_premium_pct": -51,
+    "analyst_target": 278.0251,
+    "analyst_upside_pct": 24.4,
+    "rec_key": "strong_buy",
+    "n_analysts": 57
+  },
+  "key_risks": [
+    "出口管制风险：美国对华芯片出口限制已造成Q1 $4.5B减值，持续恶化是最大变数",
+    "竞争加速：超大规模云厂商同时是最大客户和自研ASIC竞争者",
+    "高Beta=2.2x，大盘波动时股价放大2倍，波动性风险高"
+  ],
+  "bull_case": [
+    "Blackwell 供不应求：GB200 NVLink 系统交货期排到2026年底，CSP Capex 持续创新高",
+    "推理市场崛起：ChatGPT/Copilot商业化后推理需求季节性更低、持续性更强",
+    "CUDA 生态护城河：数百万研究员代码基于 CUDA，迁移成本极高，AMD ROCm落后3年+",
+    "分析师评级1.3（强烈买入），但需注意分析师通常滞后于市场 分析师目标价24%上行空间，但目标价通常有6-12个月滞后，需判断时效性"
+  ],
+  "bear_case": [
+    "估值透支：PE(fwd)=19x 看似合理，但依赖CSP Capex不减速——任何宏观收紧将重创",
+    "出口管制黑天鹅：美国进一步限制H20/B20出口将削减中国市场$10B+营收",
+    "Beta=2.2 高波动，需控制仓位",
+    "建议止损位 $207.83（当前价-7% 或52周低点保护）"
+  ],
+  "web_enhanced": true,
+  "revenue_breakdown": [],
+  "latest_catalysts": []
+}

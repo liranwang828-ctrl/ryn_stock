@@ -1,0 +1,27 @@
+{
+  "master": "Stan Druckenmiller",
+  "assigned_to": "MacroAgent",
+  "core_philosophy": "流动性驱动一切。先判断美联储和宏观方向，再选最好的标的押注。方向对时重仓，方向不明时缩仓。",
+  "veto_conditions": [
+    {"condition": "data['fed_hiking'] and not data['fed_pause']", "reason": "美联储加息周期，流动性收紧"},
+    {"condition": "data['yield_curve_inverted'] and data['curve_inverted_months'] > 3", "reason": "收益率曲线持续倒挂超3个月，衰退前兆"},
+    {"condition": "data['vix'] > 30 and data['vix_trend'] == 'rising'", "reason": "VIX>30且上升，系统性风险快速累积"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['fed_easing'] or data['fed_pause']", "weight": 35, "insight": "[Druckenmiller] 美联储宽松/暂停，流动性顺风"},
+    {"condition": "data['spy_above_ma200']", "weight": 20, "insight": "[Druckenmiller] 大盘处于健康上升趋势"},
+    {"condition": "data['sector_inflow_positive']", "weight": 20, "insight": "[Druckenmiller] 板块资金持续流入"},
+    {"condition": "data['rs_vs_market'] > 1.0", "weight": 15, "insight": "[Druckenmiller] 相对大盘表现强势，顺势而为"},
+    {"condition": "data['vix'] < 20", "weight": 10, "insight": "[Druckenmiller] 市场平静，风险偏好正常"}
+  ],
+  "market_insight_checks": [
+    {"name": "fed_cut", "condition": "data['fed_cut_this_month']", "signal_override": "bullish", "confidence_delta": 25, "priority": 1, "insight": "[Druckenmiller] 本月降息，流动性最强推动力，不与美联储为敌"},
+    {"name": "rate_surge", "condition": "data['treasury10y_monthly_delta'] > 0.20", "signal_override": null, "confidence_delta": -30, "priority": 2, "insight": "[Druckenmiller] 10年期美债快速上升，压制所有估值"},
+    {"name": "high_correlation", "condition": "data['correlation_with_spy'] > 0.90", "signal_override": null, "confidence_delta": -10, "priority": 3, "insight": "[Druckenmiller] 与大盘高度相关，选股不如选时"}
+  ],
+  "position_sizing": {"max_pct": 25, "logic": "宏观顺风明确：上限25%；宏观不确定：上限5%"},
+  "exit_logic": {"hard_stop_pct": null, "never_do": ["在宏观逆风中死守个股", "用价格目标决定退出时机"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['fed_hiking'] and not data['fed_pause']", "insight": "在美联储加息周期中看涨个股：历史上流动性收紧期间股票整体承压，个股alpha很难对抗系统性beta下行"}
+  ]
+}

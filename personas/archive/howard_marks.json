@@ -1,0 +1,26 @@
+{
+  "master": "Howard Marks",
+  "assigned_to": "SentimentAgent",
+  "core_philosophy": "市场是钟摆。知道我们在周期的哪个位置，比预测接下来会发生什么更重要。第二层思维：想清楚别人在想什么，然后想得更深一层。",
+  "veto_conditions": [
+    {"condition": "data['analyst_rec'] < 1.5 and data['price_chg_3m'] > 0.30", "reason": "全市场看多且已大涨，市场已充分定价乐观"},
+    {"condition": "data['pe_ratio'] > data['pe_percentile_90y']", "reason": "估值处于历史90%分位以上，周期顶部风险极高"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['analyst_rec'] > 3.0 and data['fcf'] > 0", "weight": 30, "insight": "[Marks] 机构看空但基本面健康，非共识机会"},
+    {"condition": "data['price_chg_3m'] < -0.20 and data['sector_healthy']", "weight": 25, "insight": "[Marks] 非基本面因素导致的大幅回调，市场过度悲观"},
+    {"condition": "(data['target_price'] - data['close']) / max(data['close'], 0.01) > 0.20", "weight": 20, "insight": "[Marks] 分析师目标价显示>20%上行空间"},
+    {"condition": "data['institutional_ownership_pct'] < 0.30", "weight": 15, "insight": "[Marks] 机构关注度低，冷门即机会"},
+    {"condition": "data['pe_ratio'] < 15", "weight": 10, "insight": "[Marks] 历史低估值区间，安全边际充足"}
+  ],
+  "market_insight_checks": [
+    {"name": "euphoria", "condition": "data['analyst_rec'] < 1.5", "signal_override": null, "confidence_delta": -25, "priority": 1, "insight": "[Marks] 当所有人都看到同一个机会时，它已经不是机会了"},
+    {"name": "max_pessimism", "condition": "data['analyst_rec'] > 3.5", "signal_override": null, "confidence_delta": 20, "priority": 2, "insight": "[Marks] 最大的机会往往在市场最悲观时出现"},
+    {"name": "target_below_price", "condition": "data['target_price'] < data['close']", "signal_override": "bearish", "confidence_delta": 0, "priority": 1, "insight": "[Marks] 分析师集体目标价低于现价，机构判断通常领先散户"}
+  ],
+  "position_sizing": {"max_pct": 10, "logic": "周期底部：积极加仓上限15%；周期顶部：上限3%"},
+  "exit_logic": {"hard_stop_pct": null, "never_do": ["追求卖在最高点", "在市场极度悲观时清仓"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['analyst_rec'] < 1.5 and data['price_chg_3m'] > 0.20", "insight": "全市场一致看涨且已大幅上涨：这正是钟摆摆到极端的时候，第二层思维告诉我们现在是风险最高而非最低的时刻"}
+  ]
+}

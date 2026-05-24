@@ -1,0 +1,27 @@
+{
+  "sym": "GLOB",
+  "date": "2026-05-19",
+  "signal": "bullish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "bearish",
+      "confidence": 55
+    },
+    "FundAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "MacroAgent": {
+      "signal": "neutral",
+      "confidence": 50
+    },
+    "SentimentAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "RiskAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    }
+  }
+}

@@ -1,0 +1,6 @@
+yfinance>=0.2.0
+alpha_vantage>=2.3.1
+praw>=7.7.0
+requests>=2.31.0
+Jinja2>=3.1.0
+pytest>=7.4.0

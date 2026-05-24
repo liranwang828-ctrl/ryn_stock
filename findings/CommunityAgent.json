@@ -1,0 +1,37 @@
+{
+  "msg_type": "initial_finding",
+  "from": "CommunityAgent",
+  "symbol": "AMD",
+  "signal": "neutral",
+  "confidence": 0,
+  "revision": 0,
+  "key_points": [
+    "Reddit/StockTwits 看多比例 0%",
+    "社群热点: r/wallstreetbets: bf6 amd crashing... (+3看空)",
+    "[Michael Burry否决] P/FCF>30，定价已过度反映乐观预期"
+  ],
+  "data_refs": [
+    {
+      "field": "community_sentiment",
+      "verified": false,
+      "source": "reddit+stocktwits"
+    }
+  ],
+  "timestamp": "2026-05-23T18:44:16.714072+00:00",
+  "analysis": [],
+  "conclusion": {
+    "judgment": "",
+    "boundary": "",
+    "anticipated_challenge": ""
+  },
+  "master": "Michael Burry",
+  "rule_signal": "bearish",
+  "rule_confidence": 80,
+  "master_signal": "veto",
+  "master_confidence": 0,
+  "internal_conflict": false,
+  "veto_triggered": "P/FCF>30，定价已过度反映乐观预期",
+  "entry_score": 0,
+  "position_max_pct": 8,
+  "stop_loss_pct": null
+}

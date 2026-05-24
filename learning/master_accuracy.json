@@ -1,0 +1,10 @@
+{
+  "_comment": "大师历史准确率追踪。每次CIO结果和实际涨跌对比后更新。",
+  "TechAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "FundAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "MacroAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "SentimentAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "CommunityAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "RiskAgent": {"correct": 0, "total": 0, "accuracy": 0.5},
+  "IntuitionAgent": {"correct": 0, "total": 0, "accuracy": 0.5}
+}

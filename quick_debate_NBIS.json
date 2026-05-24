@@ -1,0 +1,59 @@
+{
+  "sym": "NBIS",
+  "time": "15:49:11",
+  "consensus": "🟡观望",
+  "majority": "等",
+  "vote_count": {
+    "等": 2,
+    "进": 1
+  },
+  "avg_score": 5.7,
+  "votes": {
+    "Minervini": "进",
+    "Druckenmiller": "等",
+    "Marks": "等"
+  },
+  "results": {
+    "Minervini": {
+      "persona": "Minervini",
+      "vote": "进",
+      "score": 8,
+      "reason": "RS+10.2%极强、MACD柱正向、RSI3=52健康；但贴近日高追高风险",
+      "pros": [
+        "RS+10.2%极强",
+        "MACD柱正向",
+        "RSI3=52健康",
+        "站VWAP上方",
+        "缩量（回踩健康）"
+      ],
+      "cons": [
+        "贴近日高追高风险"
+      ]
+    },
+    "Druckenmiller": {
+      "persona": "Druckenmiller",
+      "vote": "等",
+      "score": 6,
+      "reason": "大盘顺风SPY+0.9%/QQQ+0.9%、RS+10.2%领涨市场，主题极强",
+      "pros": [
+        "大盘顺风SPY+0.9%/QQQ+0.9%",
+        "RS+10.2%领涨市场，主题极强"
+      ],
+      "cons": []
+    },
+    "Marks": {
+      "persona": "Marks",
+      "vote": "等",
+      "score": 3,
+      "reason": "VIX18中性、RSI3=52健康；但距日高仅0.3%，盈亏比差",
+      "pros": [
+        "VIX18中性",
+        "RSI3=52健康"
+      ],
+      "cons": [
+        "距日高仅0.3%，盈亏比差"
+      ]
+    }
+  },
+  "formatted": "╔════════════════════════════════════════════════════╗\n║  ⚡ NBIS 快速辩论  15:49:11  综合5.7/10  🟡观望         ║\n╠════════════════════════════════════════════════════╣\n║  🟢进  Minervini         8/10  RS+10.2%极强、MACD柱正向、RSI3=52健康║\n║  🟡等  Druckenmiller     6/10  大盘顺风SPY+0.9%/QQQ+0.9%、RS+10.║\n║  🟡等  Marks             3/10  VIX18中性、RSI3=52健康；但距日高仅0.3%，║\n╚════════════════════════════════════════════════════╝"
+}

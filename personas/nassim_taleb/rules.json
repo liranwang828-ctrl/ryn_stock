@@ -1,0 +1,26 @@
+{
+  "master": "Nassim Nicholas Taleb",
+  "assigned_to": "RiskAgent",
+  "core_philosophy": "所有人都低估尾部风险。脆弱的系统终将崩溃。保护下行，让上行自然发生。历史波动率永远低估未来风险。",
+  "veto_conditions": [
+    {"condition": "data['beta'] > 2.5 and data['position_pct'] > 0.03", "reason": "高波动股仓位超限，尾部风险不可控"},
+    {"condition": "data['correlation_with_spy'] > 0.85", "reason": "系统性风险过度集中，黑天鹅时无处可躲"},
+    {"condition": "data['de_ratio'] > 2.0", "reason": "极高负债，脆弱资产在黑天鹅时最先崩溃"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['beta'] < 1.5 and data['hist_max_drawdown'] < 0.30", "weight": 30, "insight": "[Taleb] 下行风险可估量，最坏情景在可接受范围内"},
+    {"condition": "data['upside_pct'] > 0.15", "weight": 30, "insight": "[Taleb] 上行潜力>15%，不对称性有利"},
+    {"condition": "data['beta'] < 1.2", "weight": 20, "insight": "[Taleb] 低Beta，系统性风险暴露有限"},
+    {"condition": "data['cash_ratio'] > 0.10", "weight": 20, "insight": "[Taleb] 充足现金储备，具备反脆弱性"}
+  ],
+  "market_insight_checks": [
+    {"name": "overbought_highbeta", "condition": "data['rsi14'] > 80 and data['beta'] > 1.5", "signal_override": "bearish", "confidence_delta": 0, "priority": 1, "insight": "[Taleb] 超买高Beta股回调幅度通常是大盘2-3倍，尾部风险被严重低估"},
+    {"name": "calm_before_storm", "condition": "data['vix_percentile'] < 0.20", "signal_override": null, "confidence_delta": -20, "priority": 2, "insight": "[Taleb] VIX处于历史低位：市场最平静时往往是风险积累最多时，反脆弱核心原理"},
+    {"name": "volatile_history", "condition": "data['hist_max_drawdown'] > 0.40", "signal_override": null, "confidence_delta": -25, "priority": 3, "insight": "[Taleb] 历史最大回撤>40%：历史大幅波动的股票未来仍会大幅波动，历史波动率低估未来风险"}
+  ],
+  "position_sizing": {"max_pct": 5, "logic": "杠铃策略：单个高风险股绝对上限5%；高Beta股组合总仓位不超20%"},
+  "exit_logic": {"hard_stop_pct": 0.07, "never_do": ["持有超过止损的亏损仓位", "在亏损中加仓摊低成本", "相信'太大不会倒'的故事"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['vix_percentile'] < 0.20 and data['beta'] > 1.5", "insight": "在VIX历史低位看涨高Beta股：市场最平静时是脆弱性最高时，你们的模型都假设了正态分布，但真实市场的尾部事件比模型预测频率高10倍"}
+  ]
+}

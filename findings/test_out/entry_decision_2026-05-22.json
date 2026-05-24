@@ -1,0 +1,21 @@
+{
+  "date": "2026-05-22",
+  "decisions": {
+    "DUMMY": {
+      "sym": "DUMMY",
+      "decision": "观察",
+      "hard_vetoes": [],
+      "soft_vetoes": [
+        "dummy soft"
+      ],
+      "reason": "Testing lock",
+      "score": 60,
+      "rr_ratio": 2.5
+    }
+  },
+  "poll_needed": true,
+  "poll_symbols": [
+    "DUMMY",
+    "BABA"
+  ]
+}

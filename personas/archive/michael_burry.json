@@ -1,0 +1,27 @@
+{
+  "master": "Michael Burry",
+  "assigned_to": "CommunityAgent",
+  "core_philosophy": "市场经常是错的，错得有规律。社群热度是反向指标。找到市场共识的结构性错误，等待证伪。",
+  "veto_conditions": [
+    {"condition": "data['community_bull_pct'] > 0.75", "reason": "散户过热>75%，强烈反向信号"},
+    {"condition": "(data.get('operating_cashflow') or 0) <= 0 and (data.get('fcf') or 0) <= 0", "reason": "经营性和自由现金流双双为负，主业不产生现金，无安全边际"},
+    {"condition": "data['p_fcf'] > 30", "reason": "P/FCF>30，定价已过度反映乐观预期"},
+    {"condition": "abs(data['target_price'] - data['close']) / max(data['close'], 0.01) < 0.05", "reason": "目标价与现价差<5%，无错误定价机会"}
+  ],
+  "entry_conditions": [
+    {"condition": "data['p_fcf'] < 15", "weight": 35, "insight": "[Burry] P/FCF<15，用现金流定价发现低估"},
+    {"condition": "data['community_bull_pct'] < 0.40", "weight": 25, "insight": "[Burry] 社群冷淡<40%，市场忽视即潜在机会"},
+    {"condition": "data['analyst_rec'] > 3.0 and data.get('fcf_healthy', False)", "weight": 20, "insight": "[Burry] 机构看空但现金流健康，机构误判机会"},
+    {"condition": "data['price_chg_3m'] < -0.20 and data.get('fcf_healthy', False)", "weight": 20, "insight": "[Burry] 非基本面超跌，情绪性定价错误"}
+  ],
+  "market_insight_checks": [
+    {"name": "retail_frenzy", "condition": "data['community_bull_pct'] > 0.70 and data['price_chg_3m'] > 0.30", "signal_override": "bearish", "confidence_delta": 0, "priority": 1, "insight": "[Burry] 散户集体涌入是最可靠的短期顶部信号，共识即风险"},
+    {"name": "deep_value", "condition": "data['community_bull_pct'] < 0.30 and data['p_fcf'] < 12", "signal_override": "bullish", "confidence_delta": 20, "priority": 2, "insight": "[Burry] 被所有人嫌弃的便宜资产，P/FCF<12是历史强买入信号"},
+    {"name": "dream_stock", "condition": "data['p_fcf'] > 40 and data['community_bull_pct'] > 0.60", "signal_override": "bearish", "confidence_delta": 0, "priority": 1, "insight": "[Burry] 价格反映的是梦想而非现金流，这正是我做空的情形"}
+  ],
+  "position_sizing": {"max_pct": 8, "logic": "深度研究+P/FCF<10满仓；仅部分条件满足不超5%"},
+  "exit_logic": {"hard_stop_pct": null, "never_do": ["因短期下跌怀疑自己的深度研究", "跟随社群情绪出入场"]},
+  "debate_triggers": [
+    {"condition": "any(v['signal']=='bullish' for v in board_signals.values()) and data['community_bull_pct'] > 0.70", "insight": "社群看多超过70%而多方看涨：这在我的历史分析中是最可靠的反向信号，市场共识本身就是我最大的风险警报"}
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "persona": "nassim_taleb",
+  "description": "反脆弱框架的问题序列，高债务直接否决，优先检验尾部生存能力",
+  "confidence_base": 55,
+  "natural_adversaries": ["stan_druckenmiller", "peter_lynch"],
+  "sequence": [
+    {
+      "id": "q1",
+      "question": "债务结构是什么？极端情景下能撑多久？",
+      "why": "高负债在极端情景下会造成永久性损失，这是不可接受的脆弱性——不管平时基本面多好",
+      "data_required": ["debt_ratio", "cash_runway", "total_debt", "total_cash"],
+      "fail_action": "veto",
+      "veto_reason": "高负债在极端情景下会造成永久性损失，这是不可接受的脆弱性"
+    },
+    {
+      "id": "q2",
+      "question": "这只股票的收益分布是厚尾还是薄尾？（高Beta+高杠杆=更脆弱）",
+      "why": "厚尾分布意味着极端事件比正态分布预测的更频繁，风险被系统性低估",
+      "data_required": ["beta", "leverage_ratio"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 20
+    },
+    {
+      "id": "q3",
+      "question": "有没有类似期权的不对称结构？（有限亏损+潜在大盈利）",
+      "why": "不对称结构是我寻找的核心：最差情况下只损失小额，但有极大的上行潜力",
+      "data_required": ["downside_risk", "upside_potential", "position_size"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    },
+    {
+      "id": "q4",
+      "question": "与持仓其他标的的压力相关性如何？（黑天鹅时是否同时崩溃）",
+      "why": "极端事件下所有高风险资产相关性趋向于1，分散持有高相关资产没有真正的保护作用",
+      "data_required": ["correlation", "portfolio_exposure"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    },
+    {
+      "id": "q5",
+      "question": "市场在系统性忽略什么尾部风险？",
+      "why": "最危险的风险是那些大家都认为不可能发生的——共识的平静是脆弱性最高的时刻",
+      "data_required": ["vix_level", "options_skew", "news_sentiment"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 10
+    }
+  ]
+}

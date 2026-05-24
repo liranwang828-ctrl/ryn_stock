@@ -1,0 +1,76 @@
+{
+  "sym": "LITE",
+  "long_name": "Lumentum Holdings Inc.",
+  "generated_at": "2026-05-21T08:01:31.834672+00:00",
+  "sector": "Technology",
+  "industry": "Communication Equipment",
+  "country": "United States",
+  "employees": 10562,
+  "website": "https://www.lumentum.com",
+  "business_summary": "Lumentum Holdings Inc. manufactures and sells optical and photonic products in the Americas, the Asia-Pacific, Europe, the Middle East, and Africa. It operates through two segments, Cloud & Networking and Industrial Tech. The Cloud & Networking segment offers optical and photonic chips, components, modules, and subsystems supplied to cloud data center operators, AI/ML infrastructure providers, and network equipment manufacturer customers that are building cloud data centers and network infrastru",
+  "business_summary_full": "Lumentum Holdings Inc. manufactures and sells optical and photonic products in the Americas, the Asia-Pacific, Europe, the Middle East, and Africa. It operates through two segments, Cloud & Networking and Industrial Tech. The Cloud & Networking segment offers optical and photonic chips, components, modules, and subsystems supplied to cloud data center operators, AI/ML infrastructure providers, and network equipment manufacturer customers that are building cloud data centers and network infrastructures. Its Industrial Tech segment provides short-pulse solid-state lasers, kilowatt-class fiber lasers, diode lasers, and gas lasers that serves the semiconductor device, solar cell, display, and electric vehicle and battery manufacturing markets. The company was incorporated in 2015 and is headquartered in San Jose, California.",
+  "competitive_moat": [
+    "较高毛利率（41%），具备一定定价能力",
+    "ROE=23%，资本回报率良好，具备竞争优势",
+    "营收增速+90%，大幅高于行业平均，增长护城河显著",
+    "光模块技术领先：400G/800G 高速光模块市场份额前三，AI 数据中心网络互联核心器件",
+    "垂直整合能力：从激光器芯片到完整模块全栈自研，成本控制和性能优化优势明显"
+  ],
+  "growth_drivers": [
+    "强劲营收增速（+90% YoY），市场对高增长给予溢价估值",
+    "AI基础设施需求爆发，超大规模云厂商Capex持续创新高",
+    "数据中心扩张驱动算力需求，云计算/AI训练/推理需求三轮驱动",
+    "智能汽车/自动驾驶渗透率提升，汽车芯片需求长期增长",
+    "AI 数据中心光互联需求爆发：GPU 集群规模扩大推动 800G/1.6T 光模块需求指数增长",
+    "云厂商 Capex 创新高：微软/谷歌/Meta 数据中心扩张直接带动光模块采购"
+  ],
+  "competitors": [
+    {
+      "sym": "COHR",
+      "name": "Coherent (II-VI)",
+      "angle": "最大光模块竞争对手，收购II-VI后规模第一"
+    },
+    {
+      "sym": "IINN",
+      "name": "Innolight",
+      "angle": "中国光模块厂商，价格竞争激烈"
+    },
+    {
+      "sym": "FNSR",
+      "name": "Finisar/II-VI",
+      "angle": "高速光学器件竞争"
+    }
+  ],
+  "peers_pe": {},
+  "valuation_anchors": {
+    "pe_ttm": 153.91313,
+    "pe_fwd": 47.957893,
+    "peg": 0.63,
+    "sector_pe": 38.8,
+    "pe_premium_pct": 24,
+    "analyst_target": 1104.678,
+    "analyst_upside_pct": 27.3,
+    "rec_key": "buy",
+    "n_analysts": 24
+  },
+  "key_risks": [
+    "高Beta=1.5x，大盘波动时股价放大2倍，波动性风险高",
+    "空头比例13.4%较高，存在做空压力",
+    "负债率111%，高杠杆在利率上行时面临偿债压力",
+    "竞争激烈：Coherent、II-VI、Innolight 等均在抢占 800G 份额",
+    "客户集中度风险：少数超大规模云厂商贡献主要营收"
+  ],
+  "bull_case": [
+    "AI光互联核心受益：GPU集群规模化推动800G/1.6T光模块需求指数增长，LITE份额前三",
+    "高毛利率+垂直整合：全栈自研降低成本，毛利率有望持续提升",
+    "MACD正值(25.19)说明短期均线高于长期均线，动能方向向上——需量能配合才构成有效信号 RSI-14=38.9健康区间，上行空间未耗尽",
+    "MACD金叉(25.2)，多头动能扩大"
+  ],
+  "bear_case": [
+    "竞争加剧：Coherent整合II-VI后规模更大，中国厂商价格战压缩利润空间",
+    "客户集中度高：少数云厂商贡献大部分营收，单一客户订单波动影响股价剧烈"
+  ],
+  "web_enhanced": true,
+  "revenue_breakdown": [],
+  "latest_catalysts": []
+}

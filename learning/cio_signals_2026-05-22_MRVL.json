@@ -1,0 +1,19 @@
+{
+  "sym": "MRVL",
+  "date": "2026-05-22",
+  "signal": "bullish",
+  "agent_signals": {
+    "FundAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "MacroAgent": {
+      "signal": "bullish",
+      "confidence": 95
+    },
+    "RiskAgent": {
+      "signal": "bearish",
+      "confidence": 45
+    }
+  }
+}

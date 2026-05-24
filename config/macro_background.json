@@ -1,0 +1,36 @@
+{
+  "_updated": "2026-05-17",
+  "_note": "每月更新一次，或重大宏观事件后更新（债务危机、政策转向等）",
+
+  "A_debt_cycle": {
+    "us_debt_gdp_pct": 124,
+    "fed_balance_sheet_T": 7.2,
+    "credit_spread_status": "偏紧",
+    "cycle_phase": "长期债务周期中期"
+  },
+
+  "C_internal_order": {
+    "political_polarization": "高",
+    "wealth_gap_trend": "扩大",
+    "risk_level": "中"
+  },
+
+  "D_external": {
+    "fed_rate": 4.33,
+    "fomc_next": "2026-06-11",
+    "china_trade_note": "中美关税谈判进行中，90天暂停期"
+  },
+
+  "E_historical_analogy": {
+    "closest_period": "2000年科技泡沫后期+1970s滞胀特征混合",
+    "effective_strategies": [
+      "催化剂驱动个股优于指数",
+      "避开长久期高估值无利润股",
+      "保持仓位灵活，快进快出"
+    ],
+    "key_difference": "AI 生产力提升可能支撑科技估值，与1970s不同"
+  },
+
+  "macro_regime": "高利率+高债务+AI变量",
+  "regime_implication": "成长型标的承压，催化剂驱动机会仍存在"
+}

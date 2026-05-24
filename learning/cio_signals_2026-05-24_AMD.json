@@ -1,0 +1,15 @@
+{
+  "sym": "AMD",
+  "date": "2026-05-24",
+  "signal": "bullish",
+  "agent_signals": {
+    "MacroAgent": {
+      "signal": "bullish",
+      "confidence": 95
+    },
+    "RiskAgent": {
+      "signal": "bearish",
+      "confidence": 45
+    }
+  }
+}

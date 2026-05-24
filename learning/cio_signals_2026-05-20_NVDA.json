@@ -1,0 +1,27 @@
+{
+  "sym": "NVDA",
+  "date": "2026-05-20",
+  "signal": "bullish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "bullish",
+      "confidence": 90
+    },
+    "FundAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "MacroAgent": {
+      "signal": "neutral",
+      "confidence": 50
+    },
+    "SentimentAgent": {
+      "signal": "bullish",
+      "confidence": 85
+    },
+    "RiskAgent": {
+      "signal": "bearish",
+      "confidence": 75
+    }
+  }
+}

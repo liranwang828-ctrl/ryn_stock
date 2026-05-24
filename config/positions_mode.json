@@ -1,0 +1,75 @@
+{
+  "_comment": "持仓交易模式跟踪。mode: swing/intraday。poll.py 每轮自动检查是否需要切换。",
+  "MRVU": {
+    "mode": "swing",
+    "reason": "初始默认"
+  },
+  "NBIL": {
+    "mode": "swing",
+    "reason": "NBIS强催化剂(684%收入)"
+  },
+  "MRVL": {
+    "mode": "swing",
+    "reason": "午后仍在日高(67 RSI3)缩量走强"
+  },
+  "NVDA": {
+    "mode": "intraday",
+    "reason": "日高在开盘0分钟内形成"
+  },
+  "MSFT": {
+    "mode": "intraday",
+    "reason": "日高在开盘9分钟内形成"
+  },
+  "IAU": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "BABA": {
+    "mode": "swing",
+    "reason": "跟踪仓不操作"
+  },
+  "PONY": {
+    "mode": "swing",
+    "reason": "跟踪仓不操作"
+  },
+  "SNDK": {
+    "mode": "intraday",
+    "reason": "日高在开盘0分钟内形成"
+  },
+  "LEU": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "OKLO": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "TTD": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "SNAP": {
+    "mode": "swing",
+    "reason": "催化剂★★★→波段持有"
+  },
+  "POWL": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "ANET": {
+    "mode": "swing",
+    "reason": "午后仍在日高(51 RSI3)缩量走强"
+  },
+  "MXL": {
+    "mode": "swing",
+    "reason": "默认波段"
+  },
+  "NBIS": {
+    "mode": "intraday",
+    "reason": "日高在开盘24分钟内形成"
+  },
+  "GLOB": {
+    "mode": "intraday",
+    "reason": "场景D冲高回落→日内出场"
+  }
+}

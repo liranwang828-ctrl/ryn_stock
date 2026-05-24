@@ -1,0 +1,27 @@
+{
+  "sym": "IAU",
+  "date": "2026-05-21",
+  "signal": "bearish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "bearish",
+      "confidence": 55
+    },
+    "FundAgent": {
+      "signal": "neutral",
+      "confidence": 55
+    },
+    "MacroAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    },
+    "SentimentAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    },
+    "RiskAgent": {
+      "signal": "neutral",
+      "confidence": 55
+    }
+  }
+}

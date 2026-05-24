@@ -1,0 +1,57 @@
+{
+  "sym": "RKLB",
+  "time": "17:57:55",
+  "consensus": "🟢进场",
+  "majority": "进",
+  "vote_count": {
+    "进": 2,
+    "等": 1
+  },
+  "avg_score": 6.3,
+  "votes": {
+    "Druckenmiller": "等",
+    "Minervini": "进",
+    "Marks": "进"
+  },
+  "results": {
+    "Druckenmiller": {
+      "persona": "Druckenmiller",
+      "vote": "等",
+      "score": 5,
+      "reason": "大盘顺风SPY+0.7%/QQQ+0.9%、RS+5.8%，个股主题明确",
+      "pros": [
+        "大盘顺风SPY+0.7%/QQQ+0.9%",
+        "RS+5.8%，个股主题明确"
+      ],
+      "cons": []
+    },
+    "Minervini": {
+      "persona": "Minervini",
+      "vote": "进",
+      "score": 8,
+      "reason": "RS+5.8%极强、MACD柱正向、RSI3=58健康；但VWAP下方-1.5%",
+      "pros": [
+        "RS+5.8%极强",
+        "MACD柱正向",
+        "RSI3=58健康",
+        "量能扩张"
+      ],
+      "cons": [
+        "VWAP下方-1.5%"
+      ]
+    },
+    "Marks": {
+      "persona": "Marks",
+      "vote": "进",
+      "score": 6,
+      "reason": "VIX17低位，市场稳定、RSI3=58健康、距日高4%尚有空间",
+      "pros": [
+        "VIX17低位，市场稳定",
+        "RSI3=58健康",
+        "距日高4%尚有空间"
+      ],
+      "cons": []
+    }
+  },
+  "formatted": "╔════════════════════════════════════════════════════╗\n║  ⚡ RKLB 快速辩论  17:57:55  综合6.3/10  🟢进场         ║\n╠════════════════════════════════════════════════════╣\n║  🟡等  Druckenmiller     5/10  大盘顺风SPY+0.7%/QQQ+0.9%、RS+5.8║\n║  🟢进  Minervini         8/10  RS+5.8%极强、MACD柱正向、RSI3=58健康；║\n║  🟢进  Marks             6/10  VIX17低位，市场稳定、RSI3=58健康、距日高4%║\n╚════════════════════════════════════════════════════╝"
+}

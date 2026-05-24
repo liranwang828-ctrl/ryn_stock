@@ -1,0 +1,98 @@
+<h2>Dashboard 问题梳理 — 8 项诊断与解决方向</h2>
+<p class="subtitle">基于你刚才的反馈，逐一诊断根因</p>
+
+<div class="section">
+  <h3>📋 问题清单</h3>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#1 组合刷新缺失</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  更新持仓后，Overview 的组合风险卡无「刷新」按钮。
+  根因：/api/status 不重建 portfolio_snapshot，只读已有文件。
+  </p>
+  <span class="badge badge-red">API 缺失</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#2 NAV 历史不更新</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  同 #1，净值 Chart.js 曲线依赖 portfolio_history，
+  数据源 portfolio_snapshot_{date}.json 未随持仓变化重建。
+  </p>
+  <span class="badge badge-red">同 #1</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--yellow); padding:12px;">
+  <strong style="color:#f59e0b;">#3 「生成」按钮含义不明</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  有 CIO 报告→显示 CIO 链接；无 CIO→显示「📊生成」。
+  但无「研报」状态指示，且按钮未说明生成内容（CIO辩论+memo）。
+  AMD 添加后无 CIO 报告，所以只有「生成」按钮。
+  </p>
+  <span class="badge badge-yellow">UX 不清</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#4 流程引导断裂</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  Step1(扫描)→Step2(盘前决策)之间缺「确认关注标的+批量生成报告」步骤。
+  且缺少「一键生成缺失的盘前报告+研报」按钮。
+  </p>
+  <span class="badge badge-red">流程缺失</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#5 盘前决策后流程卡住</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  SOP 状态检查用 daily_plan_{date}.json，
+  但 premarket_summary.py 不生成此文件 → Step2 永远「待计划」。
+  </p>
+  <span class="badge badge-red">状态检测错误</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#6 盘中详情完全无内容</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  盘中详情 tab 依赖 intraday_snapshot_{date}_{sym}.jsonl，
+  只有 poll.py 运行时才生成。盘前决策产出（macro_strategy 节点）未写入此文件。
+  </p>
+  <span class="badge badge-red">数据链断裂</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--yellow); padding:12px;">
+  <strong style="color:#f59e0b;">#7 CIO 脑暴不应阻塞主流程</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  Step3(CIO辩论)在 pipeline 顺序中，但实际不阻塞后续步骤。
+  CIO 产出：HTML 报告 + strategic_memo + macro_strategy 节点更新。
+  对盘中决策的影响：macro_strategy 节点被 premarket_summary 读取。
+  </p>
+  <span class="badge badge-yellow">定位调整</span>
+</div>
+
+<div class="card" style="border-left:3px solid var(--red); padding:12px;">
+  <strong style="color:#f43f5e;">#8 盘中监测无法启动</strong>
+  <p style="font-size:0.82rem; color:var(--text-secondary); margin:4px 0;">
+  /api/run?task=poll → python agents/poll.py [自选股...]
+  需排查：Python 路径、缺失依赖、poll.py 本身的启动逻辑。
+  </p>
+  <span class="badge badge-red">需排查</span>
+</div>
+
+</div>
+
+<div style="margin-top:20px; padding:16px; background:rgba(99,102,241,0.05); border-radius:12px; border:1px solid rgba(99,102,241,0.15);">
+  <strong style="color:#a5b4fc;">🎯 解决优先级建议（按你的顺序：内容→可维护性→交互）</strong>
+  <ol style="color:var(--text-secondary); font-size:0.88rem; margin-top:8px; padding-left:20px;">
+    <li><strong>#4+#5 修复流程引导</strong> — 补确认步骤 + 修复状态检测（最影响日常使用）</li>
+    <li><strong>#6 盘中详情数据链</strong> — premarket_summary 产出写回 dashboard 数据文件</li>
+    <li><strong>#1+#2 组合刷新按钮</strong> — 新增 /api/refresh-portfolio 端点</li>
+    <li><strong>#8 排查 poll 启动</strong> — 修复盘中监测</li>
+    <li><strong>#3 生成按钮 UX</strong> — 明确状态标签 + 批量生成</li>
+    <li><strong>#7 CIO 从主流程移出</strong> — pipeline 重排</li>
+    <li>模板拆分为模块化（可维护性）</li>
+    <li>Chart.js 增强 + 交互优化</li>
+  </ol>
+</div>

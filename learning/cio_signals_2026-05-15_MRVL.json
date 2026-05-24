@@ -1,0 +1,31 @@
+{
+  "sym": "MRVL",
+  "date": "2026-05-15",
+  "signal": "bullish",
+  "agent_signals": {
+    "TechAgent": {
+      "signal": "neutral",
+      "confidence": 60
+    },
+    "FundAgent": {
+      "signal": "bullish",
+      "confidence": 70
+    },
+    "MacroAgent": {
+      "signal": "bearish",
+      "confidence": 75
+    },
+    "SentimentAgent": {
+      "signal": "bullish",
+      "confidence": 76
+    },
+    "CommunityAgent": {
+      "signal": "bullish",
+      "confidence": 78
+    },
+    "RiskAgent": {
+      "signal": "bearish",
+      "confidence": 75
+    }
+  }
+}

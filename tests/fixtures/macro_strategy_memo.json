@@ -1,0 +1,21 @@
+{
+  "sym": "TEST",
+  "analysis_date": "2026-05-20",
+  "synthesis": {"strategic_stance": "hold"},
+  "judgment": {"unified_confidence": 3},
+  "support_and_risk": {
+    "next_catalyst": {"event": "earnings", "date": "2026-06-15", "importance": "high"}
+  },
+  "scenarios": {
+    "bull": {"price_target": 130.0},
+    "base": {"price_target": 115.0},
+    "bear": {"price_target": 85.0}
+  },
+  "agent_analysis": {
+    "sentiment": {"confidence": 75, "signal": "bullish"}
+  },
+  "position_context": {
+    "falsification_conditions": [],
+    "position_snapshot": {"cost": 100.0, "shares": 10}
+  }
+}

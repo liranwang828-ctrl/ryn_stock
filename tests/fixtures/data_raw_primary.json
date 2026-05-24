@@ -1,0 +1,8 @@
+{
+  "symbol": "AMD", "timestamp": "2026-05-12T13:00:00Z", "light": false,
+  "fields": {
+    "close":  {"value": 458.79},
+    "volume": {"value": 45989300},
+    "rsi14":  {"value": 82.5}
+  }
+}

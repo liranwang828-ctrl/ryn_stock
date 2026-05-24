@@ -1,0 +1,39 @@
+Bootstrap: 处理 30 只标的...
+  TLRY... 477条
+  IAU... 477条
+  MMM... 477条
+  MSFT... 477条
+  BBAI... 477条
+  GOOGL... 477条
+  INTC... 477条
+  MU... 477条
+  LITE... 477条
+  AMD... 477条
+  OKLO... 477条
+  META... 477条
+  SNDK... 289条
+  AMZN... 477条
+  RGTI... 477条
+  TTD... 477条
+  RKLB... 477条
+  MRVL... 477条
+  IREN... 477条
+  FN... 477条
+  AAOI... 477条
+  NVDA... 477条
+  CRWV... 259条
+  HOOD... 477条
+  MXL... 477条
+  TSLA... 477条
+  AAPL... 477条
+  FLNC... 477条
+  OXY... 477条
+  QCOM... /tool/pandora/.package/python-3.12.0/lib/python3.12/site-packages/sklearn/base.py:458: UserWarning: X has feature names, but RandomForestClassifier was fitted without feature names
+  warnings.warn(
+/tool/pandora/.package/python-3.12.0/lib/python3.12/site-packages/sklearn/base.py:458: UserWarning: X has feature names, but RandomForestClassifier was fitted without feature names
+  warnings.warn(
+477条
+特征矩阵已保存: /home/lirawang/stock_team/learning/historical_features.parquet (13904行)
+日内模型训练完成，训练集准确率: 70.7%
+波段模型训练完成，训练集准确率: 53.7%
+案例库初始化: 40 条
