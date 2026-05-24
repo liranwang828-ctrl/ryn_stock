@@ -1,0 +1,38 @@
+{
+  "LITE": {
+    "sym": "LITE",
+    "date": "2026-05-24",
+    "thesis": "光模块AI数据中心需求",
+    "thesis_status": "intact",
+    "minervini": {
+      "current_price": 870.0,
+      "ma20": 922.0,
+      "ma20_dev_pct": -5.7,
+      "atr14": 89.0,
+      "lo5": 857.0,
+      "ma20_position": "下方",
+      "dev_quality": "合理区间"
+    },
+    "druckenmiller": {
+      "regime": "中性",
+      "macro_tone": "中性",
+      "macro_score": 5,
+      "vix": 18.5,
+      "macro_type": "光模块",
+      "sizing_note": "小仓（0.5x标准）（宏观中性）",
+      "headwinds": [
+        "rate_up"
+      ]
+    },
+    "marks": {
+      "rr_ratio": 3.5,
+      "entry": 870.0,
+      "stop": 855.0,
+      "target": 922.0,
+      "rr_ok": true,
+      "main_risks": [
+        "QQQ 开跌 > -1.5%"
+      ]
+    }
+  }
+}

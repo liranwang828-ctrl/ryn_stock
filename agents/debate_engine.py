@@ -220,7 +220,97 @@ def run_targeted_response(symbol: str, persona_a: str, persona_b: str,
     arg_a = stance_a.get("core_argument", "")
     arg_b = stance_b.get("core_argument", "")
 
-    # 较高信心者倾向于攻击，较低信心者倾向于防御
+    # ── 1. 尝试大模型真实心智辩论 ────────────────────────────────────
+    try:
+        from agents.llm_client import LLMClient
+        from agents.persona_engine import load_persona_full
+        client = LLMClient()
+        if client.is_configured():
+            profile_a = load_persona_full(_get_persona_file_name(persona_a))
+            profile_b = load_persona_full(_get_persona_file_name(persona_b))
+            
+            system_prompt_a = (
+                f"You are the famous trading master: {persona_a.upper()}.\n"
+                f"Your trading worldview/philosophy is:\n{profile_a.get('worldview', '')}\n"
+                f"Your language style, keywords and DNA are:\n{profile_a.get('language', '')}\n"
+                f"Your known blindspots are:\n{profile_a.get('blindspots', '')}\n"
+                "Please respond to the other master in character. Keep the response professional, highly realistic to your philosophy, and within 120 Chinese characters."
+            )
+            
+            system_prompt_b = (
+                f"You are the famous trading master: {persona_b.upper()}.\n"
+                f"Your trading worldview/philosophy is:\n{profile_b.get('worldview', '')}\n"
+                f"Your language style, keywords and DNA are:\n{profile_b.get('language', '')}\n"
+                f"Your known blindspots are:\n{profile_b.get('blindspots', '')}\n"
+                "Please respond to the other master in character. Keep the response professional, highly realistic to your philosophy, and within 120 Chinese characters."
+            )
+            
+            if conf_a >= conf_b:
+                # A 攻击 B
+                prompt_a = (
+                    f"We are debating stock {symbol.upper()}.\n"
+                    f"Your stance: {sig_a} (Confidence: {conf_a}%). Core Argument: {arg_a}\n"
+                    f"The other master, {persona_b.upper()}, has a contradictory stance: {sig_b} (Confidence: {conf_b}%). Core Argument: {arg_b}\n"
+                    f"Write a targeted challenge in Chinese, attacking {persona_b.upper()}'s core argument. Focus on why they neglect the vital signs you see. Output ONLY the response text in Chinese."
+                )
+                response_a = client.call_llm(prompt=prompt_a, system_prompt=system_prompt_a).strip()
+                responses[persona_a] = {
+                    "response_type":  "A",
+                    "response":       response_a,
+                    "new_confidence": min(conf_a + 5, 95),
+                    "opponent":       persona_b,
+                }
+                
+                # B 防御
+                prompt_b = (
+                    f"We are debating stock {symbol.upper()}.\n"
+                    f"Your stance: {sig_b} (Confidence: {conf_b}%). Core Argument: {arg_b}\n"
+                    f"The other master, {persona_a.upper()}, has challenged your view with: \"{response_a}\"\n"
+                    f"Write your defense in Chinese, explaining why your thesis still stands and address their challenge using your style. Output ONLY the response text in Chinese."
+                )
+                response_b = client.call_llm(prompt=prompt_b, system_prompt=system_prompt_b).strip()
+                responses[persona_b] = {
+                    "response_type":  "D",
+                    "response":       response_b,
+                    "new_confidence": max(conf_b - 5, 5),
+                    "opponent":       persona_a,
+                }
+            else:
+                # B 攻击 A
+                prompt_b = (
+                    f"We are debating stock {symbol.upper()}.\n"
+                    f"Your stance: {sig_b} (Confidence: {conf_b}%). Core Argument: {arg_b}\n"
+                    f"The other master, {persona_a.upper()}, has a contradictory stance: {sig_a} (Confidence: {conf_a}%). Core Argument: {arg_a}\n"
+                    f"Write a targeted challenge in Chinese, attacking {persona_a.upper()}'s core argument. Focus on why they neglect the vital signs you see. Output ONLY the response text in Chinese."
+                )
+                response_b = client.call_llm(prompt=prompt_b, system_prompt=system_prompt_b).strip()
+                responses[persona_b] = {
+                    "response_type":  "A",
+                    "response":       response_b,
+                    "new_confidence": min(conf_b + 5, 95),
+                    "opponent":       persona_a,
+                }
+                
+                # A 防御
+                prompt_a = (
+                    f"We are debating stock {symbol.upper()}.\n"
+                    f"Your stance: {sig_a} (Confidence: {conf_a}%). Core Argument: {arg_a}\n"
+                    f"The other master, {persona_b.upper()}, has challenged your view with: \"{response_b}\"\n"
+                    f"Write your defense in Chinese, explaining why your thesis still stands and address their challenge using your style. Output ONLY the response text in Chinese."
+                )
+                response_a = client.call_llm(prompt=prompt_a, system_prompt=system_prompt_a).strip()
+                responses[persona_a] = {
+                    "response_type":  "D",
+                    "response":       response_a,
+                    "new_confidence": max(conf_a - 5, 5),
+                    "opponent":       persona_b,
+                }
+            
+            return responses
+    except Exception:
+        pass
+
+    # ── 2. 降级备用：模板规则回应 ──────────────────────────────────────
     if conf_a >= conf_b:
         # A 攻击 B
         responses[persona_a] = {

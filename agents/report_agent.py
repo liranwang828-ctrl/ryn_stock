@@ -318,11 +318,68 @@ def terminal_summary(result, board=None):
     lines.append("═" * W)
     return "\n".join(lines)
 
+def generate_cio_llm_synthesis(sym: str, result: dict, board: list) -> str:
+    """调用大模型为深度分析报告合成 CIO 综合决策综述 (包括宏观、技术、板块共振与大师辩论总结)"""
+    try:
+        from agents.llm_client import LLMClient
+        client = LLMClient()
+        if not client.is_configured():
+            return None
+        
+        # 格式化各个维度的信号
+        agent_sigs = []
+        for ag, s in result.get("agent_signals", {}).items():
+            agent_sigs.append(f"{ag.replace('Agent','')}: {s.get('signal')} ({s.get('confidence')}%)")
+        agent_sigs_str = ", ".join(agent_sigs)
+        
+        # 格式化板块定位
+        sec = result.get("sector_info", {})
+        sec_str = f"细分行业: {sec.get('sector')} (参考ETF: {sec.get('etf')}), 板块信号: {sec.get('signal')} ({sec.get('confidence')}%)"
+        
+        # 格式化宏观指标
+        mac = result.get("macro_factors", {})
+        mac_str = f"VIX: {mac.get('vix')} (趋势: {mac.get('vix_trend')}), SPY今日变化: {mac.get('spy_chg')}%, QQQ今日5m变化: {mac.get('qqq_5m')}%"
+        
+        # 格式化大师辩论对话
+        debate_lines = []
+        from agents.report_agent import latest_per_agent
+        agent_msgs = latest_per_agent(board)
+        for ag, msg in agent_msgs.items():
+            debate_lines.append(f"{ag.replace('Agent','')}: signal={msg.get('signal')}, key_points={msg.get('key_points', [])[:2]}")
+        debate_str = "\n".join(debate_lines)
+        
+        system_prompt = (
+            "You are the senior Chief Investment Officer (CIO) of an elite multi-strategy hedge fund.\n"
+            "You need to synthesize today's multi-agent quantitative reports, master debates, and macro factors into a single highly professional investment summary.\n"
+            "Write a cohesive three-paragraph review in Chinese:\n"
+            "- Paragraph 1: Outlines the tactical stance on this stock based on current price trend, technical setup, and macro water temperature.\n"
+            "- Paragraph 2: Evaluates the specific sector synergy, industry correlations, leader-follower transmission (e.g. NVDA leading AMD, or Azure spend driving software), and relative strength.\n"
+            "- Paragraph 3: Summarizes the master debate consensus, highlights critical risk warning flags, and provides concrete execution guidance.\n"
+            "Ensure your tone is elegant, authoritative, and completely objective. Max 400 characters total."
+        )
+        
+        prompt = (
+            f"Please synthesize the investment thesis for stock: {sym.upper()}\n"
+            f"Unified Signal: {result.get('signal')} (Confidence: {result.get('confidence')}%)\n"
+            f"Multi-Agent Signals: {agent_sigs_str}\n"
+            f"Sector Outlook: {sec_str}\n"
+            f"Macro Water Temp: {mac_str}\n"
+            f"Master Debates & Stances:\n{debate_str}\n\n"
+            f"Generate the professional Chinese summary:"
+        )
+        
+        response = client.call_llm(prompt=prompt, system_prompt=system_prompt)
+        return response.strip()
+    except Exception as e:
+        return f"CIO 大模型决策综述生成失败: {str(e)}"
+
+
 def write_html(result, board=None):
     if board is None:
         board = load_board()
     env    = Environment(loader=FileSystemLoader(os.path.join(BASE, "templates")))
     tmpl   = env.get_template("report.html.j2")
+    
     # 按 symbol + 日期命名，支持并行跑不冲突
     sym    = result.get("symbol", result.get("sym", "UNKNOWN")).upper()
     date_tag = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -345,6 +402,22 @@ def write_html(result, board=None):
         "veto_agents": {},
     }
     render_ctx.update(result)
+    
+    # ── 触发大模型综述合成 ──────────────────────────────────────────
+    cio_synthesis = generate_cio_llm_synthesis(sym, render_ctx, board)
+    render_ctx["cio_llm_synthesis"] = cio_synthesis
+    
+    # ── 加载持仓论点与硬证伪边界 ──────────────────────────────────────────
+    positions_cfg = {}
+    try:
+        pos_path = os.path.join(BASE, "config", "positions.json")
+        if os.path.exists(pos_path):
+            with open(pos_path, encoding="utf-8") as f:
+                pos_data = json.load(f)
+                positions_cfg = pos_data.get("positions", {}).get(sym, {})
+    except Exception:
+        pass
+    render_ctx["positions_cfg"] = positions_cfg
     
     open(path, "w", encoding="utf-8").write(tmpl.render(**render_ctx, board=board,
                                       agent_msgs=latest_per_agent(board)))

@@ -1,7 +1,7 @@
 {
   "sym": "AMD",
   "long_name": "Advanced Micro Devices, Inc.",
-  "generated_at": "2026-05-23T18:44:11.622434+00:00",
+  "generated_at": "2026-05-24T03:59:20.322706+00:00",
   "sector": "Technology",
   "industry": "Semiconductors",
   "country": "United States",
@@ -35,9 +35,15 @@
   "key_risks": [
     "高Beta=2.4x，大盘波动时股价放大2倍，波动性风险高"
   ],
-  "bull_case": [],
-  "bear_case": [],
-  "web_enhanced": false,
+  "bull_case": [
+    "SPY 盘后 持平(-0.25%)，方向不明",
+    "VIX=16.7 中性 (↓-6.3%)"
+  ],
+  "bear_case": [
+    "Beta=2.4 高波动，需控制仓位",
+    "建议止损位 $434.78（当前价-7% 或52周低点保护）"
+  ],
+  "web_enhanced": true,
   "revenue_breakdown": [],
   "latest_catalysts": []
 }

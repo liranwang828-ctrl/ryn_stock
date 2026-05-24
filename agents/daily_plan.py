@@ -99,20 +99,153 @@ def _save_plan(plan: dict, date_str: str) -> None:
         json.dump(plan, f, indent=2, ensure_ascii=False)
     os.replace(tmp, path)
 
-def generate_plan(symbols: list, date_str: str = None, seed: int = None) -> dict:
+def generate_lite_stock_plan_on_the_fly(sym: str, date_str: str, seed: int = None) -> dict:
+    """对于新发现的股票，缺失静态盘前报告时自适应执行 On-the-fly 快速大模型战略与战术合成，确保秒级输出且不空洞"""
+    sym = sym.upper()
+    try:
+        from agents.quick_fundamentals import fetch_fundamentals
+        from agents.llm_client import LLMClient
+        
+        # 1. 快速抓取基本面数据（约 2 秒）
+        fund = {}
+        try:
+            fund = fetch_fundamentals(sym)
+        except Exception:
+            pass
+        
+        # 2. 抓取今日盘前基本价格与14天ATR
+        import yfinance as yf
+        tick = yf.Ticker(sym)
+        info = tick.info
+        pre_price = info.get("preMarketPrice") or info.get("regularMarketPrice") or info.get("previousClose") or 100.0
+        prev_close = info.get("regularMarketPreviousClose") or info.get("previousClose") or 100.0
+        gap_pct = (pre_price - prev_close) / prev_close * 100 if prev_close else 0.0
+        
+        atr = 5.0
+        try:
+            h = tick.history(period="14d")
+            if not h.empty:
+                atr = float((h["High"] - h["Low"]).mean())
+        except Exception:
+            pass
+        
+        # 3. 大模型 On-the-fly 双重合成提示 (Lite 模式)
+        client = LLMClient()
+        predicted_scene = "B"
+        t1_entry_hint = "观察今日VWAP回踩企稳后的入场机会"
+        llm_narrative = "⚠️ 临时战术运行 (无深度分析报告底座)"
+        
+        if client.is_configured():
+            system_prompt = (
+                "You are an expert trading advisor. This is a newly discovered stock with no deep analysis yet.\n"
+                "You need to output a JSON object containing a quick strategic stance and tactical gameplan:\n"
+                "{\n"
+                "  \"strategic_stance\": \"<one-sentence strategic rating, e.g., '技术突破多头', '基本面承压防守'>\",\n"
+                "  \"scene\": \"<'A', 'B', 'C', 'D', 'E', 'F', 'G', or 'H'>\",\n"
+                "  \"entry_hint\": \"<concrete tactical action hint in Chinese, max 2 sentences>\"\n"
+                "}"
+            )
+            
+            prompt = (
+                f"Newly discovered Stock: {sym}\n"
+                f"Premarket Price: ${pre_price} (Gap: {gap_pct:+.2f}%)\n"
+                f"Revenue Growth: {fund.get('rev_growth_pct', 'N/A')}%\n"
+                f"PE (fwd): {fund.get('pe_fwd', 'N/A')}x\n"
+                f"FCF (B): {fund.get('fcf_B', 'N/A')}\n"
+                f"Analyst Target Price: ${fund.get('analyst_target', 'N/A')}\n\n"
+                f"Provide the JSON strategic and tactical analysis."
+            )
+            
+            try:
+                res = json.loads(client.call_llm(prompt=prompt, system_prompt=system_prompt, json_mode=True))
+                predicted_scene = res.get("scene", "B")
+                t1_entry_hint = res.get("entry_hint", t1_entry_hint)
+                llm_narrative = f"⚠️ 临时战术运行 | 战略推导: {res.get('strategic_stance', '')}"
+            except Exception:
+                pass
+                
+        # 计算价格防线
+        watch_lo = round(pre_price * 0.99, 2)
+        watch_hi = round(pre_price * 1.01, 2)
+        
+        # ATR stop calculation
+        t1_stop = calc_stop(vwap=pre_price, atr14=atr, seed=seed)
+        entry_mid = (watch_lo + watch_hi) / 2
+        t1_target1 = round(entry_mid + atr * 0.7, 2)
+        t1_target2 = round(entry_mid + atr * 1.4, 2)
+        
+        return {
+            "predicted_scene": predicted_scene,
+            "catalyst": llm_narrative,
+            "catalyst_strength": 1,
+            "watch_zone_lo": watch_lo,
+            "watch_zone_hi": watch_hi,
+            "t1_entry_hint": t1_entry_hint,
+            "t1_stop": t1_stop,
+            "t1_target1": t1_target1,
+            "t1_target2": t1_target2,
+            "t2_condition_a": "价格>T1成本×1.005 + 量比>0.85x",
+            "t2_condition_b": "缩量回踩0.3-2.5% + 守VWAP",
+            "t2_stop_mode": "t1_cost",
+            "plan_status": "active",
+            "actual_scene": None,
+            "actual_vwap": None,
+            "entered": False,
+            "added_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "is_lite_inferred": True # 标注是自适应快速推导的临时剧本
+        }
+    except Exception as e:
+        return {
+            "predicted_scene": "B",
+            "catalyst": f"⚠️ 临时自适应降级运行: {str(e)}",
+            "catalyst_strength": 1,
+            "watch_zone_lo": 100.0,
+            "watch_zone_hi": 102.0,
+            "t1_entry_hint": "观察日内开盘守稳VWAP机会",
+            "t1_stop": 95.0,
+            "t1_target1": 105.0,
+            "t1_target2": 110.0,
+            "t2_condition_a": "价格>T1成本×1.005",
+            "t2_condition_b": "缩量回踩 + 守VWAP",
+            "t2_stop_mode": "t1_cost",
+            "plan_status": "active",
+            "actual_scene": None,
+            "actual_vwap": None,
+            "entered": False,
+            "added_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "is_lite_inferred": True
+        }
+
+
+def generate_plan(symbols: list, date_str: str = None, seed: int = None, allow_lite: bool = True) -> dict:
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     pre_path = _pre_path(date_str)
-    if not os.path.exists(pre_path):
+    
+    if not allow_lite and not os.path.exists(pre_path):
         raise FileNotFoundError(f"premarket 文件不存在：{pre_path}")
-    with open(pre_path, encoding="utf-8") as f:
-        pre = json.load(f)
-    target_syms = set(symbols) if symbols else set(pre["stocks"].keys())
+        
     plan = _load_plan(date_str)
     plan["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    for sym, pre_data in pre["stocks"].items():
-        if sym in target_syms:
-            plan["stocks"][sym] = _build_stock_plan(pre_data, date_str, seed=seed)
+    
+    pre = {"stocks": {}}
+    if os.path.exists(pre_path):
+        try:
+            with open(pre_path, encoding="utf-8") as f:
+                pre = json.load(f)
+        except Exception:
+            pass
+            
+    target_syms = set(symbols) if symbols else set(pre.get("stocks", {}).keys())
+    
+    for sym in target_syms:
+        sym = sym.upper()
+        if sym in pre.get("stocks", {}):
+            plan["stocks"][sym] = _build_stock_plan(pre["stocks"][sym], date_str, seed=seed)
+        else:
+            # 🌸 触发 Lite 自适应快速大模型战略/战术合成
+            plan["stocks"][sym] = generate_lite_stock_plan_on_the_fly(sym, date_str, seed=seed)
+            
     _save_plan(plan, date_str)
     return plan
 
@@ -130,19 +263,33 @@ def get_all(date_str: str = None) -> dict:
     return plan.get("stocks", {})
 
 
-def add_symbol(symbol: str, date_str: str = None, seed: int = None) -> dict:
+def add_symbol(symbol: str, date_str: str = None, seed: int = None, allow_lite: bool = True) -> dict:
     if date_str is None:
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sym = symbol.upper()
     pre_path = _pre_path(date_str)
-    if not os.path.exists(pre_path):
+    
+    if not allow_lite and not os.path.exists(pre_path):
         raise FileNotFoundError(f"premarket 文件不存在：{pre_path}")
-    with open(pre_path, encoding="utf-8") as f:
-        pre = json.load(f)
-    if sym not in pre["stocks"]:
+        
+    pre = {"stocks": {}}
+    if os.path.exists(pre_path):
+        try:
+            with open(pre_path, encoding="utf-8") as f:
+                pre = json.load(f)
+        except Exception:
+            pass
+            
+    if not allow_lite and sym not in pre.get("stocks", {}):
         raise KeyError(f"premarket 中无标的：{sym}")
+        
     plan = _load_plan(date_str)
-    plan["stocks"][sym] = _build_stock_plan(pre["stocks"][sym], date_str, seed=seed)
+    if sym in pre.get("stocks", {}):
+        plan["stocks"][sym] = _build_stock_plan(pre["stocks"][sym], date_str, seed=seed)
+    else:
+        # 🌸 触发 Lite 自适应快速大模型战略/战术合成
+        plan["stocks"][sym] = generate_lite_stock_plan_on_the_fly(sym, date_str, seed=seed)
+        
     _save_plan(plan, date_str)
     return plan["stocks"][sym]
 

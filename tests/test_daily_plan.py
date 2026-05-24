@@ -172,7 +172,7 @@ def test_generate_plan_raises_if_no_premarket():
     try:
         with patch("agents.daily_plan.BASE", tmpdir):
             with pytest.raises(FileNotFoundError):
-                generate_plan(["MRVL"], date_str="2099-01-01")
+                generate_plan(["MRVL"], date_str="2099-01-01", allow_lite=False)
     finally:
         shutil.rmtree(tmpdir)
 
@@ -239,7 +239,7 @@ def test_add_symbol_not_in_premarket_raises():
         with patch("agents.daily_plan.BASE", tmpdir):
             generate_plan(["MRVL"], date_str=date_str, seed=42)
             with pytest.raises(KeyError):
-                add_symbol("NONEXISTENT", date_str=date_str)
+                add_symbol("NONEXISTENT", date_str=date_str, allow_lite=False)
     finally:
         shutil.rmtree(tmpdir)
 

@@ -549,6 +549,21 @@
     </div>
   </header>
 
+  <!-- ── 👑 CIO 大模型决策综述卡片 ── -->
+  {% if cio_llm_synthesis %}
+  <section class="card cio-synthesis-card" style="border: 1px solid rgba(234, 179, 8, 0.25); background: linear-gradient(135deg, rgba(234, 179, 8, 0.06) 0%, rgba(15, 23, 42, 0.7) 100%); box-shadow: 0 8px 32px 0 rgba(234, 179, 8, 0.05); border-left: 5px solid var(--neutral); transition: all 0.3s ease;">
+    <div class="card-header" style="border-bottom: 1px solid rgba(234, 179, 8, 0.15);">
+      <div class="card-title" style="color: var(--neutral); font-size: 1.2rem; font-family: 'Outfit', sans-serif; font-weight: 700;">
+        👑 CIO 大模型决策综述与跨板块共振
+      </div>
+      <span class="badge badge-neutral" style="font-size: 0.72rem; padding: 2px 8px; border-color: rgba(234, 179, 8, 0.35);">DeepSeek Reasoning</span>
+    </div>
+    <div style="font-size: 1.0rem; line-height: 1.75; color: var(--text-primary); font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; text-align: justify; letter-spacing: 0.01em;">
+      {{ cio_llm_synthesis | replace('\n', '<br>') }}
+    </div>
+  </section>
+  {% endif %}
+
   <!-- ── EXECUTIVE SUMMARY ── -->
   <section class="card">
     <div class="scoreboard">
@@ -889,6 +904,30 @@
       <div class="card-header">
         <div class="card-title">🛡️ 尾部风险与未决争议</div>
       </div>
+
+      {% if positions_cfg %}
+        <div style="padding: 1.1rem; background: rgba(244, 63, 94, 0.03); border: 1px solid rgba(244, 63, 94, 0.15); border-radius: 12px; margin-bottom: 1.2rem; border-left: 4px solid var(--bearish);">
+          <div style="font-weight:700; font-size:0.95rem; margin-bottom: 0.4rem; color: #ffffff; display: flex; align-items: center; gap:0.4rem; font-family: 'Outfit', sans-serif;">
+            🎯 中长线投资论点 (Strategic Thesis)
+          </div>
+          <p style="font-size:0.88rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 0.8rem;">
+            {{ positions_cfg.thesis or '暂未填写中长线投资论点。' }}
+          </p>
+          {% if positions_cfg.falsification_conditions %}
+            <div style="font-weight:700; font-size:0.75rem; margin-bottom: 0.35rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Outfit', sans-serif;">
+              🚨 核心证伪边界 (Invalidation Conditions)
+            </div>
+            <ul style="padding-left: 0.2rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              {% for cond in positions_cfg.falsification_conditions %}
+                <li style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; display: flex; align-items: flex-start; gap: 0.4rem;">
+                  <span style="color: var(--bearish); font-weight: bold; min-width: 8px;">•</span>
+                  <span>{{ cond }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
       
       {% if stop_loss %}
         <div style="padding: 1rem; background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 8px; margin-bottom: 1rem;">

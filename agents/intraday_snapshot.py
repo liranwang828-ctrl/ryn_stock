@@ -353,6 +353,68 @@ def write_snapshot_entry(
 
     ts_str = datetime.now().strftime("%H:%M:%S")
     nodes  = get_effective_nodes(premarket_summary)
+
+    # ── 触发盘中事件大模型智能分析 ──────────────────────────────────────
+    action_now = None
+    if llm_triggered:
+        try:
+            from agents.llm_client import LLMClient
+            client = LLMClient()
+            if client.is_configured():
+                # 读取当前的宏观背景数据作为底座
+                macro_info = {}
+                macro_path = os.path.join(BASE, "findings", "macro.json")
+                if os.path.exists(macro_path):
+                    try:
+                        with open(macro_path, encoding="utf-8") as f:
+                            macro_info = json.load(f)
+                    except Exception:
+                        pass
+                
+                system_prompt = (
+                    "You are the expert Chief Investment Officer (CIO) of a professional trading desk. "
+                    "You monitor intraday stock events and must output a JSON action directive.\n"
+                    "Your JSON must strictly match this format:\n"
+                    "{\n"
+                    "  \"conclusion\": \"<short action in Chinese, e.g., '减仓 20%', '强行止损出场', '可Flex加仓', '继续观望'>\",\n"
+                    "  \"urgency\": \"<'immediate' or 'normal'>\",\n"
+                    "  \"note\": \"<detailed professional rationale in Chinese explaining the tactical action, max 3 sentences>\"\n"
+                    "}"
+                )
+                
+                prompt = (
+                    f"An intraday event has been triggered on stock {sym.upper()}.\n"
+                    f"Event Triggered: {event}\n"
+                    f"Current Price: ${price_now.get('price', 0.0)}\n"
+                    f"Daily Change: {price_now.get('chg_pct', 0.0)}%\n"
+                    f"VWAP Distance: {price_now.get('vwap_dist_pct', 0.0)}%\n"
+                    f"RSI (5m): {price_now.get('rsi14_5m', 'N/A')}\n"
+                    f"Volume Ratio: {price_now.get('vol_ratio', 'N/A')}\n"
+                    f"Today's Macro Environment:\n"
+                    f"VIX: {macro_info.get('vix', 'N/A')}\n"
+                    f"VIX Spike Status: {vix_spike}\n"
+                    f"SPY Change: {macro_info.get('spy_chg', 'N/A')}%\n"
+                    f"QQQ (5m) Change: {macro_info.get('qqq_5m', 'N/A')}%\n"
+                    f"Master Consensus Score: {cur_consensus}\n"
+                    f"Technical Nodes:\n"
+                    f"Entry Base: ${nodes.get('entry_base')}\n"
+                    f"Hard Stop: ${nodes.get('hard_stop')}\n"
+                    f"Target: ${nodes.get('target')}\n"
+                    f"Flex Add Price: ${nodes.get('flex_add')}\n"
+                    f"Flex Reduce Price: ${nodes.get('flex_reduce')}\n\n"
+                    f"Please analyze this situation and provide the JSON action directive in Chinese."
+                )
+                
+                llm_response = client.call_llm(prompt=prompt, system_prompt=system_prompt, json_mode=True)
+                action_now = json.loads(llm_response)
+        except Exception as e:
+            # 优雅降级，防止交易轮询因为网络或API报错而中断
+            action_now = {
+                "conclusion": "事件触发评估",
+                "urgency": "immediate" if is_red else "normal",
+                "note": f"系统触发了 {event} 大模型评估，但调用时出现异常: {str(e)}"
+            }
+
     record = {
         "ts": ts_str,
         "meta": {
@@ -367,7 +429,7 @@ def write_snapshot_entry(
         "price_now":     price_now,
         "plan_vs_now":   pvn,
         "node_snapshot": build_node_snapshot(nodes),
-        "action_now":    None,
+        "action_now":    action_now,
     }
 
     append_snapshot(sym, date, record, find_dir=find_dir)
@@ -375,7 +437,7 @@ def write_snapshot_entry(
     update_poll_state(
         sym=sym,
         plan_vs_now=pvn,
-        last_action_now=None,
+        last_action_now=json.dumps(action_now, ensure_ascii=False) if action_now else None,
         last_event=event if llm_triggered else None,
         last_event_at=ts_str if llm_triggered else None,
         cooldown_until=cooldown_until,
