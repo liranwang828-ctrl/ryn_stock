@@ -649,6 +649,8 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
                         "cost": cost,
                         "price": cost,
                         "cur_price": cost,  # 补上 cur_price 字段以对齐 daily_dashboard.html.j2 模板渲染
+                        "market_value": val,  # 补上 market_value 字段以对齐模板渲染
+                        "days_held": 0,  # 补上 days_held 字段以对齐模板渲染
                         "value": val,
                         "profit": 0.0,
                         "profit_pct": 0.0,
