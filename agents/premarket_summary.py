@@ -167,6 +167,8 @@ def build_summary(sym: str, date_str: str, base_dir: str = BASE) -> dict:
     exit_ = _load(os.path.join(find_dir, f"exit_decision_{date_str}.json"))
     chkl  = _load(os.path.join(base_dir, f"daily_checklist_{date_str}.json"))
     memo  = _load(os.path.join(base_dir, f"strategic_memo_{sym.upper()}.json"))
+    poll_cfg = _load(os.path.join(base_dir, "config", "poll_config.json"))
+    sector_map_cfg = (poll_cfg.get("sector_map") or {}) if isinstance(poll_cfg, dict) else {}
 
     sym_upper = sym.upper()
 
@@ -192,7 +194,7 @@ def build_summary(sym: str, date_str: str, base_dir: str = BASE) -> dict:
         "catalyst_strength": stk.get("catalyst_strength", 0),
         "pre_vol_ratio":  stk.get("pre_vol_ratio", 0.0),
         "overnight_note": ord_.get("symbols", {}).get(sym_upper, {}).get("overnight_note", ""),
-        "sector_ref":     stk.get("sector_ref", ""),
+        "sector_ref":     stk.get("sector_ref") or ord_.get("symbols", {}).get(sym_upper, {}).get("sector_ref", "") or (sector_map_cfg.get(sym_upper, {}) or {}).get("ref", ""),
         "sector_gap_pct": stk.get("sector_gap", 0.0),
         "rs_vs_sector":   round(mc.get("rs_1m", 0.0) - stk.get("sector_gap", 0.0), 2),
         "sector_note":    ord_.get("symbols", {}).get(sym_upper, {}).get("regime_note", ""),

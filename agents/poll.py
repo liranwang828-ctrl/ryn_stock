@@ -124,6 +124,13 @@ def _get_cached_history(ticker_obj, sym, key, period, interval=None, ttl=300):
             df = ticker_obj.history(period=period, interval=interval)
         else:
             df = ticker_obj.history(period=period)
+        if getattr(df, "empty", False):
+            if interval:
+                df_retry = ticker_obj.history(period=period, interval=interval)
+            else:
+                df_retry = ticker_obj.history(period=period)
+            if not getattr(df_retry, "empty", False):
+                df = df_retry
     except Exception as e:
         if key in sym_cache:
             # 请求失败时，使用过期的缓存兜底
@@ -173,6 +180,21 @@ def snap(sym, force_h1m=True):
                 atr14=0.0, atr5=0.0, ma20=None, ma50=None, ma5=None, gain_10d=None,
                 tgt_dev=None, h1m=None,
                 rsi14_5m=50.0, vol_ratio_5m=1.0, bars5m="─", consec_green_5m=0,
+                reversal_signals=[], reversal_score=0, reversal_mode=False,
+            )
+        return None
+
+    if h1m is None or getattr(h1m, "empty", False) or h2d is None or getattr(h2d, "empty", False) or h30 is None or getattr(h30, "empty", False):
+        fb = _stooq_fallback(sym)
+        if fb is not None:
+            return dict(
+                sym=sym, cur=fb, lc=fb, hi=fb, lo=fb, vwap=fb,
+                chg=0.0, dvwap=0.0, vol="-", bars="-----",
+                vr=0, vp=0, rsi3=50.0, hist=0.0, prev_hist=0.0,
+                macd_cross=False, macd_fail=False, hi_time_mins=0,
+                atr14=0.0, atr5=0.0, ma20=None, ma50=None, ma5=None, gain_10d=None,
+                tgt_dev=None, h1m=None,
+                rsi14_5m=50.0, vol_ratio_5m=1.0, bars5m="鈹€", consec_green_5m=0,
                 reversal_signals=[], reversal_score=0, reversal_mode=False,
             )
         return None
@@ -556,6 +578,31 @@ def pullback_diagnosis(stock_2m, qqq_2m):
         return "🟡混合因素", "大盘平，个股轻微回调，关注方向"
 
 # ── 盘初场景框架 ───────────────────────────────────────────
+def classify_poll_symbols(symbols, real_positions=None, entry_decisions=None, focus_stocks=None):
+    """Split symbols into active/passive polling buckets.
+
+    Focus symbols stay active so today's dashboard focus gets frequent updates.
+    """
+    real_positions = real_positions or {}
+    entry_decisions = entry_decisions or {}
+    focus_set = {s.upper() for s in (focus_stocks or [])}
+
+    active_syms = set()
+    passive_syms = set()
+    for sym in symbols:
+        sym_u = sym.upper()
+        is_held = sym_u in real_positions
+        decision = entry_decisions.get(sym_u, {})
+        decision_action = str(decision.get("action", "")).lower()
+        is_watch = any(kw in decision_action for kw in ["enter", "watch", "鍙叆鍦?", "瑙傚療"])
+
+        if is_held or is_watch or sym_u in focus_set:
+            active_syms.add(sym_u)
+        else:
+            passive_syms.add(sym_u)
+
+    return active_syms, passive_syms
+
 _possible_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__))
 _STOCK_BASE = _possible_base if os.path.exists(os.path.join(_possible_base, "templates")) else ((os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__))) if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__)), "templates")) else os.path.expanduser("~/stock_team"))
 SCENARIO_PATH_TPL  = os.path.join(_STOCK_BASE, "opening_scenarios_{}.json")
@@ -2425,11 +2472,30 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
     eok = mkt >= 1
     ml = "🟢顺风" if mkt>=4 else "🟡中性" if mkt>=1 else "🟠谨慎" if mkt>=-1 else "🔴逆风"
 
+    # 板块ETF涨跌：供盘中快照、分类与 dashboard 统一使用
+    sector_snaps = {}
+    if sector_map:
+        unique_refs = {
+            v.get("ref")
+            for v in sector_map.values()
+            if isinstance(v, dict) and v.get("ref")
+        }
+        for ref in unique_refs:
+            try:
+                s = snap(ref)
+                if s and s.get("chg") is not None:
+                    sector_snaps[ref] = float(s.get("chg", 0.0) or 0.0)
+            except Exception:
+                pass
+
     # ── 写入快照 ──────────────────────────────────────────
     snap_data = {}
     for sym, a in stocks.items():
         if not a: continue
         _rs = round(a["chg"]-spy_chg, 2)
+        sec_ref = (sector_map or {}).get(sym, {}).get("ref") if isinstance(sector_map, dict) else None
+        sec_chg = sector_snaps.get(sec_ref) if sec_ref else None
+        rs_vs_sector = round(float(a["chg"]) - sec_chg, 2) if sec_chg is not None else None
         snap_data[sym] = {
             "cur": a["cur"], "chg": a["chg"],
             "rs":  _rs,
@@ -2439,6 +2505,9 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
             "vol":  a["vol"],
             "vol_code": a.get("vol_code", "flat"),     # 枚举：expand|flat|shrink
             "bars": a["bars"], "atr14": a["atr14"],
+            "sector_ref": sec_ref,
+            "sector_chg": round(sec_chg, 2) if sec_chg is not None else None,
+            "rs_vs_sector": rs_vs_sector if rs_vs_sector is not None else 0.0,
         }
     if vix:
         write_snapshot(snap_data, vix, spy_chg, qqq_chg)
@@ -3115,6 +3184,14 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
     last_passive_poll_time = 0
     passive_interval = 180  # 3分钟
     active_interval = 10    # 10秒
+    focus_stocks = []
+    try:
+        _focus_path = os.path.join(BASE, "config", "daily_focus.json")
+        if os.path.exists(_focus_path):
+            with open(_focus_path, encoding="utf-8") as f:
+                focus_stocks = json.load(f).get("focus_stocks", [])
+    except Exception:
+        focus_stocks = []
     
     print("\n🚀 [System] 启动极速降频分流盘中监控（双队列缓存版）...")
     print(f"活跃队列刷新频率: {active_interval}秒 | 被动队列刷新频率: {passive_interval}秒")
@@ -3134,18 +3211,12 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
                 _entry_decisions = {}
                 
             # 2. 对 Symbols 进行分流
-            active_syms = set()
-            passive_syms = set()
-            for sym in symbols:
-                is_held = sym in real_positions
-                decision = _entry_decisions.get(sym, {})
-                decision_action = decision.get("action", "").lower()
-                is_watch = any(kw in decision_action for kw in ["enter", "watch", "可入场", "观察"])
-                
-                if is_held or is_watch:
-                    active_syms.add(sym)
-                else:
-                    passive_syms.add(sym)
+            active_syms, passive_syms = classify_poll_symbols(
+                symbols,
+                real_positions=real_positions,
+                entry_decisions=_entry_decisions,
+                focus_stocks=focus_stocks,
+            )
                     
             current_time = time.time()
             should_poll_passive = (current_time - last_passive_poll_time) >= passive_interval
@@ -3170,6 +3241,15 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
                 passive_syms=passive_syms,
                 should_poll_passive=should_poll_passive
             )
+
+            try:
+                from agents.dashboard_cache import write_dashboard_cache
+                from agents.dashboard_writer import build_dashboard_context
+                _cache_date = datetime.now().strftime("%Y-%m-%d")
+                _cache_ctx = build_dashboard_context(_cache_date, base_dir=BASE)
+                write_dashboard_cache(BASE, _cache_ctx)
+            except Exception:
+                pass
             
             if should_poll_passive:
                 last_passive_poll_time = current_time

@@ -125,6 +125,7 @@
       try {
         // 存储当前处于活跃状态的任务名称，用于持久化 and 自动 reconnect
         safeStorage.setItem('active_log_task', taskName);
+        highlightConsoleTab(taskName);
 
         const badge = document.getElementById('current-task-badge');
         if (badge) {
@@ -133,12 +134,24 @@
         }
         const dot = document.getElementById('terminal-dot-status');
         if (dot) dot.className = "terminal-dot active";
+        const drawerDot = document.getElementById('terminal-drawer-dot-status');
+        if (drawerDot) drawerDot.className = "terminal-dot active";
+        
         const nameEl = document.getElementById('terminal-task-name');
         if (nameEl) nameEl.innerText = "task_" + taskName + ".log";
         
         const terminal = document.getElementById('terminal-body');
         if (terminal) {
           terminal.innerText = "[系统] 正在请求启动后台异步任务: " + taskName + "...\n";
+        }
+        const drawerTerminal = document.getElementById('terminal-drawer-body');
+        if (drawerTerminal) {
+          drawerTerminal.innerText = "[系统] 正在请求启动后台异步任务: " + taskName + "...\n";
+        }
+
+        // 智能无感体验：如果是 cio 生成或 premarket 等，自动滑出终端抽屉展示，不打断用户总览视角
+        if (taskName.startsWith('cio_') || taskName === 'premarket' || taskName === 'generate-focus-reports') {
+          openTerminalDrawer(taskName);
         }
 
         fetch('/api/run?task=' + taskName)
@@ -147,6 +160,7 @@
             try {
               if (data.error) {
                 if (terminal) terminal.innerText += "[错误] " + data.error + "\n";
+                if (drawerTerminal) drawerTerminal.innerText += "[错误] " + data.error + "\n";
                 const errBadge = document.getElementById('current-task-badge');
                 if (errBadge) {
                   errBadge.innerText = "ERROR";
@@ -154,8 +168,11 @@
                 }
                 const errDot = document.getElementById('terminal-dot-status');
                 if (errDot) errDot.className = "terminal-dot";
+                const errDrawerDot = document.getElementById('terminal-drawer-dot-status');
+                if (errDrawerDot) errDrawerDot.className = "terminal-dot";
               } else {
                 if (terminal) terminal.innerText += "[系统] 任务启动成功！\n";
+                if (drawerTerminal) drawerTerminal.innerText += "[系统] 任务启动成功！\n";
                 startLogPolling(taskName);
               }
             } catch (innerErr) {
@@ -164,6 +181,7 @@
           })
           .catch(err => {
             if (terminal) terminal.innerText += "[错误] 请求发送失败: " + err + "\n";
+            if (drawerTerminal) drawerTerminal.innerText += "[错误] 请求发送失败: " + err + "\n";
             const errBadge = document.getElementById('current-task-badge');
             if (errBadge) {
               errBadge.innerText = "FAILED";
@@ -203,12 +221,18 @@
         const qqq5mEl = document.getElementById('slide-qqq5m');
         const rsiEl = document.getElementById('slide-rsi');
         const minsigEl = document.getElementById('slide-minsig');
+        
+        const btYearsEl = document.getElementById('slide-bt-years');
+        const btWindowEl = document.getElementById('slide-bt-window');
 
         const vix = vixEl ? vixEl.value : "N/A";
         const ma200 = ma200El ? ma200El.value : "N/A";
         const qqq5m = qqq5mEl ? qqq5mEl.value : "N/A";
         const rsi = rsiEl ? rsiEl.value : "N/A";
         const minsig = minsigEl ? minsigEl.value : "N/A";
+        
+        const btYears = btYearsEl ? btYearsEl.value : "5";
+        const btWindow = btWindowEl ? btWindowEl.value : "60";
 
         // 存储当前处于活跃状态的任务名称，用于持久化 and 自动 reconnect
         safeStorage.setItem('active_log_task', 'backtest');
@@ -225,7 +249,9 @@
 
         const terminal = document.getElementById('terminal-body');
         if (terminal) {
-          terminal.innerText = "[沙盒] 正在加载因子参数并运行5年多维度回测策略...\n"
+          terminal.innerText = "[沙盒] 正在加载因子参数并运行多周期历史回测策略...\n"
+                             + "  - 回测年数: " + btYears + " 年\n"
+                             + "  - 滑动窗口: " + btWindow + " 天\n"
                              + "  - VIX阀门: " + vix + "\n"
                              + "  - SPY MA200: " + ma200 + "%\n"
                              + "  - QQQ 5m暴跌: " + qqq5m + "%\n"
@@ -233,8 +259,15 @@
                              + "  - 最小信号数: " + minsig + "\n\n";
         }
 
+        // 智能体验优化：自动将控制台 tab 切换为 “沙盒回测” 并高亮
+        const btTabBtn = document.getElementById('console-tab-backtest');
+        if (btTabBtn) {
+          document.querySelectorAll('.console-tab-btn').forEach(b => b.classList.remove('active'));
+          btTabBtn.classList.add('active');
+        }
+
         // 异步调用回测
-        fetch('/api/run?task=backtest&years=5&window_days=60')
+        fetch('/api/run?task=backtest&years=' + btYears + '&window_days=' + btWindow)
           .then(res => res.json())
           .then(data => {
             try {
@@ -258,6 +291,206 @@
         console.error('Error starting backtest sandbox:', err);
       }
     }
+
+    // ── SOP Checkbox and Manual Focus Tickers Helper Functions ──────────────────
+    function toggleFocusSymbol(sym, checked) {
+      try {
+        const url = checked ? '/api/add_focus?symbol=' + sym : '/api/remove_focus?symbol=' + sym;
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              console.log("Focus toggled successfully:", sym, checked);
+              updateLiveWatchingTickersUI(sym, checked);
+              syncStatus();
+            } else {
+              console.error("Failed to toggle focus:", data.error);
+            }
+          })
+          .catch(err => console.error("Error toggling focus:", err));
+      } catch (err) {
+        console.error("Error in toggleFocusSymbol:", err);
+      }
+    }
+
+    function updateLiveWatchingTickersUI(sym, isAdded) {
+      const container = document.getElementById('live-watching-tickers-list');
+      if (!container) return;
+      const tagId = 'watching-tag-' + sym;
+      let tag = document.getElementById(tagId);
+      if (isAdded) {
+        if (!tag) {
+          tag = document.createElement('span');
+          tag.id = tagId;
+          tag.style = "font-family:'JetBrains Mono'; font-weight:700; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:3px; font-size:0.7rem;";
+          tag.innerText = sym;
+          container.appendChild(tag);
+        }
+      } else {
+        if (tag) {
+          tag.remove();
+        }
+      }
+    }
+
+    function addManualFocusStock() {
+      try {
+        const input = document.getElementById('manual-focus-sym');
+        const symbol = input ? input.value.trim().toUpperCase() : '';
+        if (!symbol) {
+          alert('请输入股票代码！');
+          return;
+        }
+        
+        fetch('/api/add_focus?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              if (input) input.value = '';
+              
+              const container = document.getElementById('focus-checklist-container');
+              if (container) {
+                const labelId = 'lbl-focus-' + symbol;
+                if (!document.getElementById(labelId)) {
+                  const label = document.createElement('label');
+                  label.id = labelId;
+                  label.style = "display:flex; align-items:center; gap:4px; cursor:pointer;";
+                  label.className = "focus-chk-lbl";
+                  
+                  const chk = document.createElement('input');
+                  chk.type = "checkbox";
+                  chk.checked = true;
+                  chk.value = symbol;
+                  chk.onchange = function() { toggleFocusSymbol(symbol, this.checked); };
+                  
+                  const span = document.createElement('span');
+                  span.style = "font-family:'JetBrains Mono'; font-weight:700;";
+                  span.innerText = symbol;
+                  
+                  label.appendChild(chk);
+                  label.appendChild(span);
+                  container.appendChild(label);
+                }
+              }
+              
+              updateLiveWatchingTickersUI(symbol, true);
+              syncStatus();
+              alert(symbol + " 已成功添加到今日关注列表！");
+            } else {
+              alert("添加失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            alert("请求失败: " + err);
+          });
+      } catch (err) {
+        console.error("Error in addManualFocusStock:", err);
+      }
+    }
+
+    function applyTunedParams() {
+      try {
+        const btn = document.getElementById('btn-apply-backtest');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = "⏳ 正在应用...";
+        }
+        
+        fetch('/api/apply_backtest')
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              if (btn) {
+                btn.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
+                btn.innerText = "✓ 已成功应用";
+                btn.style.boxShadow = "0 0 10px rgba(16,185,129,0.4)";
+              }
+              alert("🎉 调优因子参数应用成功！\n" + 
+                    "微观参数已成功同步写回，旧参数已备份至 findings 文件夹。\n\n" + 
+                    "已应用参数:\n" + JSON.stringify(data.applied_params, null, 2));
+              syncStatus();
+            } else {
+              alert("❌ 应用失败: " + data.error);
+              if (btn) {
+                btn.disabled = false;
+                btn.innerText = "💾 应用参数";
+              }
+            }
+          })
+          .catch(err => {
+            alert("❌ 请求发送失败: " + err);
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = "💾 应用参数";
+            }
+          });
+      } catch (err) {
+        console.error("Error in applyTunedParams:", err);
+      }
+    }
+
+    function highlightConsoleTab(taskName) {
+      try {
+        document.querySelectorAll('.console-tab-btn').forEach(b => {
+          b.classList.remove('active');
+          if (b.id === 'console-tab-' + taskName) {
+            b.classList.add('active');
+          }
+        });
+      } catch (err) {
+        console.error("Error highlighting console tab:", err);
+      }
+    }
+
+    function switchConsoleTab(taskName, btn) {
+      try {
+        document.querySelectorAll('.console-tab-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        
+        safeStorage.setItem('active_log_task', taskName);
+        
+        const terminalTitle = document.getElementById('terminal-task-name');
+        if (terminalTitle) {
+          terminalTitle.innerText = "task_" + taskName + ".log";
+        }
+        
+        fetch('/api/status')
+          .then(res => res.json())
+          .then(data => {
+            const isRunning = !!(data.running_tasks && data.running_tasks[taskName] && data.running_tasks[taskName].running);
+            
+            const badge = document.getElementById('current-task-badge');
+            if (badge) {
+              if (isRunning) {
+                badge.innerText = "RUNNING";
+                badge.className = "badge badge-yellow";
+              } else {
+                const finished = data.running_tasks && data.running_tasks[taskName] && data.running_tasks[taskName].returncode !== undefined;
+                badge.innerText = finished ? "FINISHED" : "IDLE";
+                badge.className = finished ? "badge badge-green" : "badge badge-gray";
+              }
+            }
+            
+            if (isRunning) {
+              startLogPolling(taskName);
+            } else {
+              if (logPollInterval) {
+                clearInterval(logPollInterval);
+                logPollInterval = null;
+              }
+              activeLogPollingTask = null;
+              fetchLogsOnce(taskName, false);
+            }
+          })
+          .catch(err => {
+            console.error("Error syncing status during tab switch:", err);
+            fetchLogsOnce(taskName, false);
+          });
+      } catch (err) {
+        console.error("Error switching console tab:", err);
+      }
+    }
+
 
     function stopTask(taskName) {
       try {
@@ -311,6 +544,11 @@
                   terminal.innerText = data.logs;
                   terminal.scrollTop = terminal.scrollHeight; // 滚动到底部
                 }
+                const drawerTerminal = document.getElementById('terminal-drawer-body');
+                if (drawerTerminal) {
+                  drawerTerminal.innerText = data.logs;
+                  drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+                }
                 
                 if (!data.running) {
                   stopLogPolling();
@@ -318,7 +556,19 @@
                     terminal.innerText += "\n[控制台] 进程已退出。\n";
                     terminal.scrollTop = terminal.scrollHeight;
                   }
+                  if (drawerTerminal) {
+                    drawerTerminal.innerText += "\n[控制台] 进程已退出。\n";
+                    drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+                  }
                   syncStatus();
+                  
+                  // 如果运行的任务是生成报告、预计算或扫描相关任务，进程退出时触发自动重载页面以更新仪表盘
+                  const curTask = safeStorage.getItem('active_log_task');
+                  if (curTask && (curTask.startsWith('cio_') || curTask === 'premarket' || curTask === 'scan')) {
+                    setTimeout(() => {
+                      location.reload();
+                    }, 1500);
+                  }
                 }
               } catch (innerErr) {
                 console.error('Error in log polling callback:', innerErr);
@@ -342,6 +592,8 @@
         activeLogPollingTask = null;
         const dot = document.getElementById('terminal-dot-status');
         if (dot) dot.className = "terminal-dot";
+        const drawerDot = document.getElementById('terminal-drawer-dot-status');
+        if (drawerDot) drawerDot.className = "terminal-dot";
         
         // 当日志轮询因任务结束而停止时，将 badge 标记为已完成
         const badge = document.getElementById('current-task-badge');
@@ -366,9 +618,15 @@
                 terminal.innerText = data.logs;
                 terminal.scrollTop = terminal.scrollHeight;
               }
+              const drawerTerminal = document.getElementById('terminal-drawer-body');
+              if (drawerTerminal) {
+                drawerTerminal.innerText = data.logs;
+                drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+              }
               
               const badge = document.getElementById('current-task-badge');
               const dot = document.getElementById('terminal-dot-status');
+              const drawerDot = document.getElementById('terminal-drawer-dot-status');
               const nameEl = document.getElementById('terminal-task-name');
               
               if (nameEl) nameEl.innerText = "task_" + taskName + ".log";
@@ -378,10 +636,12 @@
                   badge.innerText = "RUNNING";
                   badge.className = "badge badge-yellow";
                   if (dot) dot.className = "terminal-dot active";
+                  if (drawerDot) drawerDot.className = "terminal-dot active";
                 } else {
                   badge.innerText = "FINISHED";
                   badge.className = "badge badge-green";
                   if (dot) dot.className = "terminal-dot";
+                  if (drawerDot) drawerDot.className = "terminal-dot";
                 }
               }
             } catch (innerErr) {
@@ -513,7 +773,14 @@
                 }
               }
 
+              // 智能恢复兜底：如果依然没有活跃任务，使用服务器返回的最近修改日志的那个主要任务
+              if (!activeTask && data.latest_log_task) {
+                activeTask = data.latest_log_task;
+                safeStorage.setItem('active_log_task', activeTask);
+              }
+
               if (activeTask) {
+                highlightConsoleTab(activeTask);
                 const isRunning = !!(data.running_tasks && data.running_tasks[activeTask] && data.running_tasks[activeTask].running);
                 
                 if (isRunning) {
@@ -724,6 +991,27 @@
                     badge5.className = "badge badge-gray";
                     badge5.innerText = s5.detail || "待收盘复盘";
                   }
+                }
+              }
+
+              // 6. 如果有回测结果报告，更新 KPI 网格
+              if (data.backtest_report && data.backtest_report.exists) {
+                const bt = data.backtest_report;
+                const sharpeEl = document.getElementById('kpi-sharpe');
+                const mddEl = document.getElementById('kpi-mdd');
+                const winrateEl = document.getElementById('kpi-winrate');
+                const pfEl = document.getElementById('kpi-pf');
+                const alphaEl = document.getElementById('kpi-alpha');
+                const applyBtn = document.getElementById('btn-apply-backtest');
+                
+                if (sharpeEl) sharpeEl.innerText = Number(bt.sharpe).toFixed(2);
+                if (mddEl) mddEl.innerText = (Number(bt.mdd) * 100).toFixed(1) + '%';
+                if (winrateEl) winrateEl.innerText = (Number(bt.win_rate) * 100).toFixed(1) + '%';
+                if (pfEl) pfEl.innerText = Number(bt.profit_factor).toFixed(2);
+                if (alphaEl) alphaEl.innerText = (Number(bt.alpha) * 100).toFixed(1) + '%';
+                
+                if (applyBtn) {
+                  applyBtn.style.display = 'block';
                 }
               }
             } catch (innerErr) {
@@ -1076,9 +1364,7 @@
     // 联动今日关注股票智能生成 CIO 深度研判报告
     function generateReportForFocus(symbol) {
       try {
-        // 1. 立即切换到控制中心 Tab，防止阻塞
-        showTab('command', document.getElementById('btn-command'));
-        // 2. 调用控制中心的异步任务触发器，自动展示加载状态、开始日志轮询并展示输出进度
+        // 直接触发任务运行并开启滑出日志抽屉
         runTask('cio_' + symbol);
       } catch (err) {
         console.error('Error in generateReportForFocus:', err);
@@ -1229,9 +1515,178 @@
       }
     }
 
+    let masterQuotes = [];
+    let currentQuoteIndex = 0;
+    let quoteInterval = null;
+
+    function initMasterQuotesCarousel() {
+      try {
+        const host = (location.protocol === 'file:') ? `http://localhost:${ {{ server_port | default(8080) }} }` : '';
+        fetch(host + '/api/master-quotes')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              masterQuotes = data;
+              currentQuoteIndex = 0;
+              renderNextQuote();
+              if (quoteInterval) clearInterval(quoteInterval);
+              quoteInterval = setInterval(renderNextQuote, 8000);
+            }
+          })
+          .catch(err => console.error("Error loading master quotes:", err));
+      } catch (e) {
+        console.error("Error initializing quotes carousel:", e);
+      }
+    }
+
+    function renderNextQuote() {
+      try {
+        const container = document.getElementById('master-quote-container');
+        if (!container || masterQuotes.length === 0) return;
+        
+        container.style.opacity = 0;
+        
+        setTimeout(() => {
+          const q = masterQuotes[currentQuoteIndex];
+          const personaEl = document.getElementById('master-quote-persona');
+          const badgeEl = document.getElementById('master-quote-badge');
+          const symbolEl = document.getElementById('master-quote-symbol');
+          const reasonEl = document.getElementById('master-quote-reason');
+          
+          if (personaEl) {
+            personaEl.innerText = q.persona;
+            if (q.persona.includes("Livermore")) personaEl.style.color = "#34d399";
+            else if (q.persona.includes("Buffett")) personaEl.style.color = "#60a5fa";
+            else if (q.persona.includes("Wood")) personaEl.style.color = "#f472b6";
+            else if (q.persona.includes("Druckenmiller")) personaEl.style.color = "#fbbf24";
+            else personaEl.style.color = "#a7f3d0";
+          }
+          if (badgeEl) {
+            const score = q.score || 5;
+            badgeEl.innerText = `${q.vote} (Score: ${score})`;
+            if (q.vote.includes("买入") || q.vote.includes("做多")) {
+              badgeEl.className = "badge badge-green";
+            } else if (q.vote.includes("卖出") || q.vote.includes("防守")) {
+              badgeEl.className = "badge badge-red";
+            } else {
+              badgeEl.className = "badge badge-yellow";
+            }
+          }
+          if (symbolEl) symbolEl.innerText = q.symbol;
+          if (reasonEl) reasonEl.innerText = `"${q.reason}"`;
+          
+          container.style.opacity = 1;
+          currentQuoteIndex = (currentQuoteIndex + 1) % masterQuotes.length;
+        }, 500);
+      } catch (e) {
+        console.error("Error rendering quote:", e);
+      }
+    }
+
+    function syncMarketClock() {
+      try {
+        const host = (location.protocol === 'file:') ? `http://localhost:${ {{ server_port | default(8080) }} }` : '';
+        fetch(host + '/api/market-clock')
+          .then(res => res.json())
+          .then(data => {
+            if (!data || data.error) return;
+            const phaseEl = document.getElementById('market-clock-phase');
+            const countdownEl = document.getElementById('market-clock-countdown');
+            if (phaseEl) {
+              phaseEl.innerText = data.phase_label || '未知';
+              let cls = 'badge badge-gray';
+              if (data.phase === 'regular') cls = 'badge badge-green';
+              else if (data.phase === 'premarket' || data.phase === 'postmarket') cls = 'badge badge-blue';
+              else if (data.phase === 'overnight') cls = 'badge badge-yellow';
+              phaseEl.className = cls;
+              phaseEl.title = '北京时间 ' + (data.now_cn || '') + ' | 美东 ' + (data.now_et || '');
+            }
+            if (countdownEl) {
+              const target = data.countdown_target === 'close' ? '收盘' : '开盘';
+              countdownEl.innerText = '距' + target + ' ' + (data.countdown_human || '--');
+              countdownEl.title = '下次开盘 ' + (data.next_open_et || '') + ' | 下次收盘 ' + (data.next_close_et || '');
+            }
+            
+            // Dynamic market-aware SOP Stepper banner updates
+            const bannerEl = document.getElementById('sop-guide-banner');
+            const titleEl = document.getElementById('sop-guide-title');
+            const textEl = document.getElementById('sop-guide-text');
+            
+            const oBannerEl = document.getElementById('overview-sop-guide-banner');
+            const oTitleEl = document.getElementById('overview-sop-guide-title');
+            const oTextEl = document.getElementById('overview-sop-guide-text');
+            
+            const phase = data.phase || 'closed';
+            let titleText = '';
+            let guideText = '';
+            let alertClass = 'alert-card alert-info';
+            let borderStyle = '4px solid var(--blue)';
+            let bgStyle = 'rgba(59, 130, 246, 0.05)';
+            
+            if (phase === 'closed' || phase === 'weekend') {
+              titleText = '🏠 美股已休市 (Market Closed)';
+              guideText = '当前处于策略复盘与因子调优的黄金时期。建议：① 运行<b>沙盒回测</b>调优策略参数；② 运行 Step 5 进行盘后总结并确认写回[学习反思]；③ 可在下方 Step 2 提前维护关注股票，为下个交易日做盘前准备。没做的步骤（如扫描或战略合成）可以随时补做。SOP 流程图正呈现您最近一个交易日的实际完成进度。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            } else if (phase === 'premarket') {
+              titleText = '🌅 盘前整装待发 (Pre-Market Session)';
+              guideText = '距离正式开盘还有数小时。最佳行动路径：① 启动 Step 1 运行<b>自动量化扫股</b>；② 勾选下方 Step 2 今日关注的标的并生成 CIO 研报；③ 启动 Step 3 运行<b>多Agent战略合成</b>以防大盘降级。没做的步骤可以点击启动补做。';
+              alertClass = 'alert-card alert-yellow';
+              borderStyle = '4px solid var(--yellow)';
+              bgStyle = 'rgba(245, 158, 11, 0.05)';
+            } else if (phase === 'regular') {
+              titleText = '⚔️ 盘中激战正酣 (Market Regular Hours)';
+              guideText = '美股实盘交易正在进行！最佳行动路径：① 确保 Step 4 运行<b>盘中高频盯盘</b>以自动捕捉高频因子波动；② 随时关注下方大师辩论心智交锋，严格遵守策略安全线；③ 发现机会可随时点击“录入交易”。若盘前工作没做完，仍可补做。';
+              alertClass = 'alert-card alert-green';
+              borderStyle = '4px solid var(--green)';
+              bgStyle = 'rgba(16, 185, 129, 0.05)';
+            } else if (phase === 'postmarket') {
+              titleText = '🌆 盘后结算与总结 (Post-Market Session)';
+              guideText = '今日主力交易时段已收盘。最佳行动路径：① 启动 Step 5 运行<b>收盘复盘结算</b>，计算今日组合的真实 NAV 净资产；② 查看最新成交与收益率走势，并在[学习反思]中记录交易心智。未完成的流程均可在此阶段补做。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            } else {
+              titleText = '🌙 夜间非交易时段 (Overnight Session)';
+              guideText = '当前市场处于美东夜间隔夜休整期。建议：① 进行<b>因子策略回测</b>及历史资产波动复盘；② 提前在下方 Step 2 确认自选股与关注列表并批量生成宏观报告，为明天的战斗整装蓄能。所有流程皆支持补做。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            }
+            
+            // Update Command Hub banner
+            if (bannerEl && titleEl && textEl) {
+              titleEl.innerHTML = titleText;
+              textEl.innerHTML = guideText;
+              bannerEl.className = alertClass;
+              bannerEl.style.borderLeft = borderStyle;
+              bannerEl.style.background = bgStyle;
+            }
+            
+            // Update Overview banner
+            if (oBannerEl && oTitleEl && oTextEl) {
+              oTitleEl.innerHTML = titleText;
+              oTextEl.innerHTML = guideText;
+              oBannerEl.className = alertClass;
+              oBannerEl.style.borderLeft = borderStyle;
+              oBannerEl.style.background = bgStyle;
+            }
+          })
+          .catch(err => console.error('Error syncing market clock:', err));
+      } catch (err) {
+        console.error('Error in syncMarketClock:', err);
+      }
+    }
+
     // 恢复状态并初始化
     (function() {
       try {
+        // 初始化大师金句轮播
+        initMasterQuotesCarousel();
+        syncMarketClock();
+        setInterval(syncMarketClock, 10000);
+        
         // 初始化数据健康警告面板的显示状态
         const panel = document.getElementById('data-health-alert-panel');
         if (panel) {
@@ -1334,4 +1789,33 @@
       }
     }
 
+    function openTerminalDrawer(taskName) {
+      try {
+        const drawer = document.getElementById('terminal-drawer');
+        const title = document.getElementById('terminal-drawer-title');
+        const body = document.getElementById('terminal-drawer-body');
+        const dot = document.getElementById('terminal-drawer-dot-status');
+        
+        if (title) title.innerText = "任务控制台: " + taskName;
+        if (body) body.innerText = "[系统] 正在准备异步日志流...\n";
+        if (dot) dot.className = "terminal-dot active";
+        
+        if (drawer) {
+          drawer.classList.add('open');
+        }
+      } catch (err) {
+        console.error("Error opening terminal drawer:", err);
+      }
+    }
+
+    function closeTerminalDrawer() {
+      try {
+        const drawer = document.getElementById('terminal-drawer');
+        if (drawer) {
+          drawer.classList.remove('open');
+        }
+      } catch (err) {
+        console.error("Error closing terminal drawer:", err);
+      }
+    }
   </script>

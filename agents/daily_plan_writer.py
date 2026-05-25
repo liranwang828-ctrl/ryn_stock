@@ -246,7 +246,7 @@ def build_daily_plan(date: str, symbols: list[str] | None = None,
         elif adj:
             ego_status = "pending"
         else:
-            ego_status = None
+            ego_status = "pending"
 
         pending = _count_pending_suggestions(sym, date, find_dir)
         pending_total += pending

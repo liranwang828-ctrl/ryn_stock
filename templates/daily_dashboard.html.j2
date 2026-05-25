@@ -18,13 +18,27 @@
         <span>生成时间: <b style="color:#fff;">{{ generated_at }}</b></span>
         <span>每 30 秒自动刷新</span>
         {% if daily_plan and daily_plan.get('market_context') %}
-          <span>环境: <b style="color:#fff;">{{ daily_plan.market_context.get('env','—') }}</b></span>
-          {% if daily_plan.market_context.get('vix_level') %}
-            <span>VIX: <b style="color:#fff;">{{ '%.1f' % daily_plan.market_context.vix_level }}</b></span>
+          <span>环境: <b style="color:#fff;">{{ (daily_plan.get('market_context') or {}).get('env','—') }}</b></span>
+          {% if (daily_plan.get('market_context') or {}).get('vix_level') %}
+            <span>VIX: <b style="color:#fff;">{{ '%.1f' % (daily_plan.get('market_context') or {}).get('vix_level') }}</b></span>
           {% endif %}
         {% endif %}
         <span id="data-health-meta-span" style="display: inline-flex; align-items: center; gap: 4px;">
           数据信道: <span id="data-health-badge" class="badge {% if data_health and data_health.status == 'restricted' %}badge-pulse-red{% else %}badge-green{% endif %}" style="font-size:0.75rem; padding:1px 6px; cursor:pointer;" onclick="toggleDataHealthPanel()">{% if data_health and data_health.status == 'restricted' %}⚠️ 受限{% else %}📊 稳定{% endif %}</span>
+        </span>
+        {% set mc_clock = market_clock|default({}) %}
+        <span id="market-clock-meta-span" style="display:inline-flex; align-items:center; gap:6px;">
+          市场阶段:
+          <span id="market-clock-phase" class="badge {% if mc_clock.get('phase') == 'regular' %}badge-green{% elif mc_clock.get('phase') in ['premarket','postmarket'] %}badge-blue{% else %}badge-gray{% endif %}" style="font-size:0.75rem; padding:1px 6px;">
+            {{ mc_clock.get('phase_label', '读取中') }}
+          </span>
+          <span id="market-clock-countdown" style="font-family:'JetBrains Mono', monospace; color:var(--text-muted);">
+            {% if mc_clock.get('countdown_human') %}
+              距{{ '收盘' if mc_clock.get('countdown_target') == 'close' else '开盘' }} {{ mc_clock.get('countdown_human') }}
+            {% else %}
+              同步中
+            {% endif %}
+          </span>
         </span>
       </div>
     </div>
@@ -83,11 +97,118 @@
     <button class="tab-btn" onclick="showTab('events', this)">⚡ LLM 事件 Events</button>
     <button class="tab-btn" onclick="showTab('postmarket', this)">🌙 盘后复盘 Postmarket</button>
     <button class="tab-btn" onclick="showTab('research', this)">🔬 研报中心 Research</button>
+    <button class="tab-btn" onclick="showTab('learning', this)">&#128218; 学习反思 Learning</button>
     <button class="tab-btn" onclick="showTab('command', this)" id="btn-command">🎛️ 控制中心 Command Hub</button>
   </div>
 
   <!-- ═══════════════ TAB: 总览 ═══════════════ -->
     <div id="tab-overview" class="tab-pane active">
+
+    <!-- 🧭 Top Command Board: Sector Compass + Master Debate highlights -->
+    <div class="top-command-board" style="display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 1.25rem; margin-bottom: 1.5rem; align-items: stretch;">
+      
+      <!-- Card 1: 板块透视与全局风向标 -->
+      <div class="card" style="margin-bottom: 0; background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.75) 100%); border: 1px solid rgba(99, 102, 241, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); backdrop-filter: blur(12px); border-radius: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative;">
+        <div style="position: absolute; top: -50px; left: -50px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+        
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🧭</span>
+            <div>
+              <h2 style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; color: #ffffff; margin: 0; letter-spacing: 0.3px; background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">今日板块格局透视与全局风向标 (Sector Sentiment Compass)</h2>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin: 1px 0 0 0;">大模型多因子推演全局情绪传导与跨板块共振叙事</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            {% set mc = (daily_plan.get('market_context') or {}) if daily_plan else {} %}
+            <span class="badge {% if mc and mc.get('env') == '顺风' %}badge-green{% elif mc and mc.get('env') == '逆风' %}badge-red{% else %}badge-yellow{% endif %}" style="font-family:'Outfit'; font-weight:700; font-size:0.72rem; padding: 2px 8px;">
+              🛡️ {{ mc.get('env','中性') }}
+            </span>
+            {% if mc and mc.get('vix_level') %}
+              <span class="badge {% if mc.get('vix_level') > 24 %}badge-red{% elif mc.get('vix_level') > 20 %}badge-yellow{% else %}badge-blue{% endif %}" style="font-family:'JetBrains Mono'; font-weight:700; font-size:0.72rem; padding: 2px 8px;">
+                📈 VIX: {{ '%.1f' % mc.get('vix_level') }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div style="padding: 1rem 1.25rem; display: grid; grid-template-columns: 1.45fr 0.55fr; gap: 1rem; flex: 1; align-items: center;">
+          <!-- 叙事内容 -->
+          <div style="font-size: 0.85rem; line-height: 1.6; color: #e2e8f0; font-weight: 500;">
+            {% if mc and mc.get('env_narrative') %}
+              {{ mc.env_narrative }}
+            {% elif daily_plan and daily_plan.get('per_symbol') %}
+              {% set ns = [] %}
+              {% for sym, stk in daily_plan.per_symbol.items() %}
+                {% set pm_sym = premarket.get(sym, {}) %}
+                {% set ss = pm_sym.get('stock_snapshot', {}) %}
+                {% if ss.get('sector_note') and ss.sector_note not in ns %}
+                  {% set _ = ns.append(ss.sector_note) %}
+                {% endif %}
+              {% endfor %}
+              {% if ns %}
+                🚀 <b>今日跨行业传导焦点：</b>{{ ns | join(' | ') }}
+              {% else %}
+                📈 今日大盘环境为 <b>{{ mc.get('env','中性') }}</b>。大模型动态行业传导通道开启，跟风股密切锚定领头羊（NVDA、AMD）异动。若触发日内 VIX 恐慌或龙头破位，防守线将自动收紧。
+              {% endif %}
+            {% else %}
+              ⚡ <b>今日大盘计划待生成：</b>请点击控制中心运行【盘前决策汇总】来触发多智能体大盘计划和战略合成。
+            {% endif %}
+          </div>
+          
+          <!-- 今日宏观重大事件 -->
+          <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.75rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; font-weight: 700; display: flex; justify-content: space-between;">
+              <span>📅 今日宏观事件 Risks</span>
+              <span style="color: var(--yellow);">★ HIGH</span>
+            </div>
+            <div style="flex: 1; max-height: 80px; overflow-y: auto; font-size: 0.75rem; line-height: 1.4; color: var(--text-muted);">
+              {% if mc and mc.get('macro_events') %}
+                {% for ev in mc.macro_events %}
+                  <div style="margin-bottom: 3px; display: flex; gap: 4px; align-items: flex-start;">
+                    <span style="color: var(--red);">•</span> <span>{{ ev }}</span>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div style="color: var(--text-muted); font-style: italic;">今日无高影响宏观排期事件</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: 大师个性对决金句滚动墙 -->
+      <div class="card" style="margin-bottom: 0; background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.75) 100%); border: 1px solid rgba(16, 185, 129, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); backdrop-filter: blur(12px); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+        <div style="position: absolute; bottom: -50px; right: -50px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+        
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🎙️</span>
+            <div>
+              <h2 style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; color: #ffffff; margin: 0; letter-spacing: 0.3px; background: linear-gradient(135deg, #ffffff 0%, #a7f3d0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">多智能体大师脑暴交锋 (Master Dialogues)</h2>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin: 1px 0 0 0;">今日个股多空博弈性格化大师交锋观点</p>
+            </div>
+          </div>
+          <span class="badge badge-green" style="font-size:0.65rem; padding: 2px 6px;">Live Stance</span>
+        </div>
+        
+        <!-- 金句展示容器 -->
+        <div style="padding: 1rem 1.25rem; flex: 1; display: flex; flex-direction: column; justify-content: center; position: relative; min-height: 110px;">
+          <div id="master-quote-container" style="transition: opacity 0.5s ease-in-out; opacity: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span id="master-quote-persona" style="font-family: 'Outfit'; font-weight: 800; font-size: 0.85rem; color: #34d399; background: rgba(52, 211, 153, 0.1); padding: 2px 8px; border-radius: 4px;">Jesse Livermore</span>
+              <span id="master-quote-badge" class="badge badge-red" style="font-size: 0.65rem; padding: 1px 5px;">做多 (Score: 9)</span>
+              <span id="master-quote-symbol" style="font-family: 'JetBrains Mono'; font-weight: 700; font-size: 0.75rem; color: var(--text-muted);">NVDA</span>
+            </div>
+            <p id="master-quote-reason" style="font-size: 0.82rem; line-height: 1.5; color: #e2e8f0; font-style: italic; margin: 0;">
+              "市场永远不会错，个人意见经常错。放量突破前期高点是铁律，不要在强劲趋势中试图摸顶！"
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
     <div class="overview-grid">
       <!-- Left Column: Real Asset Allocation, Today's Focus Table, Inflow Hub -->
       <div class="grid-left-col">
@@ -216,23 +337,51 @@
               </thead>
               <tbody>
                 {% for sym in focus_list %}
-                {% set pm = premarket.get(sym, {}) or {} %}
-                {% set it = intraday.get(sym, {}) or {} %}
-                {% set nodes = macro_nodes.get(sym, {}) or {} %}
-                {% set pm_d = premarket_details.get(sym, {}) or {} %}
-                {% set sc = (pm_d.get('strategic_context', {}) or {}) if pm_d else {} %}
-                {% set dp_sym = daily_plan.get('per_symbol', {}).get(sym, {}) if daily_plan else {} %}
-                {% set pm_entry_ov = pm.get('entry', {}) or {} %}
-                {% set action = dp_sym.get('action_now', pm_entry_ov.get('decision', sc.get('strategic_stance', '—'))) %}
-                {% set price = it.get('price_now', {}).get('price') %}
-                {% set pvn = it.get('plan_vs_now', {}) %}
-                {% set ds = nodes.get('dynamic_stop', {}) or {} %}
-                {% set add1 = nodes.get('add1', {}) or {} %}
-                {% set fr_node = nodes.get('flex_reduce', {}) or {} %}
-                {% set flex_reduce_price = (fr_node or {}).get('price') or ((pm or {}).get('exit') or {}).get('flex_reduce_level') or ((pm_d or {}).get('exit') or {}).get('flex_reduce_level') %}
+                {% set pm = (premarket or {}).get(sym) or {} %}
+                {% set it = (intraday or {}).get(sym) or {} %}
+                {% set nodes = (macro_nodes or {}).get(sym) or {} %}
+                {% set pm_d = (premarket_details or {}).get(sym) or {} %}
+                {% set sc = (pm_d.get('strategic_context') or {}) if pm_d else {} %}
+                {% set dp_sym = (daily_plan.get('per_symbol') or {}).get(sym) or {} if daily_plan else {} %}
+                {% set pm_entry_ov = pm.get('entry') or {} %}
+                {% set pm_exit_ov = pm.get('exit') or {} %}
+                {% set pm_exit_details = pm_d.get('exit') or {} %}
+                
+                {# 智能融合盘前决策与盘中大模型实时事件指令 #}
+                {% set it_action = it.get('action_now') or {} %}
+                {% set action = it_action.get('conclusion') or dp_sym.get('action_now', pm_entry_ov.get('decision', sc.get('strategic_stance', '—'))) %}
+                
+                {% set price = (it.get('price_now') or {}).get('price') %}
+                {% set pvn = it.get('plan_vs_now') or {} %}
+                {% set ds = nodes.get('dynamic_stop') or {} %}
+                {% set add1 = nodes.get('add1') or {} %}
+                {% set fr_node = nodes.get('flex_reduce') or {} %}
+                
+                {# 获取核心点位及其自愈降级兜底 #}
+                {% set key_levels = dp_sym.get('key_levels') or {} %}
+                {% set stop_price = key_levels.get('hard_stop') or ds.get('price') or pm_exit_ov.get('hard_stop') or pm_exit_details.get('hard_stop') %}
+                {% set flex_add_price = key_levels.get('flex_add') or add1.get('price') or pm_exit_ov.get('flex_add_level') or pm_exit_details.get('flex_add_level') %}
+                {% set flex_reduce_price = (fr_node or {}).get('price') or key_levels.get('flex_reduce') or pm_exit_ov.get('flex_reduce_level') or pm_exit_details.get('flex_reduce_level') %}
+                
+                {# 动态距离计算自愈，彻底消除‘—’缺失问题 #}
                 {% set dist_stop = pvn.get('dist_to_stop_pct') %}
+                {% if dist_stop is none and price and stop_price %}
+                  {% set dist_stop = ((price - stop_price) / price * 100) | abs %}
+                {% endif %}
+                
                 {% set dist_fa = pvn.get('dist_to_flex_add_pct') %}
+                {% if dist_fa is none and price and flex_add_price %}
+                  {% set dist_fa = ((price - flex_add_price) / price * 100) | abs %}
+                {% endif %}
+                
                 {% set dist_fr = pvn.get('dist_to_flex_reduce_pct') %}
+                {% if dist_fr is none and price and flex_reduce_price %}
+                  {% set dist_fr = ((price - flex_reduce_price) / price * 100) | abs %}
+                {% endif %}
+                
+                {# 逻辑证伪条件提取 #}
+                {% set falsif_conds = (pm_d.get('thesis') or {}).get('falsification_conditions', []) or (pm.get('thesis') or {}).get('falsification_conditions', []) or (sc or {}).get('falsification_conditions', []) %}
+                
                 {% set thesis = pvn.get('thesis_signal') or sc.get('thesis_lifecycle', '—') %}
                 {% set gate = it.get('price_now', {}).get('gate_status', '—') %}
                 {% set gtc_ok = sym not in (session_state.get('gtc_status', {}).get('missing', []) if session_state else []) %}
@@ -241,37 +390,65 @@
                   <td style="font-family:'Outfit', sans-serif; font-weight:700; color:#fff;">
                     <div style="display: inline-flex; align-items: center; gap: 4px;">
                       {{ sym }}
+                      {% if dp_sym and dp_sym.get('is_lite_inferred') %}
+                        <div class="tooltip-container">
+                          <span class="badge badge-orange-pulse" style="cursor:help; padding:1px 4px; font-size:0.65rem;">⚡ LITE</span>
+                          <span class="tooltip-content">
+                            <b>⚠️ Lite 降级自适应推导模式</b><br>
+                            本地暂无该股的《长线深度战略报告》，当前策略基于基本面数据与今日盘前技术面由大模型动态实时推导生成。点击右侧“待生成”可补全。
+                          </span>
+                        </div>
+                      {% endif %}
                       {% if sym in watchlist %}
                         <span class="btn-watch-active">⭐ 自选</span>
                       {% endif %}
                     </div>
                   </td>
                   <td>
-                    {% if action == 'exit' %}<span class="badge badge-red">🚨 exit</span>
-                    {% elif action == 'reduce' %}<span class="badge badge-yellow">⬇️ reduce</span>
-                    {% elif action == 'enter' %}<span class="badge badge-green">✅ enter</span>
-                    {% elif action == 'watch' %}<span class="badge badge-blue">👁️ watch</span>
-                    {% elif action == 'hold' %}<span class="badge badge-blue">🔵 hold</span>
-                    {% else %}<span class="badge badge-gray">{{ action or '—' }}</span>{% endif %}
+                    {% if it_action and it_action.get('conclusion') %}
+                      <span class="badge badge-pulse-red" title="盘中实时大模型决策结论: {{ it_action.get('note', '') }}">⚡ {{ it_action.get('conclusion') | upper }}</span>
+                    {% else %}
+                      {% if action == 'exit' %}<span class="badge badge-red">🚨 exit</span>
+                      {% elif action == 'reduce' %}<span class="badge badge-yellow">⬇️ reduce</span>
+                      {% elif action == 'enter' %}<span class="badge badge-green">✅ enter</span>
+                      {% elif action == 'watch' %}<span class="badge badge-blue">👁️ watch</span>
+                      {% elif action == 'hold' %}<span class="badge badge-blue">🔵 hold</span>
+                      {% else %}<span class="badge badge-gray">{{ action or '—' }}</span>{% endif %}
+                    {% endif %}
                   </td>
                   <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">
                     {{ '$%.2f'%price if price else '—' }}
                   </td>
                   <td class="{{ 'red' if dist_stop is not none and dist_stop<3 else 'yellow' if dist_stop is not none and dist_stop<5 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
-                    {% if dist_stop is not none %}{{ '%.1f'%dist_stop }}%{% elif ds.get('price') %}${{ '%.0f'%ds.price }}{% else %}—{% endif %}
+                    {% if dist_stop is not none %}{{ '%.1f'%dist_stop }}%{% elif stop_price %}${{ '%.2f'%stop_price }}{% else %}—{% endif %}
                   </td>
                   <td class="{{ 'green' if dist_fa is not none and dist_fa<2 else '' }}" style="font-family:'JetBrains Mono', monospace;">
-                    {% if dist_fa is not none %}{{ '%.1f'%dist_fa }}%{% elif add1.get('price') %}${{ '%.0f'%add1.price }}{% else %}—{% endif %}
+                    {% if dist_fa is not none %}{{ '%.1f'%dist_fa }}%{% elif flex_add_price %}${{ '%.2f'%flex_add_price }}{% else %}—{% endif %}
                   </td>
                   <td class="{{ 'yellow' if dist_fr is not none and dist_fr<2 else '' }}" style="font-family:'JetBrains Mono', monospace;">
                     {% if dist_fr is not none %}{{ '%.1f'%dist_fr }}%{% elif flex_reduce_price %}${{ '%.2f'%flex_reduce_price }}{% else %}—{% endif %}
                   </td>
-                  <td>
-                    {% if thesis == 'breach' %}<span class="red">💀</span>
-                    {% elif thesis == 'warning' or thesis == 'late' %}<span class="yellow">⚠️</span>
-                    {% elif thesis == 'intact' or thesis == 'mid' or thesis == 'early' %}<span class="green">✅</span>
-                    {% else %}<span class="gray">{{ thesis }}</span>{% endif %}
-                    <span style="font-size:0.8rem; font-weight:600;">{{ thesis }}</span>
+                  <td style="position: relative;">
+                    <div class="tooltip-container">
+                      {% if thesis == 'breach' %}<span class="red">💀</span>
+                      {% elif thesis == 'warning' or thesis == 'late' %}<span class="yellow">⚠️</span>
+                      {% elif thesis == 'intact' or thesis == 'mid' or thesis == 'early' %}<span class="green">✅</span>
+                      {% else %}<span class="gray">{{ thesis }}</span>{% endif %}
+                      <span style="font-size:0.8rem; font-weight:600; border-bottom: 1px dotted var(--text-muted);">{{ thesis }}</span>
+                      
+                      <div class="tooltip-content" style="width: 280px;">
+                        <b style="color:var(--indigo); font-size:0.82rem; display:block; margin-bottom:6px;">🛡️ 核心操盘逻辑与证伪条件</b>
+                        {% if falsif_conds %}
+                          <ul style="margin: 0; padding-left: 14px; color: #cbd5e1; font-size: 0.72rem; line-height: 1.5;">
+                            {% for cond in falsif_conds %}
+                              <li style="margin-bottom:4px;">{{ cond }}</li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <div style="font-style:italic; color:var(--text-muted); font-size:0.72rem;">暂无特定的今日逻辑证伪条件</div>
+                        {% endif %}
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <span class="badge {% if gate == '通过' %}badge-green{% elif gate == '未通过' %}badge-red{% else %}badge-gray{% endif %}" style="padding:1px 5px; font-size:0.7rem;">
@@ -585,6 +762,183 @@
     </div>
   </div><!-- /tab-overview -->
 
+  <!-- ═══════════════ TAB: 学习反思 ═══════════════ -->
+  <div id="tab-learning" class="tab-pane">
+    {% set learning_state = learning or {} %}
+    {% set learning_scope = learning_state.get('scope') or 'all_time' %}
+    {% set latest_learning_lesson = (learning_state.get('latest_lessons') or [])[:1] %}
+    {% set latest_open_questions = learning_state.get('open_questions') or [] %}
+    <div style="margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.2); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%); border-radius: 14px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+      
+      <!-- Top banner -->
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:1.5rem; flex-wrap:wrap; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1rem;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size: 2rem;">&#128218;</span>
+          <div>
+            <h2 style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.3rem; color: #ffffff; margin: 0; background: linear-gradient(135deg, #ffffff 0%, #60a5fa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">大模型自主学习反思与规则演进 (Learning Journal & Rule Evolution)</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 0 0;">通过多智能体日内观察、复盘评估及规则沉淀，实现交易系统自愈性进化</p>
+          </div>
+        </div>
+        <span class="badge badge-blue" style="font-size:0.75rem; padding: 4px 10px; font-weight: 700;">{{ '全量知识库' if learning_scope == 'all_time' else 'Knowledge Store' }}</span>
+      </div>
+
+      <!-- Grid layout for statistics and open questions -->
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start; margin-bottom: 1.5rem;">
+        
+        <!-- Left: Stats Cards for Source Coverage -->
+        <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 1.25rem;">
+          <h3 style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+            <span>&#128202;</span> 知识沉淀统计 (Knowledge Accumulation)
+          </h3>
+          {% set coverage = learning_state.get('source_coverage') or {} %}
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
+            
+            <div style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 10px; padding: 0.85rem; text-align: center; transition: all 0.3s ease;">
+              <div style="font-size: 0.72rem; color: #93c5fd; text-transform: uppercase; font-weight: 700; margin-bottom: 0.35rem;">观察 (Observations)</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.7rem; font-weight: 800; color: #60a5fa;">{{ coverage.get('observation', 0) }}</div>
+            </div>
+            
+            <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 10px; padding: 0.85rem; text-align: center; transition: all 0.3s ease;">
+              <div style="font-size: 0.72rem; color: #a7f3d0; text-transform: uppercase; font-weight: 700; margin-bottom: 0.35rem;">规则/教训 (Lessons)</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.7rem; font-weight: 800; color: #34d399;">{{ coverage.get('lesson', 0) }}</div>
+            </div>
+            
+            <div style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 10px; padding: 0.85rem; text-align: center; transition: all 0.3s ease;">
+              <div style="font-size: 0.72rem; color: #fde68a; text-transform: uppercase; font-weight: 700; margin-bottom: 0.35rem;">调优决策 (Decisions)</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.7rem; font-weight: 800; color: #fbbf24;">{{ coverage.get('decision', 0) }}</div>
+            </div>
+
+            <div style="background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.15); border-radius: 10px; padding: 0.85rem; text-align: center; transition: all 0.3s ease;">
+              <div style="font-size: 0.72rem; color: #ddd6fe; text-transform: uppercase; font-weight: 700; margin-bottom: 0.35rem;">反馈结果 (Outcomes)</div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.7rem; font-weight: 800; color: #a78bfa;">{{ coverage.get('outcome', 0) }}</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: Open Questions -->
+        <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 1.25rem; min-height: 156px;">
+          <h3 style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 8px;">
+            <span>&#10068;</span> 核心探究课题 (Open Questions)
+          </h3>
+          {% if latest_open_questions %}
+            <div style="display:flex; flex-direction:column; gap:0.65rem;">
+              {% for q in latest_open_questions %}
+                <div style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid #60a5fa; border-radius: 0 6px 6px 0; padding: 0.5rem 0.75rem; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">
+                  {{ q }}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="font-size: 0.82rem; line-height: 1.5; color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem 0;">
+              暂无待探究课题
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Main Columns for Details -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+        
+        <!-- Left Column: Latest Lessons Learned -->
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; border-left: 4px solid #34d399; padding-left: 8px;">
+            最新核心交易规则 (Key Trading Lessons)
+          </h3>
+          
+          {% if latest_learning_lesson %}
+            <div style="display:flex; flex-direction:column; gap:1.25rem;">
+              {% for lesson in learning_state.get('latest_lessons') or [] %}
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="badge badge-green" style="font-size: 0.65rem; font-family: 'JetBrains Mono'; font-weight: 800;">{{ lesson.get('id', 'LESSON') }}</span>
+                      <span style="font-size: 0.72rem; color: var(--text-muted);">{{ lesson.get('date') }}</span>
+                    </div>
+                    {% if lesson.get('source') %}
+                      <span style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #34d399; background: rgba(52, 211, 153, 0.1); padding: 1px 6px; border-radius: 4px;">{{ lesson.get('source') }}</span>
+                    {% endif %}
+                  </div>
+                  
+                  <div style="font-size: 0.92rem; line-height: 1.6; color: #ffffff; font-weight: 600; margin-bottom: 0.85rem;">
+                    {{ lesson.get('summary') }}
+                  </div>
+
+                  {% if lesson.get('what_worked') %}
+                    <div style="margin-bottom: 0.5rem;">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: #34d399; font-weight: 700; margin-bottom: 0.25rem;">成功经验 (What Worked)</div>
+                      <ul style="margin: 0; padding-left: 1.1rem; font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;">
+                        {% for ww in lesson.get('what_worked') %}
+                          <li>{{ ww }}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endif %}
+
+                  {% if lesson.get('what_failed') %}
+                    <div>
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: #f87171; font-weight: 700; margin-bottom: 0.25rem;">改进教训 (What Failed)</div>
+                      <ul style="margin: 0; padding-left: 1.1rem; font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;">
+                        {% for wf in lesson.get('what_failed') %}
+                          <li>{{ wf }}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endif %}
+
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); font-style: italic; text-align: center; padding: 3rem 0; background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 10px;">
+              🔍 尚未记录核心交易规则
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Right Column: Recent Observations -->
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #ffffff; margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; border-left: 4px solid #60a5fa; padding-left: 8px;">
+            盘中特征与行为观察 (Recent Observations)
+          </h3>
+          
+          {% if learning_state.get('latest_observations') %}
+            <div style="display:flex; flex-direction:column; gap:1rem;">
+              {% for obs in learning_state.get('latest_observations') or [] %}
+                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 10px; padding: 1rem; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding-bottom: 0.4rem;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="badge badge-blue" style="font-size: 0.65rem; font-family: 'JetBrains Mono'; font-weight: 800;">{{ obs.get('id', 'OBS') }}</span>
+                      <span style="font-size: 0.72rem; color: var(--text-muted);">{{ obs.get('date') }}</span>
+                    </div>
+                    {% if obs.get('source') %}
+                      <span style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: #60a5fa; background: rgba(59, 130, 246, 0.1); padding: 1px 6px; border-radius: 4px;">{{ obs.get('source') }}</span>
+                    {% endif %}
+                  </div>
+
+                  <div style="font-size: 0.85rem; line-height: 1.55; color: #e2e8f0;">
+                    {{ obs.get('summary') }}
+                  </div>
+                  
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); font-style: italic; text-align: center; padding: 3rem 0; background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 10px;">
+              🔍 尚未记录盘中特征观察
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+    </div>
+  </div><!-- /tab-learning -->
+
+
   <!-- ═══════════════ TAB: 盘中详情 ═══════════════ -->
   <div id="tab-intraday" class="tab-pane">
     <!-- 盘前策略节点（Pre-market Strategy Nodes） -->
@@ -661,22 +1015,24 @@
 
     {% if focus_list %}
       {% for sym in focus_list %}
-      {% set pm = premarket.get(sym, {}) %}
-      {% set it = intraday.get(sym, {}) %}
-      {% set dp_sym = daily_plan.get('per_symbol', {}).get(sym, {}) if daily_plan else {} %}
-      {% set pn = it.get('price_now', {}) %}
-      {% set pvn = it.get('plan_vs_now', {}) %}
-      {% set pm_entry = pm.get('entry', {}) or {} %}
-      {% set pm_exit = pm.get('exit', {}) or {} %}
-      {% set pm_adj = pm.get('post_open_adj', {}) or {} %}
+      {% set pm = (premarket or {}).get(sym) or {} %}
+      {% set it = (intraday or {}).get(sym) or {} %}
+      {% set dp_sym = (daily_plan.get('per_symbol') or {}).get(sym) or {} if daily_plan else {} %}
+      {% set pn = it.get('price_now') or {} %}
+      {% set pvn = it.get('plan_vs_now') or {} %}
+      {% set pm_entry = pm.get('entry') or {} %}
+      {% set pm_exit = pm.get('exit') or {} %}
+      {% set pm_adj = pm.get('post_open_adj') or {} %}
+      {% set mn = (macro_nodes or {}).get(sym) or {} %}
       {# key_levels #}
-      {% set kl_dp = dp_sym.get('key_levels', {}) or {} %}
+      {% set kl_dp = dp_sym.get('key_levels') or {} %}
       {% set kl = {
         'entry_base':  kl_dp.get('entry_base')  or pm_adj.get('entry_base_adj')  or pm_entry.get('entry_base'),
-        'hard_stop':   kl_dp.get('hard_stop')   or pm_adj.get('hard_stop_adj')   or pm_exit.get('hard_stop'),
-        'flex_add':    kl_dp.get('flex_add')    or pm_adj.get('flex_add_adj')    or pm_exit.get('flex_add_level'),
-        'flex_reduce': kl_dp.get('flex_reduce') or pm_adj.get('flex_reduce_adj') or pm_exit.get('flex_reduce_level'),
-        'target':      kl_dp.get('target')      or pm_adj.get('target_adj')      or pm_exit.get('target_price') or pm_entry.get('target_price'),
+        'hard_stop':   kl_dp.get('hard_stop')   or pm_adj.get('hard_stop_adj')   or pm_exit.get('hard_stop') or (mn.get('dynamic_stop') or {}).get('price'),
+        'flex_add':    kl_dp.get('flex_add')    or pm_adj.get('flex_add_adj')    or pm_exit.get('flex_add_level') or (mn.get('add1') or {}).get('price'),
+        'flex_reduce': kl_dp.get('flex_reduce') or pm_adj.get('flex_reduce_adj') or pm_exit.get('flex_reduce_level') or (mn.get('flex_reduce') or {}).get('price'),
+        'target':      kl_dp.get('target')      or pm_adj.get('target_adj')      or pm_exit.get('target_price') or pm_entry.get('target_price') or (mn.get('tp1') or {}).get('price'),
+        'scenario_downgrade': (mn.get('scenario_downgrade') or {}).get('price'),
       } %}
       {% set ss = pm.get('stock_snapshot', {}) %}
       {% set thesis_data = pm.get('thesis', {}) %}
@@ -725,6 +1081,59 @@
             {% endif %}
           </div>
         </div>
+
+        {% set chart = it.get('mini_chart') or {} %}
+        {% set candles = chart.get('candles') or [] %}
+        {% set nodes = chart.get('nodes') or [] %}
+        {% set chart_range = chart.get('range') or {} %}
+        {% set chart_low = chart_range.get('low') %}
+        {% set chart_high = chart_range.get('high') %}
+        {% if candles and chart_low is not none and chart_high is not none %}
+          {% set chart_span = chart_high - chart_low if chart_high > chart_low else 1 %}
+          {% set chart_left = 30 %}
+          {% set chart_right = 450 %}
+          {% set chart_top = 10 %}
+          {% set chart_bottom = 72 %}
+          {% set chart_height = chart_bottom - chart_top %}
+          {% set chart_width = chart_right - chart_left %}
+          {% set slot_count = 10 %}
+          {% set candle_step = chart_width / slot_count %}
+          {% set candle_body = 12 %}
+          <div class="intraday-mini-chart">
+            {% if chart.get('source') == 'previous_close' %}
+              <div class="mini-chart-source">昨日尾盘 {{ chart.get('source_date') or '' }}</div>
+            {% endif %}
+            <svg class="mini-candle-strip" viewBox="0 0 480 88" preserveAspectRatio="none" role="img" aria-label="{{ sym }} intraday candlestick strip">
+              <rect x="0.5" y="0.5" width="479" height="87" rx="8" class="mini-chart-frame"></rect>
+              {% for idx in range(slot_count + 1) %}
+                {% set grid_x = chart_left + candle_step * idx %}
+                <line class="mini-chart-grid" x1="{{ '%.1f'|format(grid_x) }}" y1="{{ chart_top }}" x2="{{ '%.1f'|format(grid_x) }}" y2="{{ chart_bottom }}" />
+              {% endfor %}
+              {% for idx in range(3) %}
+                {% set grid_y = chart_top + chart_height / 2 * idx %}
+                <line class="mini-chart-grid mini-chart-grid-horizontal" x1="{{ chart_left }}" y1="{{ '%.1f'|format(grid_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(grid_y) }}" />
+              {% endfor %}
+              {% for node in nodes %}
+                {% set node_y = chart_top + ((chart_high - node.price) / chart_span * chart_height) %}
+                {% set node_label = 'Entry' if node.name == 'entry_base' else 'Stop' if node.name == 'hard_stop' else 'Add' if node.name == 'flex_add' else 'Reduce' if node.name == 'flex_reduce' else 'Down' if node.name == 'scenario_downgrade' else 'Target' if node.name == 'target' else node.name %}
+                <line class="mini-node-line mini-node-{{ node.name }}" x1="{{ chart_left }}" y1="{{ '%.1f'|format(node_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(node_y) }}" />
+                <text class="mini-node-label mini-node-{{ node.name }}" x="468" y="{{ '%.1f'|format(node_y + 3.5) }}">{{ node_label }}</text>
+              {% endfor %}
+              {% for candle in candles %}
+                {% set candle_slot = candle.get('slot', loop.index0) %}
+                {% set cx = chart_left + candle_step * candle_slot + candle_step / 2 %}
+                {% set wick_top = chart_top + ((chart_high - candle.high) / chart_span * chart_height) %}
+                {% set wick_bottom = chart_top + ((chart_high - candle.low) / chart_span * chart_height) %}
+                {% set open_y = chart_top + ((chart_high - candle.open) / chart_span * chart_height) %}
+                {% set close_y = chart_top + ((chart_high - candle.close) / chart_span * chart_height) %}
+                {% set body_y = open_y if open_y < close_y else close_y %}
+                {% set body_h = close_y - open_y if close_y > open_y else open_y - close_y %}
+                <line class="mini-candle-wick {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x1="{{ '%.1f'|format(cx) }}" y1="{{ '%.1f'|format(wick_top) }}" x2="{{ '%.1f'|format(cx) }}" y2="{{ '%.1f'|format(wick_bottom) }}" />
+                <rect class="mini-candle-body {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x="{{ '%.1f'|format(cx - candle_body / 2) }}" y="{{ '%.1f'|format(body_y - 3 if body_h < 7 else body_y) }}" width="{{ candle_body }}" height="{{ '%.1f'|format(body_h if body_h > 7 else 7) }}" rx="2" />
+              {% endfor %}
+            </svg>
+          </div>
+        {% endif %}
 
         <div class="grid-2">
           <!-- 左列：实时价格 + 技术 -->
@@ -1325,7 +1734,15 @@
         <div style="position: absolute; top: -50px; right: -50px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
         <div class="card-title" style="border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.8rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
           <span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📅 每日交易标准作业程序引导 (Daily Trading SOP Guide)</span>
-          <span class="badge badge-blue" style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">PRO LOGIC</span>
+        </div>
+        
+        <!-- Market-Aware Dynamic Overview SOP Guideline Banner -->
+        <div id="overview-sop-guide-banner" class="alert-card alert-info" style="margin: 0 0 1rem 0; display: flex; align-items: flex-start; gap: 12px; border-left: 4px solid var(--blue); background: rgba(59, 130, 246, 0.05); border-radius: 8px; padding: 10px 14px; transition: all 0.3s ease;">
+          <span style="font-size: 1.2rem; line-height: 1;">💡</span>
+          <div style="font-size: 0.78rem; line-height: 1.45;">
+            <span id="overview-sop-guide-title" style="font-weight: 800; display: block; margin-bottom: 2px; color: #fff;">系统加载中...</span>
+            <span id="overview-sop-guide-text" style="color: var(--text-secondary);">正在拉取最新美股市场时钟，为您智能生成当前时段的操作指南。</span>
+          </div>
         </div>
         
         <div class="sop-timeline" style="display: flex; flex-direction: column; gap: 0.9rem; position: relative; padding-left: 0.5rem;">
@@ -1415,91 +1832,152 @@
       </div>
 
       <!-- 左栏：任务流水线控制 -->
-      <div class="card">
-        <div class="card-title">
+            <!-- 左栏：任务流水线控制 -->
+      <div class="card" id="trading-pipeline-card" style="margin-bottom: 1.5rem;">
+        <div class="card-title" style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem; margin-bottom: 1rem;">
           <div class="title-left">
-            <span>⚙️ 量化交易流水线指挥调度</span>
+            <span>&#9881; 每日 SOP 智能交易流水线 (Trading Pipeline Wizard)</span>
             <span id="poll-breathing-dot" class="terminal-dot"></span>
           </div>
-          <span style="font-size:0.75rem; color:var(--text-muted);">Asynchronous Process Pipelines</span>
         </div>
         
-        <div style="display:flex; flex-direction:column; gap:0.2rem;">
+        <!-- Market-Aware Dynamic SOP Guideline Banner -->
+        <div id="sop-guide-banner" class="alert-card alert-info" style="margin: 0 1.25rem 0.5rem 1.25rem; display: flex; align-items: flex-start; gap: 12px; border-left: 4px solid var(--blue); background: rgba(59, 130, 246, 0.05); border-radius: 8px; padding: 10px 14px; transition: all 0.3s ease;">
+          <span style="font-size: 1.2rem; line-height: 1;">💡</span>
+          <div style="font-size: 0.78rem; line-height: 1.45;">
+            <span id="sop-guide-title" style="font-weight: 800; display: block; margin-bottom: 2px; color: #fff;">系统加载中...</span>
+            <span id="sop-guide-text" style="color: var(--text-secondary);">正在拉取最新美股市场时钟，为您智能生成当前时段的操作指南。</span>
+          </div>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:1.25rem; padding: 0 1.25rem 1.25rem 1.25rem;">
           
           <!-- Step 1: 扫描选股 -->
-          <div class="pipeline-step">
-            <div class="step-info">
-              <div class="step-number">1</div>
-              <div>
-                <div class="step-name">选股行情扫描 (Candidate Scan)</div>
-                <div class="step-desc">抓取美股标的多周期指标，匹配出强弱板块候选标的</div>
+          <div class="pipeline-step-card" id="step-card-scan" style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 1rem; transition: all 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:0.75rem;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display:flex; justify-content:center; align-items:center; background:rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); color:#a5b4fc;">1</div>
+                <div>
+                  <h4 style="margin:0; font-size:0.88rem; color:#fff; font-family:'Outfit';">自动量化扫股 (Candidate Scan)</h4>
+                  <p style="margin:2px 0 0 0; font-size:0.72rem; color:var(--text-muted);">抓取美股标的多周期技术面，筛选强弱板块候选标的</p>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-primary" onclick="runTask('scan')" style="padding:4px 10px; font-size:0.72rem;">&#9654; 启动扫描</button>
+                <button class="btn btn-secondary" onclick="syncStatusWithFeedback('scan')" style="padding:4px 8px; font-size:0.72rem;">同步状态</button>
               </div>
             </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn btn-primary" onclick="runTask('scan')">▶ 运行</button>
-              <button class="btn btn-secondary" onclick="syncStatusWithFeedback('scan')" style="font-size:0.75rem;">确认</button>
+            <!-- Dynamic Scan Candidates display -->
+            <div id="scan-candidates-area" style="font-size:0.78rem; background:rgba(0,0,0,0.15); border-radius:6px; padding:8px; display:none; border:1px solid rgba(255,255,255,0.02);">
+              <div style="color:var(--text-secondary); font-size:0.7rem; font-weight:700; margin-bottom:4px; text-transform:uppercase;">&#128221; 扫股候选标的 (Scanned Candidates)</div>
+              <div id="scan-candidates-list" style="display:flex; flex-wrap:wrap; gap:6px; color:#fff;">--</div>
             </div>
           </div>
           
-          <!-- Step 1.5: 确认关注列表 -->
-          <div class="pipeline-step" style="background:rgba(99,102,241,0.02); border-color:rgba(99,102,241,0.1);">
-            <div class="step-info">
-              <div class="step-number" style="background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.3); color:#93c5fd;">1.5</div>
-              <div>
-                <div class="step-name">确认今日关注列表 (Confirm Focus List)</div>
-                <div class="step-desc">在 Overview 添加关注标的后，点击右侧按钮一键生成全部 CIO + 策略节点</div>
+          <!-- Step 2: 关注列表确认与手动添加 -->
+          <div class="pipeline-step-card" id="step-card-focus" style="background: rgba(99, 102, 241, 0.02); border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 10px; padding: 1rem; transition: all 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:0.75rem;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display:flex; justify-content:center; align-items:center; background:rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color:#93c5fd;">2</div>
+                <div>
+                  <h4 style="margin:0; font-size:0.88rem; color:#fff; font-family:'Outfit';">确定今日关注列表 (Confirm Focus Tickers)</h4>
+                  <p style="margin:2px 0 0 0; font-size:0.72rem; color:var(--text-muted);">勾选扫描标的或手动添加标的，锁定今日主力关注列表</p>
+                </div>
               </div>
-              <button class="btn btn-primary" onclick="generateAllFocusReports()" style="background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-size:0.82rem;">⚡ 生成全部报告</button>
-              </div>
+              <button class="btn btn-primary" onclick="generateAllFocusReports()" style="background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-size:0.72rem; padding:4px 10px;">&#9889; 生成全部报告</button>
             </div>
-          </div>
-           
-          <!-- Step 2: 盘前计划 -->
-          <div class="pipeline-step">
-            <div class="step-info">
-              <div class="step-number">2</div>
-              <div>
-                <div class="step-name">盘前决策汇总 (Premarket Summary)</div>
-                <div class="step-desc">自动补全 CIO → 宏观节点 → 汇总输出（已有报告的标的跳过）</div>
+            
+            <!-- Focus Tickers Checklist + Add Form -->
+            <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:10px; background:rgba(0, 0, 0, 0.2); border-radius:8px; padding:10px; border:1px solid rgba(255,255,255,0.03);">
+              <!-- Left: Checkboxes -->
+              <div style="border-right:1px solid rgba(255,255,255,0.05); padding-right:8px; min-height:45px;">
+                <div style="color:var(--text-secondary); font-size:0.7rem; font-weight:700; margin-bottom:6px; text-transform:uppercase;">&#128269; 勾选今日关注标的</div>
+                <div id="focus-checklist-container" style="display:flex; flex-wrap:wrap; gap:8px 12px; font-size:0.78rem; color:#fff;">
+                  <!-- Checked symbols will be populated here -->
+                  {% for sym in symbols %}
+                    <label style="display:flex; align-items:center; gap:4px; cursor:pointer;" class="focus-chk-lbl" id="lbl-focus-{{ sym }}">
+                      <input type="checkbox" checked value="{{ sym }}" onchange="toggleFocusSymbol('{{ sym }}', this.checked)">
+                      <span style="font-family:'JetBrains Mono'; font-weight:700;">{{ sym }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
               </div>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn btn-primary" onclick="runTask('premarket')">▶ 运行</button>
-              <button class="btn btn-secondary" onclick="syncStatusWithFeedback('premarket')" style="font-size:0.75rem;">确认</button>
+              <!-- Right: Manual Add Form -->
+              <div style="display:flex; flex-direction:column; justify-content:center; gap:6px; padding-left:4px;">
+                <div style="color:var(--text-secondary); font-size:0.7rem; font-weight:700; text-transform:uppercase;">&#9997; 手动添加自定义标的</div>
+                <div style="display:flex; gap:4px;">
+                  <input type="text" id="manual-focus-sym" placeholder="如 AAPL" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:3px 6px; font-size:0.72rem; color:#fff; width:100%; text-transform:uppercase; font-family:'JetBrains Mono'; font-weight:700;" />
+                  <button onclick="addManualFocusStock()" style="border:none; background:#3b82f6; color:#fff; border-radius:4px; padding:3px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">+</button>
+                </div>
+              </div>
             </div>
           </div>
           
-          <!-- Step 3: 盘中高频轮询 -->
-          <div class="pipeline-step" style="background: rgba(99, 102, 241, 0.03); border-color: rgba(99, 102, 241, 0.15);">
-            <div class="step-info">
-              <div class="step-number" style="background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3); color:#34d399;">3</div>
-              <div>
-                <div class="step-name" style="color:#a5b4fc;">盘中高频实盘轮询 (Intraday Polling Engine)</div>
-                <div class="step-desc">启动 poll.py 实时监测个股价格、止损 ATR，执行模拟交易</div>
+          <!-- Step 3: 盘前计划 -->
+          <div class="pipeline-step-card" id="step-card-premarket" style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 1rem; transition: all 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:0.75rem;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display:flex; justify-content:center; align-items:center; background:rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); color:#a5b4fc;">3</div>
+                <div>
+                  <h4 style="margin:0; font-size:0.88rem; color:#fff; font-family:'Outfit';">盘前多Agent战略合成 (Premarket Summary)</h4>
+                  <p style="margin:2px 0 0 0; font-size:0.72rem; color:var(--text-muted);">自动合成 CIO大师研报、策略边界与场景降级，生成今日大盘总计划</p>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-primary" onclick="runTask('premarket')" style="padding:4px 10px; font-size:0.72rem;">&#9654; 运行合成</button>
+                <button class="btn btn-secondary" onclick="syncStatusWithFeedback('premarket')" style="padding:4px 8px; font-size:0.72rem;">确认</button>
               </div>
             </div>
-            <div style="display:flex; gap:6px;">
-              <button id="btn-poll-start" class="btn btn-primary" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16,185,129,0.2);" onclick="runTask('poll')">▶ 启动</button>
-              <button id="btn-poll-stop" class="btn btn-stop" onclick="stopTask('poll')">🛑 停止</button>
+            <!-- Dynamic cache/status indicator -->
+            <div id="premarket-cache-status" style="font-size:0.75rem; color:var(--text-secondary); background:rgba(0,0,0,0.1); padding:6px 10px; border-radius:6px; line-height:1.4;">
+              &#128161; 点击“运行合成”后，系统将自动复用已就绪的报告，并为缺失标的拉起 CIO 脑暴论战进程。
             </div>
           </div>
-
-          <!-- Step 4: 盘后复盘 -->
-          <div class="pipeline-step">
-            <div class="step-info">
-              <div class="step-number">4</div>
-              <div>
-                <div class="step-name">盘后复盘评估 (Postmarket Review)</div>
-                <div class="step-desc">核算今日持仓表现、生成多智能体深度盘后总结、提炼明日关注点</div>
+          
+          <!-- Step 4: 盘中高频轮询 -->
+          <div class="pipeline-step-card" id="step-card-poll" style="background: rgba(16, 185, 129, 0.02); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 10px; padding: 1rem; transition: all 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:0.75rem;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display:flex; justify-content:center; align-items:center; background:rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color:#34d399;">4</div>
+                <div>
+                  <h4 style="margin:0; font-size:0.88rem; color:#fff; font-family:'Outfit';">盘中高频实盘轮询 (Intraday Polling Engine)</h4>
+                  <p style="margin:2px 0 0 0; font-size:0.72rem; color:var(--text-muted);">秒级监控个股波动与情绪、执行模拟交易及组合防守逻辑</p>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="btn-poll-start" class="btn btn-primary" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16,185,129,0.2); padding:4px 10px; font-size:0.72rem;" onclick="runTask('poll')">&#9654; 启动盯盘</button>
+                <button id="btn-poll-stop" class="btn btn-stop" style="padding:4px 10px; font-size:0.72rem;" onclick="stopTask('poll')">🛑 停止</button>
               </div>
             </div>
-            <button class="btn btn-primary" onclick="runTask('postmarket')">▶ 运行</button>
+            <!-- Watching Tickers display -->
+            <div style="font-size:0.75rem; color:#fff; display:flex; gap:8px; align-items:center; background:rgba(0,0,0,0.15); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.02);">
+              <span style="color:var(--text-secondary); font-weight:700;">📡 活跃监控集:</span>
+              <div id="live-watching-tickers-list" style="display:flex; gap:6px; flex-wrap:wrap;">
+                {% for sym in symbols %}
+                  <span style="font-family:'JetBrains Mono'; font-weight:700; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:3px; font-size:0.7rem;" id="watching-tag-{{ sym }}">{{ sym }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 5: 盘后复盘 -->
+          <div class="pipeline-step-card" id="step-card-postmarket" style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; padding: 1rem; transition: all 0.3s ease;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display:flex; justify-content:center; align-items:center; background:rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); color:#a5b4fc;">5</div>
+                <div>
+                  <h4 style="margin:0; font-size:0.88rem; color:#fff; font-family:'Outfit';">盘后复盘分析与反思 (Postmarket Review)</h4>
+                  <p style="margin:2px 0 0 0; font-size:0.72rem; color:var(--text-muted);">核算今日交易绩效 P&L、启动多智能体盘后深度反思与总结写入</p>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="runTask('postmarket')" style="padding:4px 10px; font-size:0.72rem;">&#9654; 运行结算</button>
+            </div>
           </div>
           
         </div>
       </div>
-      
-      <!-- 右栏：实时终端控制台 -->
+
+<!-- 右栏：实时终端控制台 -->
       <!-- 手动 CIO 触发（独立卡片） -->
       <div class="card" style="margin-bottom:1.5rem;">
         <div class="card-title">
@@ -1535,6 +2013,27 @@
           </div>
           <span id="current-task-badge" class="badge badge-gray">IDLE</span>
         </div>
+        <!-- Terminal Console Tabs -->
+        <style>
+          .console-tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            cursor: pointer;
+            outline: none;
+          }
+          .console-tab-btn.active {
+            background: rgba(99, 102, 241, 0.15) !important;
+            color: #a5b4fc !important;
+            border: 1px solid rgba(99, 102, 241, 0.3) !important;
+          }
+        </style>
+        <div style="display:flex; background:rgba(0,0,0,0.3); padding:3px; border-radius:6px; margin: 0 1.25rem 0.5rem 1.25rem; gap:4px;">
+          <button class="console-tab-btn active" onclick="switchConsoleTab('poll', this)" id="console-tab-poll" style="flex:1; padding: 4px 6px; font-size:0.72rem; border-radius:4px; font-weight:700; transition:all 0.2s;">📝 盘中盯盘</button>
+          <button class="console-tab-btn" onclick="switchConsoleTab('backtest', this)" id="console-tab-backtest" style="flex:1; padding: 4px 6px; font-size:0.72rem; border-radius:4px; font-weight:700; transition:all 0.2s;">📊 沙盒回测</button>
+          <button class="console-tab-btn" onclick="switchConsoleTab('premarket', this)" id="console-tab-premarket" style="flex:1; padding: 4px 6px; font-size:0.72rem; border-radius:4px; font-weight:700; transition:all 0.2s;">🔬 盘前决策</button>
+          <button class="console-tab-btn" onclick="switchConsoleTab('scan', this)" id="console-tab-scan" style="flex:1; padding: 4px 6px; font-size:0.72rem; border-radius:4px; font-weight:700; transition:all 0.2s;">🔍 自动扫股</button>
+        </div>
         
         <div class="terminal-console">
           <div class="terminal-header">
@@ -1566,6 +2065,42 @@
         <!-- 参数滑块 -->
         <div>
           <h3 style="margin-bottom:1rem; color:#fff;">🎛️ 因子数值调参</h3>
+          
+          <!-- 回测时长与滑动窗口双 Slider -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 1.25rem; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);">
+            <div class="slider-group" style="margin-bottom:0; padding:0; border:none; background:none;">
+              <div class="slider-header" style="margin-bottom:2px;">
+                <span class="slider-label" style="font-size:0.7rem; color:var(--text-secondary);">回测时长 (Years)</span>
+                <span id="val-bt-years" class="slider-value" style="font-size:0.7rem; color:#60a5fa; font-weight:700;">5年</span>
+              </div>
+              <input type="range" id="slide-bt-years" min="1" max="5" value="5" style="height:4px;" oninput="document.getElementById('val-bt-years').innerText=this.value+'年'">
+            </div>
+            <div class="slider-group" style="margin-bottom:0; padding:0; border:none; background:none;">
+              <div class="slider-header" style="margin-bottom:2px;">
+                <span class="slider-label" style="font-size:0.7rem; color:var(--text-secondary);">滑动窗口 (Window)</span>
+                <span id="val-bt-window" class="slider-value" style="font-size:0.7rem; color:#60a5fa; font-weight:700;">60天</span>
+              </div>
+              <input type="range" id="slide-bt-window" min="30" max="120" step="10" value="60" style="height:4px;" oninput="document.getElementById('val-bt-window').innerText=this.value+'天'">
+            </div>
+          </div>
+          
+          <!-- 回测时长与滑动窗口双 Slider -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 1.25rem; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);">
+            <div class="slider-group" style="margin-bottom:0; padding:0; border:none; background:none;">
+              <div class="slider-header" style="margin-bottom:2px;">
+                <span class="slider-label" style="font-size:0.7rem; color:var(--text-secondary);">回测时长 (Years)</span>
+                <span id="val-bt-years" class="slider-value" style="font-size:0.7rem; color:#60a5fa; font-weight:700;">5年</span>
+              </div>
+              <input type="range" id="slide-bt-years" min="1" max="5" value="5" style="height:4px;" oninput="document.getElementById('val-bt-years').innerText=this.value+'年'">
+            </div>
+            <div class="slider-group" style="margin-bottom:0; padding:0; border:none; background:none;">
+              <div class="slider-header" style="margin-bottom:2px;">
+                <span class="slider-label" style="font-size:0.7rem; color:var(--text-secondary);">滑动窗口 (Window)</span>
+                <span id="val-bt-window" class="slider-value" style="font-size:0.7rem; color:#60a5fa; font-weight:700;">60天</span>
+              </div>
+              <input type="range" id="slide-bt-window" min="30" max="120" step="10" value="60" style="height:4px;" oninput="document.getElementById('val-bt-window').innerText=this.value+'天'">
+            </div>
+          </div>
           
           <!-- 1. VIX 限额 -->
           <div class="slider-group">
@@ -1624,8 +2159,60 @@
           <div style="position:relative; width:100%; height:250px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px; border:1px solid rgba(255,255,255,0.03);">
             <canvas id="backtestChart"></canvas>
           </div>
-          <div id="backtest-summary" style="margin-top:0.8rem; font-size:0.8rem; color:var(--text-secondary); line-height:1.5; text-align: left;">
-            💡 运行沙盒回测后，Chart.js 会根据系统返回的因子期望值（Expected Value）和胜率动态拟合渲染出策略资产对比曲线。
+          <!-- Quant KPI Grid -->
+          <div id="backtest-kpi-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 1rem;">
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #93c5fd; text-transform: uppercase; font-weight: 700;">夏普比率 (Sharpe)</div>
+              <div id="kpi-sharpe" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #60a5fa; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #fca5a5; text-transform: uppercase; font-weight: 700;">最大回撤 (MDD)</div>
+              <div id="kpi-mdd" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #f87171; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #a7f3d0; text-transform: uppercase; font-weight: 700;">胜率 (Win Rate)</div>
+              <div id="kpi-winrate" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #34d399; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #fde68a; text-transform: uppercase; font-weight: 700;">利润因子 (PF)</div>
+              <div id="kpi-pf" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #fbbf24; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #ddd6fe; text-transform: uppercase; font-weight: 700;">超额收益 (Alpha)</div>
+              <div id="kpi-alpha" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #a78bfa; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.5rem; display: flex; justify-content: center; align-items: center;">
+              <button class="btn btn-primary" onclick="applyTunedParams()" id="btn-apply-backtest" style="font-size:0.68rem; padding: 4px 8px; width:100%; border-radius:4px; display:none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); cursor:pointer;">💾 应用参数</button>
+            </div>
+          </div>
+          <!-- Quant KPI Grid -->
+          <div id="backtest-kpi-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 1rem;">
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #93c5fd; text-transform: uppercase; font-weight: 700;">夏普比率 (Sharpe)</div>
+              <div id="kpi-sharpe" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #60a5fa; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #fca5a5; text-transform: uppercase; font-weight: 700;">最大回撤 (MDD)</div>
+              <div id="kpi-mdd" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #f87171; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #a7f3d0; text-transform: uppercase; font-weight: 700;">胜率 (Win Rate)</div>
+              <div id="kpi-winrate" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #34d399; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #fde68a; text-transform: uppercase; font-weight: 700;">利润因子 (PF)</div>
+              <div id="kpi-pf" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #fbbf24; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.12); border-radius: 6px; padding: 0.5rem; text-align: center;">
+              <div style="font-size: 0.65rem; color: #ddd6fe; text-transform: uppercase; font-weight: 700;">超额收益 (Alpha)</div>
+              <div id="kpi-alpha" style="font-family: 'JetBrains Mono'; font-size: 1.1rem; font-weight: 800; color: #a78bfa; margin-top:2px;">--</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.5rem; display: flex; justify-content: center; align-items: center;">
+              <button class="btn btn-primary" onclick="applyTunedParams()" id="btn-apply-backtest" style="font-size:0.68rem; padding: 4px 8px; width:100%; border-radius:4px; display:none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); cursor:pointer;">💾 应用参数</button>
+            </div>
+          </div>
+          <div id="backtest-summary" style="margin-top:0.8rem; font-size:0.75rem; color:var(--text-secondary); line-height:1.5; text-align: left;">
+            💡 运行沙盒回测后，系统将在此处自动呈现 **Sharpe Ratio**、**最大回撤**、**利润因子** 等专业量化指标，并支持“一键应用调优因子”。
           </div>
         </div>
         
@@ -1883,6 +2470,20 @@
     </div>
   </div>
 
-    {% include "scripts.js.j2" %}
+      <!-- 🎛️ Terminal Slide-out Drawer (Seamless execution viewer) -->
+  <div id="terminal-drawer" class="terminal-drawer">
+    <div class="terminal-drawer-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="terminal-dot active" id="terminal-drawer-dot-status"></span>
+        <span style="font-family:'Outfit', sans-serif; font-weight:800; font-size:0.95rem; color:#fff;" id="terminal-drawer-title">脑暴执行控制台</span>
+      </div>
+      <button class="terminal-drawer-close" onclick="closeTerminalDrawer()">&times;</button>
+    </div>
+    <div id="terminal-drawer-body" class="terminal-drawer-body">
+      [系统] 控制台就绪，等待命令执行...
+    </div>
+  </div>
+
+  {% include "scripts.js.j2" %}
 </body>
 </html>
