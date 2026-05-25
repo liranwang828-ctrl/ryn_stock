@@ -93,6 +93,12 @@ quick_debate_*.json
 ANTIGRAVITY_HANDOFF.md
 persona_stances.jsonl
 
+# 排除开发辅助工具草稿及运行状态缓存
+.superpowers/
+
+# 排除已废弃的陈旧代码包
+archive/deprecated_*/
+
 # Scratch files
 scratch/
 scratch_*
