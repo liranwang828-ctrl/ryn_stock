@@ -629,6 +629,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
                         "holdings_value": 0.0,
                         "total_profit": 0.0,
                         "total_profit_pct": 0.0,
+                        "total_unrealized_pnl_pct": 0.0,  # 补上 total_unrealized_pnl_pct 字段以对齐 daily_dashboard.html.j2 模板渲染
                         "leverage_ratio": 0.0,
                         "var_5pct_loss": 0.0,
                         "var_5pct_pct": 0.0
