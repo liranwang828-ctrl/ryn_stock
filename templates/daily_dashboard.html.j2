@@ -1084,191 +1084,215 @@
           </div>
         </div>
 
-        {% set chart = it.get('mini_chart') or {} %}
-        {% set candles = chart.get('candles') or [] %}
-        {% set nodes = chart.get('nodes') or [] %}
-        {% set chart_range = chart.get('range') or {} %}
-        {% set chart_low = chart_range.get('low') %}
-        {% set chart_high = chart_range.get('high') %}
-        {% if candles and chart_low is not none and chart_high is not none %}
-          {% set chart_span = chart_high - chart_low if chart_high > chart_low else 1 %}
-          {% set chart_left = 30 %}
-          {% set chart_right = 450 %}
-          {% set chart_top = 10 %}
-          {% set chart_bottom = 72 %}
-          {% set chart_height = chart_bottom - chart_top %}
-          {% set chart_width = chart_right - chart_left %}
-          {% set slot_count = 10 %}
-          {% set candle_step = chart_width / slot_count %}
-          {% set candle_body = 12 %}
-          <div class="intraday-mini-chart">
-            {% if chart.get('source') == 'previous_close' %}
-              <div class="mini-chart-source">昨日尾盘 {{ chart.get('source_date') or '' }}</div>
-            {% endif %}
-            <svg class="mini-candle-strip" viewBox="0 0 480 88" preserveAspectRatio="none" role="img" aria-label="{{ sym }} intraday candlestick strip">
-              <rect x="0.5" y="0.5" width="479" height="87" rx="8" class="mini-chart-frame"></rect>
-              {% for idx in range(slot_count + 1) %}
-                {% set grid_x = chart_left + candle_step * idx %}
-                <line class="mini-chart-grid" x1="{{ '%.1f'|format(grid_x) }}" y1="{{ chart_top }}" x2="{{ '%.1f'|format(grid_x) }}" y2="{{ chart_bottom }}" />
-              {% endfor %}
-              {% for idx in range(3) %}
-                {% set grid_y = chart_top + chart_height / 2 * idx %}
-                <line class="mini-chart-grid mini-chart-grid-horizontal" x1="{{ chart_left }}" y1="{{ '%.1f'|format(grid_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(grid_y) }}" />
-              {% endfor %}
-              {% for node in nodes %}
-                {% set node_y = chart_top + ((chart_high - node.price) / chart_span * chart_height) %}
-                {% set node_label = 'Entry' if node.name == 'entry_base' else 'Stop' if node.name == 'hard_stop' else 'Add' if node.name == 'flex_add' else 'Reduce' if node.name == 'flex_reduce' else 'Down' if node.name == 'scenario_downgrade' else 'Target' if node.name == 'target' else node.name %}
-                <line class="mini-node-line mini-node-{{ node.name }}" x1="{{ chart_left }}" y1="{{ '%.1f'|format(node_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(node_y) }}" />
-                <text class="mini-node-label mini-node-{{ node.name }}" x="468" y="{{ '%.1f'|format(node_y + 3.5) }}">{{ node_label }}</text>
-              {% endfor %}
-              {% for candle in candles %}
-                {% set candle_slot = candle.get('slot', loop.index0) %}
-                {% set cx = chart_left + candle_step * candle_slot + candle_step / 2 %}
-                {% set wick_top = chart_top + ((chart_high - candle.high) / chart_span * chart_height) %}
-                {% set wick_bottom = chart_top + ((chart_high - candle.low) / chart_span * chart_height) %}
-                {% set open_y = chart_top + ((chart_high - candle.open) / chart_span * chart_height) %}
-                {% set close_y = chart_top + ((chart_high - candle.close) / chart_span * chart_height) %}
-                {% set body_y = open_y if open_y < close_y else close_y %}
-                {% set body_h = close_y - open_y if close_y > open_y else open_y - close_y %}
-                <line class="mini-candle-wick {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x1="{{ '%.1f'|format(cx) }}" y1="{{ '%.1f'|format(wick_top) }}" x2="{{ '%.1f'|format(cx) }}" y2="{{ '%.1f'|format(wick_bottom) }}" />
-                <rect class="mini-candle-body {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x="{{ '%.1f'|format(cx - candle_body / 2) }}" y="{{ '%.1f'|format(body_y - 3 if body_h < 7 else body_y) }}" width="{{ candle_body }}" height="{{ '%.1f'|format(body_h if body_h > 7 else 7) }}" rx="2" />
-              {% endfor %}
-            </svg>
-          </div>
-        {% endif %}
-
-        <div class="grid-2">
-          <!-- 左列：实时价格 + 技术 -->
-          <div>
-            <h3>📡 Intraday Realtime Signals</h3>
-            <table>
-              <tbody>
-                <tr>
-                  <td style="color:var(--text-secondary); width:35%;">VWAP 偏离率</td>
-                  <td class="{% if (pn.get('vwap_dist_pct') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
-                    {{ '%+.2f'%pn.vwap_dist_pct+'%' if pn.get('vwap_dist_pct') is not none else '—' }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">相对强度 (RS vs SPY)</td>
-                  <td class="{% if (pn.get('rs_vs_spy') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
-                    {{ '%+.2f'%pn.rs_vs_spy+'%' if pn.get('rs_vs_spy') is not none else '—' }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">相对强度 (RS vs 板块)</td>
-                  <td class="{% if (pn.get('rs_vs_sector') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
-                    {{ '%+.2f'%pn.rs_vs_sector+'%' if pn.get('rs_vs_sector') is not none else '—' }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">大师评分共识</td>
-                  <td>
-                    <span style="font-weight:700; color:#fff;">{{ '%.1f'%pn.master_avg if pn.get('master_avg') else '—' }}/10</span>
-                    <span class="badge {% if pn.get('master_consensus')=='buy' %}badge-green{% elif pn.get('master_consensus')=='no_buy' %}badge-red{% else %}badge-gray{% endif %}" style="font-size:0.7rem; padding: 1px 5px; margin-left:5px;">
-                      {{ pn.get('master_consensus','—') }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">入场闸门检测 Gate</td>
-                  <td>
-                    {% if pn.get('gate_pass') %}
-                      {% for g in pn.gate_pass %}<span class="gate-tag gate-pass">{{ g }}</span>{% endfor %}
-                    {% endif %}
-                    {% if pn.get('gate_block') %}
-                      {% for g in pn.gate_block %}<span class="gate-tag gate-fail">{{ g }}</span>{% endfor %}
-                    {% endif %}
-                    {% if not pn.get('gate_pass') and not pn.get('gate_block') %}—{% endif %}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- 入场条件进度 -->
-            {% set met = pvn.get('entry_conditions_met', 0) %}
-            {% set total = pvn.get('entry_conditions_total', 0) %}
-            {% if total > 0 %}
-              <div style="margin-top: 1rem; padding: 0.8rem; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:2px;">
-                  <span style="color:var(--text-secondary);">入场量化触发条件进展</span>
-                  <b style="color:#fff;">{{ met }} / {{ total }}</b>
+        <!-- ── 盘中双列横向网格主体 (Intraday Card Body Grid) ── -->
+        <div class="intraday-card-body" style="display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; align-items: stretch; margin-top: 1rem;">
+          
+          <!-- ── 左侧栏：高窄 K 线走势小视窗 ── -->
+          <div class="intraday-left-pane" style="display: flex; flex-direction: column; gap: 8px;">
+            {% set chart = it.get('mini_chart') or {} %}
+            {% set candles = chart.get('candles') or [] %}
+            {% set nodes = chart.get('nodes') or [] %}
+            {% set chart_range = chart.get('range') or {} %}
+            {% set chart_low = chart_range.get('low') %}
+            {% set chart_high = chart_range.get('high') %}
+            {% if candles and chart_low is not none and chart_high is not none %}
+              {% set chart_span = chart_high - chart_low if chart_high > chart_low else 1 %}
+              {% set chart_left = 30 %}
+              {% set chart_right = 450 %}
+              {% set chart_top = 10 %}
+              {% set chart_bottom = 72 %}
+              {% set chart_height = chart_bottom - chart_top %}
+              {% set chart_width = chart_right - chart_left %}
+              {% set slot_count = 10 %}
+              {% set candle_step = chart_width / slot_count %}
+              {% set candle_body = 12 %}
+              
+              <!-- 侧边深色高档走势小窗口 -->
+              <div class="intraday-mini-chart" style="height: 100%; min-height: 240px; display: flex; flex-direction: column; justify-content: space-between; background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px; padding: 12px 10px; position: relative;">
+                {% if chart.get('source') == 'previous_close' %}
+                  <div class="mini-chart-source" style="font-size: 0.65rem; color: var(--text-muted); text-align: left; margin-bottom: 4px; font-weight: 600;">📊 昨日尾盘 {{ chart.get('source_date') or '' }}</div>
+                {% endif %}
+                
+                <!-- 蜡烛图 SVG 自适应拉高拉窄 -->
+                <svg class="mini-candle-strip" viewBox="0 0 480 88" preserveAspectRatio="none" role="img" aria-label="{{ sym }} intraday candlestick strip" style="flex: 1; width: 100%; height: 100%;">
+                  <rect x="0.5" y="0.5" width="479" height="87" rx="8" class="mini-chart-frame"></rect>
+                  {% for idx in range(slot_count + 1) %}
+                    {% set grid_x = chart_left + candle_step * idx %}
+                    <line class="mini-chart-grid" x1="{{ '%.1f'|format(grid_x) }}" y1="{{ chart_top }}" x2="{{ '%.1f'|format(grid_x) }}" y2="{{ chart_bottom }}" />
+                  {% endfor %}
+                  {% for idx in range(3) %}
+                    {% set grid_y = chart_top + chart_height / 2 * idx %}
+                    <line class="mini-chart-grid mini-chart-grid-horizontal" x1="{{ chart_left }}" y1="{{ '%.1f'|format(grid_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(grid_y) }}" />
+                  {% endfor %}
+                  {% for node in nodes %}
+                    {% set node_y = chart_top + ((chart_high - node.price) / chart_span * chart_height) %}
+                    {% set node_label = 'Entry' if node.name == 'entry_base' else 'Stop' if node.name == 'hard_stop' else 'Add' if node.name == 'flex_add' else 'Reduce' if node.name == 'flex_reduce' else 'Down' if node.name == 'scenario_downgrade' else 'Target' if node.name == 'target' else node.name %}
+                    <line class="mini-node-line mini-node-{{ node.name }}" x1="{{ chart_left }}" y1="{{ '%.1f'|format(node_y) }}" x2="{{ chart_right }}" y2="{{ '%.1f'|format(node_y) }}" />
+                    <text class="mini-node-label mini-node-{{ node.name }}" x="468" y="{{ '%.1f'|format(node_y + 3.5) }}">{{ node_label }}</text>
+                  {% endfor %}
+                  {% for candle in candles %}
+                    {% set candle_slot = candle.get('slot', loop.index0) %}
+                    {% set cx = chart_left + candle_step * candle_slot + candle_step / 2 %}
+                    {% set wick_top = chart_top + ((chart_high - candle.high) / chart_span * chart_height) %}
+                    {% set wick_bottom = chart_top + ((chart_high - candle.low) / chart_span * chart_height) %}
+                    {% set open_y = chart_top + ((chart_high - candle.open) / chart_span * chart_height) %}
+                    {% set close_y = chart_top + ((chart_high - candle.close) / chart_span * chart_height) %}
+                    {% set body_y = open_y if open_y < close_y else close_y %}
+                    {% set body_h = close_y - open_y if close_y > open_y else open_y - close_y %}
+                    <line class="mini-candle-wick {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x1="{{ '%.1f'|format(cx) }}" y1="{{ '%.1f'|format(wick_top) }}" x2="{{ '%.1f'|format(cx) }}" y2="{{ '%.1f'|format(wick_bottom) }}" />
+                    <rect class="mini-candle-body {% if candle.close >= candle.open %}mini-candle-up{% else %}mini-candle-down{% endif %}" x="{{ '%.1f'|format(cx - candle_body / 2) }}" y="{{ '%.1f'|format(body_y - 3 if body_h < 7 else body_y) }}" width="{{ candle_body }}" height="{{ '%.1f'|format(body_h if body_h > 7 else 7) }}" rx="2" />
+                  {% endfor %}
+                </svg>
+                
+                <!-- 精致双端 HIGH/LOW 极简价格刻度 -->
+                <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-top: 6px; padding: 0 4px; font-family: 'JetBrains Mono'; font-weight: 600;">
+                  <span style="color: var(--red);">MIN: ${{ '%.2f'%chart_low }}</span>
+                  <span style="color: var(--green);">MAX: ${{ '%.2f'%chart_high }}</span>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width:{{ (met/total*100)|int }}%"></div>
-                </div>
+              </div>
+            {% else %}
+              <!-- 空置状态完美兜底 -->
+              <div style="height: 100%; min-height: 240px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.03); border-radius:8px; color:var(--text-muted); font-size:0.8rem; padding: 20px; text-align: center;">
+                ⏳ 今日盘中尚未开始轮询
               </div>
             {% endif %}
           </div>
+          
+          <!-- ── 右侧栏：实时价格、技术信号与决策表格双列布局 ── -->
+          <div class="intraday-right-pane" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="grid-2" style="margin-top: 0; height: 100%;">
+              <!-- 左列：实时价格 + 技术 -->
+              <div>
+                <h3>📡 Intraday Realtime Signals</h3>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td style="color:var(--text-secondary); width:35%;">VWAP 偏离率</td>
+                      <td class="{% if (pn.get('vwap_dist_pct') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
+                        {{ '%+.2f'%pn.vwap_dist_pct+'%' if pn.get('vwap_dist_pct') is not none else '—' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">相对强度 (RS vs SPY)</td>
+                      <td class="{% if (pn.get('rs_vs_spy') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                        {{ '%+.2f'%pn.rs_vs_spy+'%' if pn.get('rs_vs_spy') is not none else '—' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">相对强度 (RS vs 板块)</td>
+                      <td class="{% if (pn.get('rs_vs_sector') or 0)>=0 %}green{% else %}red{% endif %}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                        {{ '%+.2f'%pn.rs_vs_sector+'%' if pn.get('rs_vs_sector') is not none else '—' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">大师评分共识</td>
+                      <td>
+                        <span style="font-weight:700; color:#fff;">{{ '%.1f'%pn.master_avg if pn.get('master_avg') else '—' }}/10</span>
+                        <span class="badge {% if pn.get('master_consensus')=='buy' %}badge-green{% elif pn.get('master_consensus')=='no_buy' %}badge-red{% else %}badge-gray{% endif %}" style="font-size:0.7rem; padding: 1px 5px; margin-left:5px;">
+                          {{ pn.get('master_consensus','—') }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">入场闸门检测 Gate</td>
+                      <td>
+                        {% if pn.get('gate_pass') %}
+                          {% for g in pn.gate_pass %}<span class="gate-tag gate-pass">{{ g }}</span>{% endfor %}
+                        {% endif %}
+                        {% if pn.get('gate_block') %}
+                          {% for g in pn.gate_block %}<span class="gate-tag gate-fail">{{ g }}</span>{% endfor %}
+                        {% endif %}
+                        {% if not pn.get('gate_pass') and not pn.get('gate_block') %}—{% endif %}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
-          <!-- 右列：计划 vs 现实 + Flex -->
-          <div>
-            <h3>📐 Strategy Decision Nodes</h3>
-            <table>
-              <tbody>
-                <tr>
-                  <td style="color:var(--text-secondary); width:35%;">计划建仓位</td>
-                  <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:#fff;">
-                    {{ '$%.2f'%kl.entry_base if kl.get('entry_base') else '—' }}
-                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
-                      {{ '(%+.1f%%)'%pvn.dist_to_entry_pct if pvn.get('dist_to_entry_pct') is not none else '' }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">硬止损线 (Hard Stop)</td>
-                  <td class="{{ 'red' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<3 else 'yellow' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<5 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
-                    {{ '$%.2f'%kl.hard_stop if kl.get('hard_stop') else '—' }}
-                    <span style="font-size:0.78rem; font-weight:600;">
-                      {{ '(%.1f%%)'%pvn.dist_to_stop_pct if pvn.get('dist_to_stop_pct') is not none else '' }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">战略止盈目标 (Target)</td>
-                  <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--green);">
-                    {{ '$%.2f'%kl.target if kl.get('target') else '—' }}
-                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
-                      {{ '(%.1f%%)'%pvn.dist_to_target_pct if pvn.get('dist_to_target_pct') is not none else '' }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">Flex 缩量加仓价</td>
-                  <td class="{{ 'green' if pvn.get('dist_to_flex_add_pct') is not none and pvn.dist_to_flex_add_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
-                    {{ '$%.2f'%kl.flex_add if kl.get('flex_add') else '—' }}
-                    <span style="font-size:0.78rem;">
-                      {{ '(%.1f%%)'%pvn.dist_to_flex_add_pct if pvn.get('dist_to_flex_add_pct') is not none else '' }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">Flex 超买减仓价</td>
-                  <td class="{{ 'yellow' if pvn.get('dist_to_flex_reduce_pct') is not none and pvn.dist_to_flex_reduce_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
-                    {{ '$%.2f'%kl.flex_reduce if kl.get('flex_reduce') else '—' }}
-                    <span style="font-size:0.78rem;">
-                      {{ '(%.1f%%)'%pvn.dist_to_flex_reduce_pct if pvn.get('dist_to_flex_reduce_pct') is not none else '' }}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">核心逻辑信号 Thesis</td>
-                  <td class="{% if pvn.get('thesis_signal')=='breach' %}red{% elif pvn.get('thesis_signal')=='warning' %}yellow{% else %}green{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
-                    {{ pvn.get('thesis_signal','—') }}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="color:var(--text-secondary);">入场窗口状态 Window</td>
-                  <td class="{% if pvn.get('entry_go_status')=='go' %}green{% elif pvn.get('entry_go_status')=='abort' %}red{% else %}gray{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
-                    {{ pvn.get('entry_go_status','—') }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                <!-- 入场条件进度 -->
+                {% set met = pvn.get('entry_conditions_met', 0) %}
+                {% set total = pvn.get('entry_conditions_total', 0) %}
+                {% if total > 0 %}
+                  <div style="margin-top: 1rem; padding: 0.8rem; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:2px;">
+                      <span style="color:var(--text-secondary);">入场量化触发条件进展</span>
+                      <b style="color:#fff;">{{ met }} / {{ total }}</b>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill" style="width:{{ (met/total*100)|int }}%"></div>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- 右列：计划 vs 现实 + Flex -->
+              <div>
+                <h3>📐 Strategy Decision Nodes</h3>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td style="color:var(--text-secondary); width:35%;">计划建仓位</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:#fff;">
+                        {{ '$%.2f'%kl.entry_base if kl.get('entry_base') else '—' }}
+                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
+                          {{ '(%+.1f%%)'%pvn.dist_to_entry_pct if pvn.get('dist_to_entry_pct') is not none else '' }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">硬止损线 (Hard Stop)</td>
+                      <td class="{{ 'red' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<3 else 'yellow' if pvn.get('dist_to_stop_pct') is not none and pvn.dist_to_stop_pct<5 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:700;">
+                        {{ '$%.2f'%kl.hard_stop if kl.get('hard_stop') else '—' }}
+                        <span style="font-size:0.78rem; font-weight:600;">
+                          {{ '(%.1f%%)'%pvn.dist_to_stop_pct if pvn.get('dist_to_stop_pct') is not none else '' }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">战略止盈目标 (Target)</td>
+                      <td style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--green);">
+                        {{ '$%.2f'%kl.target if kl.get('target') else '—' }}
+                        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">
+                          {{ '(%.1f%%)'%pvn.dist_to_target_pct if pvn.get('dist_to_target_pct') is not none else '' }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Flex 缩量加仓价</td>
+                      <td class="{{ 'green' if pvn.get('dist_to_flex_add_pct') is not none and pvn.dist_to_flex_add_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                        {{ '$%.2f'%kl.flex_add if kl.get('flex_add') else '—' }}
+                        <span style="font-size:0.78rem;">
+                          {{ '(%.1f%%)'%pvn.dist_to_flex_add_pct if pvn.get('dist_to_flex_add_pct') is not none else '' }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">Flex 超买减仓价</td>
+                      <td class="{{ 'yellow' if pvn.get('dist_to_flex_reduce_pct') is not none and pvn.dist_to_flex_reduce_pct<2 else '' }}" style="font-family:'JetBrains Mono', monospace; font-weight:600;">
+                        {{ '$%.2f'%kl.flex_reduce if kl.get('flex_reduce') else '—' }}
+                        <span style="font-size:0.78rem;">
+                          {{ '(%.1f%%)'%pvn.dist_to_flex_reduce_pct if pvn.get('dist_to_flex_reduce_pct') is not none else '' }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">核心逻辑信号 Thesis</td>
+                      <td class="{% if pvn.get('thesis_signal')=='breach' %}red{% elif pvn.get('thesis_signal')=='warning' %}yellow{% else %}green{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
+                        {{ pvn.get('thesis_signal','—') }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color:var(--text-secondary);">入场窗口状态 Window</td>
+                      <td class="{% if pvn.get('entry_go_status')=='go' %}green{% elif pvn.get('entry_go_status')=='abort' %}red{% else %}gray{% endif %}" style="font-weight:700; font-size:0.85rem; text-transform:uppercase;">
+                        {{ pvn.get('entry_go_status','—') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <!-- 今日证伪条件 -->
+          
+        </div>        <!-- 今日证伪条件 -->
         {% set falsif = thesis_data.get('today_falsification', []) if thesis_data else [] %}
         {% if falsif %}
           <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 0.8rem;">
