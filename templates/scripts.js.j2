@@ -1272,12 +1272,8 @@
     }
 
     function switchDashboardDate(selectedDate) {
-      try {
-        const activeTab = safeStorage.getItem(TAB_KEY) || 'overview';
-        window.location.href = '/?date=' + selectedDate + '#' + activeTab;
-      } catch (err) {
-        console.error('Error switching date:', err);
-      }
+      // 实时盯盘大屏已锁定为 TODAY LIVE 模式，由 reports/daily_dashboard_*.html 承载历史回顾
+      console.log('Trading console is locked in live mode today: ', selectedDate);
     }
 
     function addToFocus(symbol) {

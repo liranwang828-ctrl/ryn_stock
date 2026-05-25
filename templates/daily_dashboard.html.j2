@@ -43,12 +43,11 @@
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
-      <span style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: var(--text-secondary); font-weight: 600;">📅 选择历史日期:</span>
-      <select id="dashboard-date-select" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-family:'Outfit'; font-weight:700; border-color:var(--primary);" onchange="switchDashboardDate(this.value)">
-        {% for d in available_dates %}
-          <option value="{{ d }}" {% if d == date %}selected{% endif %}>{{ d }}</option>
-        {% endfor %}
-      </select>
+      <span style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: var(--text-secondary); font-weight: 600;">📡 实时控制台:</span>
+      <div class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-family:'Outfit'; font-weight:700; border-color:var(--green); display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.05); color: #34d399; pointer-events: none;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; box-shadow: 0 0 10px #10b981; animation: agentPulse 1.8s infinite;"></span>
+        <span>TODAY / {{ date }}</span>
+      </div>
     </div>
   </header>
 
@@ -223,6 +222,9 @@
                 ➕ 录入实际交易
               </button>
               <span class="badge badge-green">Real Portfolio</span>
+              {% if is_stale_portfolio %}
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; font-family: 'Outfit'; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.5px; padding: 2.5px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="由于今日最新交易快照尚未打卡生成，系统已自动弹性对齐至最近一次的历史快照或静态底表。">⏳ 非实时 ({{ portfolio_source_date }})</span>
+              {% endif %}
             </div>
           </div>
           <div style="overflow-x: auto;">

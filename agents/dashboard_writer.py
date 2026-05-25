@@ -594,6 +594,74 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     intraday     = load_intraday_latest(date, symbols, find_dir)
     events       = load_intraday_events(date, symbols, find_dir)
     portfolio    = load_portfolio_snapshot(date, find_dir)
+    
+    # ── 智能弹性加载持仓 (防止页面数据留白/恐慌) ──────────────────────────
+    is_stale_portfolio = False
+    portfolio_source_date = date
+
+    if not portfolio or not portfolio.get("positions_detail"):
+        # 降级级别 1: 扫描并加载最近一天的历史快照
+        import glob
+        snapshots = sorted(glob.glob(os.path.join(find_dir, "portfolio_snapshot_*.json")))
+        if snapshots:
+            latest_snap_path = snapshots[-1]
+            try:
+                with open(latest_snap_path, "r", encoding="utf-8") as f:
+                    portfolio = json.load(f)
+                is_stale_portfolio = True
+                fn = os.path.basename(latest_snap_path)
+                portfolio_source_date = fn[len("portfolio_snapshot_"):-5]
+            except Exception:
+                pass
+
+    if not portfolio or not portfolio.get("positions_detail"):
+        # 降级级别 2 (极致兜底): 直接读取静态配置底表 positions.json 模拟折算
+        try:
+            pos_cfg_path = os.path.join(base_dir, "config", "positions.json")
+            if os.path.exists(pos_cfg_path):
+                with open(pos_cfg_path, "r", encoding="utf-8") as f:
+                    pos_data = json.load(f)
+                
+                portfolio = {
+                    "totals": {
+                        "total_value": 0.0,
+                        "cash": pos_data.get("cash", 0.0),
+                        "holdings_value": 0.0,
+                        "total_profit": 0.0,
+                        "total_profit_pct": 0.0,
+                        "leverage_ratio": 0.0,
+                        "var_5pct_loss": 0.0,
+                        "var_5pct_pct": 0.0
+                    },
+                    "positions_detail": []
+                }
+                
+                total_holdings_val = 0.0
+                for sym, info in pos_data.get("positions", {}).items():
+                    shares = info.get("shares", 0)
+                    cost = info.get("cost", 0.0)
+                    val = shares * cost
+                    total_holdings_val += val
+                    portfolio["positions_detail"].append({
+                        "sym": sym,
+                        "name": info.get("note", sym),
+                        "shares": shares,
+                        "cost": cost,
+                        "price": cost,  
+                        "value": val,
+                        "profit": 0.0,
+                        "profit_pct": 0.0,
+                        "ratio": 0.0,
+                        "macro_type": info.get("macro_type", "成长型")
+                    })
+                
+                portfolio["totals"]["holdings_value"] = total_holdings_val
+                portfolio["totals"]["total_value"] = total_holdings_val + pos_data.get("cash", 0.0)
+                is_stale_portfolio = True
+                portfolio_source_date = "静态持仓配置底表"
+        except Exception:
+            pass
+
     postmarket_d = load_postmarket_day(date, find_dir)
     session_st   = load_session_state(date, base_dir)
     daily_plan   = load_daily_plan(date, base_dir)
@@ -1068,6 +1136,8 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         "intraday":               intraday,
         "events":                 events,
         "portfolio":              portfolio,
+        "is_stale_portfolio":     is_stale_portfolio,
+        "portfolio_source_date":  portfolio_source_date,
         "postmarket_day":         postmarket_d,
         "session_state":          session_st,
         "daily_plan":             daily_plan,
