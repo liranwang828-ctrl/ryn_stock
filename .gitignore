@@ -72,6 +72,9 @@ findings/
 # 排除整个 learning 目录（包含 cio 信号、大屏数据缓存等）
 learning/
 
+# 本地历史归档数据
+archive/local_history/
+
 # 排除根目录下智能体生成的临时交互产物
 data_raw_primary.json
 data_raw_secondary.json
