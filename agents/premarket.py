@@ -7,6 +7,12 @@
      不传参数则读取 config/poll_config.json 中 default_symbols
 """
 import sys, os, json, requests, xml.etree.ElementTree as ET
+if sys.platform.startswith('win'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -530,7 +536,7 @@ def analyze_stock(sym, sector_ref, spy_pre_chg, futures_chg):
     except Exception:
         pass
 
-    return {
+    res_dict = {
         # ── 盘前已知（静态，不会被后续覆盖）──────────────────────
         "symbol":             sym,
         "prev_close":         round(prev_close, 2),
@@ -577,6 +583,21 @@ def analyze_stock(sym, sector_ref, spy_pre_chg, futures_chg):
         "predicted_mode":     predicted_mode,
         "mode_reason":        mode_reason,
     }
+    
+    # ── 3. 期权链前导分析 ──
+    try:
+        from agents.options_chain_analyzer import OptionChainAnalyzer
+        analyzer = OptionChainAnalyzer(sym)
+        opt_res = analyzer.analyze()
+        if "error" not in opt_res:
+            res_dict["options_indicators"] = opt_res
+        else:
+            res_dict["options_indicators"] = None
+    except Exception as e:
+        print(f"[Premarket Option Analysis Error] {sym}: {e}")
+        res_dict["options_indicators"] = None
+        
+    return res_dict
 
 def _print_macro_block():
     """读取 findings/macro.json + config/macro_background.json，打印宏观快查块"""

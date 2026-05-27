@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dashboard 鍐欏叆妯″潡 鈥?dashboard_writer.py
 璇诲彇鎵€鏈?B 绾?JSON锛岀敓鎴?reports/daily_dashboard_{date}.html銆?
 
@@ -24,6 +24,196 @@ def _load(path: str) -> dict | list:
             return json.load(f)
     except Exception:
         return {}
+
+
+def _latest_dated_file(directory: str, pattern: str) -> tuple[str | None, str | None]:
+    """Return latest YYYY-MM-DD file matching a glob pattern with one date group."""
+    import glob
+    import re
+    latest: tuple[str, str] | None = None
+    for path in glob.glob(os.path.join(directory, pattern)):
+        name = os.path.basename(path)
+        match = re.search(r"(20\d{2}-\d{2}-\d{2})", name)
+        if not match:
+            continue
+        file_date = match.group(1)
+        if latest is None or file_date > latest[0]:
+            latest = (file_date, path)
+    if not latest:
+        return None, None
+    return latest[0], latest[1]
+
+
+def _nodes_from_premarket_summary(summary: dict | None) -> dict:
+    if not isinstance(summary, dict):
+        return {}
+    entry = summary.get("entry") or {}
+    exit_data = summary.get("exit") or {}
+    nodes: dict[str, dict] = {}
+
+    entry_base = entry.get("entry_base") or entry.get("entry_base_adj")
+    hard_stop = exit_data.get("hard_stop") or entry.get("stop_loss")
+    target = exit_data.get("target_price") or entry.get("target_price")
+    flex_add = exit_data.get("flex_add_level") or entry_base
+    flex_reduce = exit_data.get("flex_reduce_level") or target
+
+    if entry_base is not None:
+        nodes["entry_base"] = {"price": entry_base, "source": "premarket_summary"}
+    if hard_stop is not None:
+        nodes["dynamic_stop"] = {"price": hard_stop, "source": "premarket_summary"}
+    if flex_add is not None:
+        nodes["add1"] = {"price": flex_add, "source": "premarket_summary"}
+    if flex_reduce is not None:
+        nodes["flex_reduce"] = {"price": flex_reduce, "source": "premarket_summary"}
+    if target is not None:
+        nodes["tp1"] = {"price": target, "source": "premarket_summary"}
+    return nodes
+
+
+def _read_last_jsonl(path: str) -> dict | None:
+    if not os.path.exists(path):
+        return None
+    last = None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    last = json.loads(line)
+                except Exception:
+                    pass
+    return last
+
+
+def _read_all_jsonl(path: str) -> list[dict]:
+    records = []
+    if not os.path.exists(path):
+        return records
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    records.append(json.loads(line))
+                except Exception:
+                    pass
+    return records
+
+
+def _read_tail_jsonl(path: str, limit: int = 11) -> list[dict]:
+    tail = deque(maxlen=max(int(limit), 1))
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                value = json.loads(line)
+            except Exception:
+                continue
+            if isinstance(value, dict):
+                tail.append(value)
+    return list(tail)
+
+
+def _clean_gate_status_text(text: str | None) -> str | None:
+    """Normalize gate_status for display."""
+    if not text:
+        return text
+    s = str(text).strip()
+    while s and s[0] in "│┃|-— ":
+        s = s[1:].lstrip()
+    if "  ❌" in s:
+        s = s.split("  ❌", 1)[0].strip()
+    if "  ✅" in s:
+        s = s.split("  ✅", 1)[0].strip()
+    return s
+
+
+def _normalize_intraday_record(rec: dict) -> dict:
+    if not isinstance(rec, dict):
+        return rec
+    price_now = rec.get("price_now")
+    if isinstance(price_now, dict):
+        rec = dict(rec)
+        price_now = dict(price_now)
+        price_now["gate_status"] = _clean_gate_status_text(price_now.get("gate_status"))
+        if price_now.get("master_consensus") is None:
+            price_now["master_consensus"] = "neutral"
+        if price_now.get("master_avg") is None:
+            price_now["master_avg"] = 5.0
+"""
+Dashboard 鍐欏叆妯″潡 鈥?dashboard_writer.py
+璇诲彇鎵€鏈?B 绾?JSON锛岀敓鎴?reports/daily_dashboard_{date}.html銆?
+
+鐢ㄦ硶: python3.12 agents/dashboard_writer.py
+     鎴栫敱 poll.py 姣忚疆鏈殑末璋冪敤 write_dashboard()
+"""
+import json, os, sys
+from collections import deque
+from datetime import datetime, timezone, date as _date
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+_possible_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__))
+BASE = _possible_base if os.path.exists(os.path.join(_possible_base, "templates")) else ((os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__))) if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__)), "templates")) else os.path.expanduser("~/stock_team"))
+FIND_DIR = os.path.join(BASE, "findings")
+TPL_DIR  = os.path.join(BASE, "templates")
+RPT_DIR  = os.path.join(BASE, "reports")
+
+
+def _load(path: str) -> dict | list:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _latest_dated_file(directory: str, pattern: str) -> tuple[str | None, str | None]:
+    """Return latest YYYY-MM-DD file matching a glob pattern with one date group."""
+    import glob
+    import re
+    latest: tuple[str, str] | None = None
+    for path in glob.glob(os.path.join(directory, pattern)):
+        name = os.path.basename(path)
+        match = re.search(r"(20\d{2}-\d{2}-\d{2})", name)
+        if not match:
+            continue
+        file_date = match.group(1)
+        if latest is None or file_date > latest[0]:
+            latest = (file_date, path)
+    if not latest:
+        return None, None
+    return latest[0], latest[1]
+
+
+def _nodes_from_premarket_summary(summary: dict | None) -> dict:
+    if not isinstance(summary, dict):
+        return {}
+    entry = summary.get("entry") or {}
+    exit_data = summary.get("exit") or {}
+    nodes: dict[str, dict] = {}
+
+    entry_base = entry.get("entry_base") or entry.get("entry_base_adj")
+    hard_stop = exit_data.get("hard_stop") or entry.get("stop_loss")
+    target = exit_data.get("target_price") or entry.get("target_price")
+    flex_add = exit_data.get("flex_add_level") or entry_base
+    flex_reduce = exit_data.get("flex_reduce_level") or target
+
+    if entry_base is not None:
+        nodes["entry_base"] = {"price": entry_base, "source": "premarket_summary"}
+    if hard_stop is not None:
+        nodes["dynamic_stop"] = {"price": hard_stop, "source": "premarket_summary"}
+    if flex_add is not None:
+        nodes["add1"] = {"price": flex_add, "source": "premarket_summary"}
+    if flex_reduce is not None:
+        nodes["flex_reduce"] = {"price": flex_reduce, "source": "premarket_summary"}
+    if target is not None:
+        nodes["tp1"] = {"price": target, "source": "premarket_summary"}
+    return nodes
 
 
 def _read_last_jsonl(path: str) -> dict | None:
@@ -114,11 +304,41 @@ def _normalize_intraday_record(rec: dict) -> dict:
 def _normalize_macro_nodes(sym: str, nodes: dict, daily_plan: dict | None = None, premarket: dict | None = None) -> dict:
     if not isinstance(nodes, dict):
         nodes = {}
-    normalized = {k: (dict(v) if isinstance(v, dict) else v) for k, v in nodes.items()}
+    
+    # 1. 强制将所有节点值统一转换为 {"price": ...} 字典形式，支持直接为数字的旧版/简版格式
+    normalized = {}
+    for k, v in nodes.items():
+        if isinstance(v, dict):
+            normalized[k] = dict(v)
+        elif v is not None:
+            normalized[k] = {"price": _coerce_price(v), "source": "macro_strategy"}
+        else:
+            normalized[k] = {}
+
+    # 2. 键名对齐与映射 (支持多种不同格式下的策略节点互通)
+    # hard_stop / stop_loss -> dynamic_stop
+    if "dynamic_stop" not in normalized or normalized["dynamic_stop"].get("price") is None:
+        stop_val = normalized.get("hard_stop") or normalized.get("stop_loss")
+        if stop_val and stop_val.get("price") is not None:
+            normalized["dynamic_stop"] = stop_val
+
+    # target / target_price / tp1 -> tp1
+    if "tp1" not in normalized or normalized["tp1"].get("price") is None:
+        target_val = normalized.get("target") or normalized.get("target_price") or normalized.get("tp1")
+        if target_val and target_val.get("price") is not None:
+            normalized["tp1"] = target_val
+
+    # flex_add / add1 -> add1
+    if "add1" not in normalized or normalized["add1"].get("price") is None:
+        add_val = normalized.get("flex_add") or normalized.get("add1")
+        if add_val and add_val.get("price") is not None:
+            normalized["add1"] = add_val
+
     key_levels = (((daily_plan or {}).get("per_symbol") or {}).get(sym.upper()) or {}).get("key_levels", {}) or {}
     pm = (premarket or {}).get(sym.upper()) or {}
     pm_exit = pm.get("exit") or {}
 
+    # flex_reduce 对齐
     flex_reduce = normalized.get("flex_reduce")
     if not isinstance(flex_reduce, dict):
         flex_reduce = {}
@@ -128,15 +348,21 @@ def _normalize_macro_nodes(sym: str, nodes: dict, daily_plan: dict | None = None
             flex_reduce["price"] = flex_reduce_price
     normalized["flex_reduce"] = flex_reduce
 
+    # soft_stop -> scenario_downgrade 对齐
     scene = normalized.get("scenario_downgrade")
     if not isinstance(scene, dict):
         scene = {}
     if scene.get("price") is None:
-        bull_to_base = scene.get("bull_to_base") or {}
-        base_to_bear = scene.get("base_to_bear") or {}
-        scene["price"] = bull_to_base.get("price") or base_to_bear.get("price")
-        if scene.get("basis") is None:
-            scene["basis"] = bull_to_base.get("basis") or base_to_bear.get("basis")
+        soft_stop_val = normalized.get("soft_stop")
+        if soft_stop_val and soft_stop_val.get("price") is not None:
+            scene["price"] = soft_stop_val.get("price")
+            scene["label"] = soft_stop_val.get("label", "Soft warning")
+        else:
+            bull_to_base = scene.get("bull_to_base") or {}
+            base_to_bear = scene.get("base_to_bear") or {}
+            scene["price"] = bull_to_base.get("price") or base_to_bear.get("price")
+            if scene.get("basis") is None:
+                scene["basis"] = bull_to_base.get("basis") or base_to_bear.get("basis")
     normalized["scenario_downgrade"] = scene
 
     return normalized
@@ -152,6 +378,60 @@ def _coerce_price(value: object) -> float | None:
     if price != price:
         return None
     return round(price, 2)
+
+
+def _apply_portfolio_price_overrides(portfolio: dict | None, pos_data: dict | None) -> None:
+    """Overlay local broker price snapshots onto portfolio rows without fetching market data."""
+    if not isinstance(portfolio, dict) or not isinstance(pos_data, dict):
+        return
+    positions_cfg = pos_data.get("positions") or {}
+    details = portfolio.get("positions_detail")
+    if not isinstance(details, list):
+        return
+
+    total_exposure = 0.0
+    var_loss = 0.0
+    pnl_weighted = 0.0
+    holdings_value = 0.0
+
+    for row in details:
+        if not isinstance(row, dict):
+            continue
+        sym = str(row.get("sym") or "").upper()
+        cfg = positions_cfg.get(sym) or {}
+        broker_price = _coerce_price(cfg.get("broker_last_price"))
+        if broker_price is not None:
+            row["cur_price"] = broker_price
+            row["price"] = broker_price
+            row["price_source"] = "broker_last_price"
+        else:
+            row.setdefault("price_source", row.get("source") or "portfolio_snapshot")
+
+        shares = float(row.get("shares") or cfg.get("shares") or 0.0)
+        leverage = float(row.get("leverage") or 1.0)
+        cost = float(row.get("cost") or cfg.get("cost") or 0.0)
+        cur_price = float(row.get("cur_price") or 0.0)
+        market_value = cur_price * shares
+        net_exposure = market_value * leverage
+        row["shares"] = shares
+        row["market_value"] = round(market_value, 4)
+        row["net_exposure"] = round(net_exposure, 4)
+        if cost > 0:
+            row["unrealized_pnl_pct"] = round((cur_price - cost) / cost * 100, 2)
+        beta = float(row.get("beta") or 1.0)
+        row["var_5pct_loss"] = round(net_exposure * beta * 0.05, 4)
+
+        holdings_value += market_value
+        total_exposure += net_exposure
+        var_loss += float(row.get("var_5pct_loss") or 0.0)
+        pnl_weighted += float(row.get("unrealized_pnl_pct") or 0.0) * market_value
+
+    totals = portfolio.setdefault("totals", {})
+    if holdings_value > 0:
+        totals["holdings_value"] = round(holdings_value, 2)
+        totals["total_exposure"] = round(total_exposure, 2)
+        totals["var_5pct_loss"] = round(var_loss, 2)
+        totals["total_unrealized_pnl_pct"] = round(pnl_weighted / holdings_value, 2)
 
 
 def _candle_padding(row: dict) -> float:
@@ -333,13 +613,42 @@ def _merge_symbol_cache(dst: dict | None, src: dict | None, symbols: list[str]) 
 
 def load_premarket_summaries(date: str, symbols: list[str],
                               find_dir: str = FIND_DIR) -> dict:
-    """杩斿洖 {sym: premarket_summary_dict}"""
+    """返回 {sym: premarket_summary_dict}"""
+    from agents.capsule_utils import get_premarket_summary_path, get_strategy_path
+    base_dir = os.path.dirname(find_dir)
     result = {}
     for sym in symbols:
-        path = os.path.join(find_dir, f"premarket_summary_{date}_{sym}.json")
+        sym_upper = sym.upper()
+        # 优先加载今日太空舱盘前计划（含回退兼容）
+        path = get_premarket_summary_path(sym_upper, date, base_dir)
         d = _load(path)
+        
+        # 弹性降级自愈加载专属 strategy.json
+        if not d:
+            strat_path = get_strategy_path(sym_upper, base_dir)
+            if os.path.exists(strat_path):
+                strat = _load(strat_path)
+                if strat:
+                    d = {
+                        "_fallback_mode": True,
+                        "entry": {
+                            "entry_base": strat.get("key_levels", {}).get("entry_low") or strat.get("key_levels", {}).get("entry_base"),
+                            "stop_loss": strat.get("key_levels", {}).get("stop_loss"),
+                            "target_price": strat.get("key_levels", {}).get("target_price"),
+                            "decision": "watch (fallback)"
+                        },
+                        "exit": {
+                            "flex_add_level": strat.get("exit_plan", {}).get("flex_add_level"),
+                            "flex_reduce_level": strat.get("exit_plan", {}).get("flex_reduce_level"),
+                            "hard_stop": strat.get("key_levels", {}).get("stop_loss")
+                        },
+                        "thesis": {
+                            "status": strat.get("thesis", {}).get("status", "intact"),
+                            "today_falsification": strat.get("thesis", {}).get("today_falsification") or []
+                        }
+                    }
         if d:
-            result[sym] = d
+            result[sym_upper] = d
     return result
 
 def load_intraday_latest(date: str, symbols: list[str],
@@ -349,8 +658,9 @@ def load_intraday_latest(date: str, symbols: list[str],
     dashboard_cache = load_dashboard_cache(base_dir)
     cached_intraday = dashboard_cache.get("intraday") if isinstance(dashboard_cache, dict) else {}
     result = {}
+    from agents.capsule_utils import get_intraday_snapshot_path
     for sym in symbols:
-        path = os.path.join(find_dir, f"intraday_snapshot_{date}_{sym}.jsonl")
+        path = get_intraday_snapshot_path(sym, date, base_dir)
         rows = _read_tail_jsonl(path, limit=10)
 
         latest = None
@@ -363,12 +673,30 @@ def load_intraday_latest(date: str, symbols: list[str],
             latest = _normalize_intraday_record(rows[-1])
 
         if latest:
+            # 允许从最新价格缓存中覆盖现价，以支持手动刷新并解决现价获取/更新延迟问题
+            if isinstance(cached_intraday, dict) and isinstance(cached_intraday.get(sym), dict):
+                cached_rec = cached_intraday.get(sym)
+                if cached_rec.get("price_now"):
+                    latest = dict(latest)
+                    price_now = dict(latest.get("price_now") or {})
+                    cached_price_now = cached_rec.get("price_now")
+                    c_asof = cached_price_now.get("price_asof", "")
+                    l_asof = price_now.get("price_asof", "")
+                    if not l_asof or c_asof >= l_asof:
+                        if cached_price_now.get("price") is not None:
+                            price_now["price"] = cached_price_now.get("price")
+                        if cached_price_now.get("chg_pct") is not None:
+                            price_now["chg_pct"] = cached_price_now.get("chg_pct")
+                        price_now["price_source"] = cached_price_now.get("price_source") or "cache_refresh"
+                        price_now["price_asof"] = c_asof
+                        latest["price_now"] = price_now
+                        
             chart_rows = rows
             chart_source = None
             chart_source_date = None
             if len(rows) < 8:
                 prev_date, prev_rows = _find_previous_intraday_tail(date, sym, find_dir, limit=10)
-                if len(prev_rows) >= len(rows):
+                if prev_rows and len(prev_rows) >= len(rows):
                     chart_rows = prev_rows
                     chart_source = "previous_close"
                     chart_source_date = prev_date
@@ -415,8 +743,9 @@ def load_intraday_events(date: str, symbols: list[str],
     base_dir = os.path.dirname(find_dir)
     dashboard_cache = load_dashboard_cache(base_dir)
     events = []
+    from agents.capsule_utils import get_intraday_snapshot_path
     for sym in symbols:
-        path = os.path.join(find_dir, f"intraday_snapshot_{date}_{sym}.jsonl")
+        path = get_intraday_snapshot_path(sym, date, base_dir)
         for rec in _read_all_jsonl(path):
             if rec.get("meta", {}).get("llm_triggered"):
                 events.append(rec)
@@ -450,7 +779,12 @@ def load_intraday_events(date: str, symbols: list[str],
     return deduped
 
 
-def load_portfolio_snapshot(date: str, find_dir: str = FIND_DIR) -> dict:
+def load_portfolio_snapshot(date: str, find_dir: str = FIND_DIR, prefer_current: bool = True) -> dict:
+    if prefer_current:
+        current_path = os.path.join(find_dir, "portfolio_snapshot_current.json")
+        current = _load(current_path)
+        if current:
+            return current
     path = os.path.join(find_dir, f"portfolio_snapshot_{date}.json")
     return _load(path)
 
@@ -463,6 +797,14 @@ def load_postmarket_day(date: str, find_dir: str = FIND_DIR) -> dict:
 def load_session_state(date: str, base_dir: str = BASE) -> dict:
     path = os.path.join(base_dir, "learning", f"session_state_{date}.json")
     return _load(path)
+
+
+def load_session_lock(date: str, base_dir: str = BASE) -> dict:
+    path = os.path.join(base_dir, "findings", "session_lock.json")
+    data = _load(path)
+    if not isinstance(data, dict) or data.get("date") != date:
+        return {}
+    return data
 
 
 def load_daily_plan(date: str, base_dir: str = BASE) -> dict:
@@ -559,6 +901,13 @@ def _load_learning_state(base_dir: str, dashboard_cache: dict | None = None) -> 
 def build_dashboard_context(date: str, symbols: list[str] | None = None,
                              base_dir: str = BASE) -> dict:
     """构建 Jinja2 渲染上下文。"""
+    from agents.capsule_utils import (
+        get_capsule_dir,
+        get_current_nodes_path,
+        get_intraday_snapshot_path,
+        get_latest_premarket_plan_path,
+        get_premarket_summary_path,
+    )
     find_dir = os.path.join(base_dir, "findings")
     dashboard_cache = load_dashboard_cache(base_dir)
 
@@ -568,6 +917,13 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         all_syms = [s for s in pos_data.get("positions", {}).keys() if s not in excluded]
         cfg = _load(os.path.join(base_dir, "config", "poll_config.json"))
         all_syms = list(dict.fromkeys(all_syms + cfg.get("default_symbols", [])))
+        focus_data_initial = _load(os.path.join(base_dir, "config", "daily_focus.json"))
+        focus_list_initial = [
+            str(s).upper()
+            for s in focus_data_initial.get("focus_stocks", [])
+            if str(s).strip()
+        ]
+        all_syms = list(dict.fromkeys(all_syms + focus_list_initial))
         
         # 鑷姩鎰熷簲浠婃棩鐢熸垚鐨?CIO 鎶ュ憡涓寘鍚殑鑷畾涔夎偂绁?
         dynamic_syms = []
@@ -584,9 +940,11 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         
         # 鏄剧ず浠婃棩鏈夌洏鍓嶆眹鎬汇€佺洏涓揩鐓ф垨浠婃棩鍔ㄦ€佺敓鎴愪簡鎶ュ憡鐨勬爣鐨?
         symbols = [s for s in all_syms if
-                   os.path.exists(os.path.join(find_dir, f"premarket_summary_{date}_{s}.json")) or
-                   os.path.exists(os.path.join(find_dir, f"intraday_snapshot_{date}_{s}.jsonl")) or
-                   s in dynamic_syms]
+                   os.path.exists(get_premarket_summary_path(s, date, base_dir)) or
+                   os.path.exists(get_intraday_snapshot_path(s, date, base_dir)) or
+                   os.path.exists(get_current_nodes_path(s, base_dir)) or
+                   s in dynamic_syms or
+                   s in focus_list_initial]
         if not symbols:   # fallback锛氳嫢鏃犱换浣曟暟鎹枃浠讹紝鏄剧ず鍏ㄩ儴
             symbols = all_syms
 
@@ -602,7 +960,10 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     if not portfolio or not portfolio.get("positions_detail"):
         # 降级级别 1: 扫描并加载最近一天的历史快照
         import glob
-        snapshots = sorted(glob.glob(os.path.join(find_dir, "portfolio_snapshot_*.json")))
+        snapshots = sorted(
+            p for p in glob.glob(os.path.join(find_dir, "portfolio_snapshot_*.json"))
+            if not os.path.basename(p).startswith("portfolio_snapshot_current")
+        )
         if snapshots:
             latest_snap_path = snapshots[-1]
             try:
@@ -668,6 +1029,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
 
     postmarket_d = load_postmarket_day(date, find_dir)
     session_st   = load_session_state(date, base_dir)
+    session_lock = load_session_lock(date, base_dir)
     daily_plan   = load_daily_plan(date, base_dir)
     learning_st  = _load_learning_state(base_dir, dashboard_cache)
     poll_cfg     = _load(os.path.join(base_dir, "config", "poll_config.json"))
@@ -825,7 +1187,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
                 flex_reduce = pm_exit.get("flex_reduce_level") or stk.get("t1_target2") or stk.get("t2_target")
 
                 per_symbol[sym_upper] = {
-                    "premarket_summary_path": f"findings/premarket_summary_{date}_{sym_upper}.json",
+                            "premarket_summary_path": get_premarket_summary_path(sym_upper, date, base_dir),
                     "action_now": stk.get("predicted_scene") or pm_entry.get("decision") or sc.get("strategic_stance") or "watch",
                     "key_levels": {
                         "entry_base": entry_base,
@@ -861,7 +1223,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
             is_lite = pm_sym.get("_lite_mode", False) or not (entry_base and hard_stop)
 
             per_symbol_data[sym_upper] = {
-                "premarket_summary_path": f"findings/premarket_summary_{date}_{sym_upper}.json",
+                        "premarket_summary_path": get_premarket_summary_path(sym_upper, date, base_dir),
                 "action_now": pm_entry.get("decision") or sc.get("strategic_stance") or "watch",
                 "key_levels": {
                     "entry_base": entry_base,
@@ -897,7 +1259,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     available_dates = set()
     if os.path.exists(find_dir):
         for f in os.listdir(find_dir):
-            if f.startswith("portfolio_snapshot_") and f.endswith(".json"):
+            if f.startswith("portfolio_snapshot_") and f.endswith(".json") and f != "portfolio_snapshot_current.json":
                 d_str = f[len("portfolio_snapshot_"):-5]
                 if len(d_str) == 10:
                     available_dates.add(d_str)
@@ -930,7 +1292,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     # 1. 鏋勫缓鍘嗗彶鍑€鍊肩粍鍚堣蛋鍔?timeline
     portfolio_history = []
     for d_str in sorted(list(available_dates)):
-        snap = load_portfolio_snapshot(d_str, find_dir)
+        snap = load_portfolio_snapshot(d_str, find_dir, prefer_current=False)
         if snap and snap.get("totals"):
             totals = snap["totals"]
             portfolio_history.append({
@@ -950,9 +1312,10 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         })
     portfolio_history.sort(key=lambda x: x["date"])
 
-    # 2. 鎵弿 reports/ 鐩綍涓嬫墍鏈?CIO 娣卞害杈╄鍙婇暱鏈熺爺绌舵姤鍛?
+    # 2. 扫秒 reports/ 目录下所有 CIO 深度辩论及长期研究报告
     all_cio_reports = []
     all_research_reports = []
+    all_discussion_reports = []
     rpt_dir = os.path.join(base_dir, "reports")
     if os.path.exists(rpt_dir):
         for f in os.listdir(rpt_dir):
@@ -961,6 +1324,22 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
                     sym = f[len("research_"):-5].upper()
                     all_research_reports.append({
                         "symbol": sym,
+                        "filename": f,
+                        "path": f"/reports/{f}"
+                    })
+                elif f.startswith("discussion_"):
+                    # discussion_YYYY-MM-DD_session.html or discussion_session.html
+                    import re
+                    match = re.search(r"discussion_(\d{4}-\d{2}-\d{2})_(.+)\.html", f)
+                    if match:
+                        d_str = match.group(1)
+                        sess = match.group(2).upper()
+                    else:
+                        d_str = date
+                        sess = f[len("discussion_"):-5].upper()
+                    all_discussion_reports.append({
+                        "date": d_str,
+                        "session": sess,
                         "filename": f,
                         "path": f"/reports/{f}"
                     })
@@ -977,6 +1356,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
                         })
     all_cio_reports.sort(key=lambda x: (x["date"], x["symbol"]), reverse=True)
     all_research_reports.sort(key=lambda x: x["symbol"])
+    all_discussion_reports.sort(key=lambda x: (x["date"], x["session"]), reverse=True)
 
     # 3. 璇诲彇 paper_trading 缁勫悎鐨勫巻鍙蹭氦鏄撳彴璐?(浠呯敤浜庢ā鎷熶氦鏄撳彴璐?
     trades_history_list = []
@@ -1028,6 +1408,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     pos_path = os.path.join(base_dir, "config", "positions.json")
     pos_data = _load(pos_path)
     cash_val = float(pos_data.get("cash", 7034.90))
+    _apply_portfolio_price_overrides(portfolio, pos_data)
 
     holdings_value = 0.0
     if portfolio and "positions_detail" in portfolio:
@@ -1071,27 +1452,79 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
     except Exception:
         pass
 
-    # 10. 鏋勫缓姣忓彧鏍囩殑鐨勪笁鎬佹姤鍛婄姸鎬?+ macro_strategy 鑺傜偣 + premarket 璇︽儏
+    # 10. 构建每只标的的三态报告状态 + macro_strategy 节点 + premarket 详情
     report_status = {}
     macro_nodes_all = {}
     premarket_details = {}
     rpt_d = os.path.join(base_dir, "reports")
+    
+    # ── 🔬 Load options chain indicators from premarket_analysis_{date}.json ──
+    pm_analysis_path = os.path.join(base_dir, f"premarket_analysis_{date}.json")
+    pm_analysis_data = {}
+    if os.path.exists(pm_analysis_path):
+        try:
+            with open(pm_analysis_path, encoding="utf-8") as f:
+                pm_analysis_data = json.load(f).get("stocks", {})
+        except Exception:
+            pass
+
     for s in symbols:
         sym_upper = s.upper()
-        memo_path = os.path.join(base_dir, f"strategic_memo_{sym_upper}.json")
+        capsule_dir = get_capsule_dir(sym_upper, base_dir)
+        capsule_memo = os.path.join(capsule_dir, "strategic_memo.json")
+        memo_path = capsule_memo if os.path.exists(capsule_memo) else os.path.join(base_dir, f"strategic_memo_{sym_upper}.json")
         macro_path = os.path.join(base_dir, f"macro_strategy_{sym_upper}.json")
-        prem_path = os.path.join(find_dir, f"premarket_summary_{date}_{sym_upper}.json")
+        prem_path = get_premarket_summary_path(sym_upper, date, base_dir)
+        latest_plan_path = get_latest_premarket_plan_path(sym_upper, base_dir)
+        current_nodes_path = get_current_nodes_path(sym_upper, base_dir)
+        latest_plan = _load(latest_plan_path) if os.path.exists(latest_plan_path) else {}
+        current_nodes = _load(current_nodes_path) if os.path.exists(current_nodes_path) else {}
+        current_plan_date = latest_plan.get("date") if isinstance(latest_plan, dict) else None
         cio_rpt = os.path.join(rpt_d, f"{date}_{sym_upper}.html") if os.path.exists(rpt_d) else ""
+        latest_cio_date, latest_cio_path = _latest_dated_file(rpt_d, f"*_ {sym_upper}.html".replace("_ ", "_")) if os.path.exists(rpt_d) else (None, None)
+        
+        capsule_plans_dir = os.path.join(capsule_dir, "plans")
+        if os.path.exists(capsule_plans_dir):
+            latest_premarket_date, latest_premarket_path = _latest_dated_file(capsule_plans_dir, "premarket_summary_*.json")
+        else:
+            latest_premarket_date, latest_premarket_path = _latest_dated_file(find_dir, f"premarket_summary_*_{sym_upper}.json")
+        research_path = os.path.join(rpt_d, f"research_{sym_upper}.html") if os.path.exists(rpt_d) else ""
 
+        has_today_current_plan = bool(latest_plan) and current_plan_date == date
+        latest_effective_date = current_plan_date or latest_premarket_date
         status = {
             "has_cio": os.path.exists(cio_rpt) if cio_rpt else False,
+            "has_any_cio": bool(latest_cio_path),
             "has_memo": os.path.exists(memo_path),
-            "has_macro_nodes": os.path.exists(macro_path),
-            "has_premarket_summary": os.path.exists(prem_path),
+            "has_macro_nodes": os.path.exists(current_nodes_path) or os.path.exists(macro_path),
+            "has_premarket_summary": has_today_current_plan or os.path.exists(prem_path),
+            "has_any_premarket_summary": bool(latest_plan) or bool(latest_premarket_path),
+            "has_research_report": os.path.exists(research_path) if research_path else False,
+            "latest_cio_date": latest_cio_date,
+            "latest_premarket_date": latest_effective_date,
         }
+        status["research_base_state"] = "ready" if (
+            status["has_research_report"] or status["has_any_cio"] or status["has_memo"]
+        ) else "missing"
+        status["trade_plan_state"] = (
+            "today" if (
+                status["has_premarket_summary"] or
+                (isinstance(current_nodes, dict) and current_nodes.get("date") == date)
+            )
+            else "historical" if status["has_any_premarket_summary"]
+            else "missing"
+        )
+        status["today_state"] = "ready" if status["has_premarket_summary"] else "needs_refresh"
         report_status[sym_upper] = status
 
-        if os.path.exists(macro_path):
+        if isinstance(current_nodes, dict) and current_nodes.get("nodes"):
+            macro_nodes_all[sym_upper] = _normalize_macro_nodes(
+                sym_upper,
+                current_nodes.get("nodes", {}),
+                daily_plan=daily_plan,
+                premarket=premarket,
+            )
+        elif os.path.exists(macro_path):
             try:
                 with open(macro_path, encoding="utf-8") as f:
                     ms = json.load(f)
@@ -1104,17 +1537,55 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
             except Exception:
                 pass
 
-        if os.path.exists(prem_path):
+        if isinstance(latest_plan, dict) and latest_plan:
+            premarket_details[sym_upper] = latest_plan
+        elif os.path.exists(prem_path):
             try:
                 with open(prem_path, encoding="utf-8") as f:
                     premarket_details[sym_upper] = json.load(f)
             except Exception:
                 pass
+        elif latest_premarket_path:
+            try:
+                with open(latest_premarket_path, encoding="utf-8") as f:
+                    historical_pm = json.load(f)
+                    premarket_details[sym_upper] = historical_pm
+                    if sym_upper not in macro_nodes_all:
+                        historical_nodes = _nodes_from_premarket_summary(historical_pm)
+                        if historical_nodes:
+                            macro_nodes_all[sym_upper] = _normalize_macro_nodes(
+                                sym_upper,
+                                historical_nodes,
+                                daily_plan=daily_plan,
+                                premarket=premarket,
+                            )
+            except Exception:
+                pass
+
+        # Merge options_indicators from premarket_analysis_{date}.json if available
+        if sym_upper in pm_analysis_data:
+            opt_ind = pm_analysis_data[sym_upper].get("options_indicators")
+            if opt_ind:
+                if sym_upper not in premarket_details:
+                    premarket_details[sym_upper] = {}
+                premarket_details[sym_upper]["options_indicators"] = opt_ind
 
         it = intraday.get(sym_upper)
         chart = it.get("mini_chart") if isinstance(it, dict) else None
         if isinstance(chart, dict) and not chart.get("nodes"):
             macro_chart_nodes = _chart_nodes_from_macro_nodes(macro_nodes_all.get(sym_upper))
+            if not macro_chart_nodes:
+                # Fallback to premarket summary entry / stop levels
+                pm_data = premarket_details.get(sym_upper) or {}
+                pm_entry = pm_data.get("entry") or {}
+                macro_chart_nodes = []
+                if pm_entry.get("entry_base"):
+                    macro_chart_nodes.append({"name": "entry_base", "price": pm_entry["entry_base"]})
+                if pm_entry.get("stop_loss"):
+                    macro_chart_nodes.append({"name": "hard_stop", "price": pm_entry["stop_loss"]})
+                if pm_entry.get("target_price"):
+                    macro_chart_nodes.append({"name": "target", "price": pm_entry["target_price"]})
+            
             if macro_chart_nodes:
                 chart["nodes"] = macro_chart_nodes
                 prices = [p for candle in chart.get("candles", []) for p in (candle.get("low"), candle.get("high"))]
@@ -1144,6 +1615,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         "portfolio_source_date":  portfolio_source_date,
         "postmarket_day":         postmarket_d,
         "session_state":          session_st,
+        "session_lock":           session_lock,
         "daily_plan":             daily_plan,
         "learning":               learning_st,
         "cio_reports":            cio_reports,
@@ -1154,10 +1626,11 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         "portfolio_history_json": json.dumps(portfolio_history),
         "all_cio_reports":        all_cio_reports,
         "all_research_reports":   all_research_reports,
+        "all_discussion_reports": all_discussion_reports,
         "trades_history":         combined_trades, # 妯℃嫙鐩樺彴璐?
         "focus_list":             focus_list,      # 浠婃棩鍏虫敞鍒楄〃
         "candidates_list":        candidates_list,  # 鐩樺墠鎵弿鍊欓€夎偂
-        "real_trades":            real_trades,     # 瀹炵洏鐪熷疄浜ゆ槗鍙拌处
+        "real_trades":            real_trades,     # 瀹炵洏鐪蟶浜ゆ槗鍙拌处
         "cash":                   cash_val,
         "nav":                    nav_val,
         "positions_config":       pos_data,        # 瀹炵洏鎸佷粨閰嶇疆鍏冩暟鎹?
@@ -1165,6 +1638,7 @@ def build_dashboard_context(date: str, symbols: list[str] | None = None,
         "benchmark_portfolio":    benchmark_portfolio, # 妯℃嫙鍩哄噯缁勫悎
         "server_port":            server_port,     # 浠〃鐩樺悗绔繍琛岀鍙?
         "market_clock":           market_clock,
+        "watchlist_live":         _load(os.path.join(base_dir, "findings", "watchlist_live_status.json")),
     }
 
 

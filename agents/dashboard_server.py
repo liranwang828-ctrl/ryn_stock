@@ -61,6 +61,235 @@ def init_folders():
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(RPT_DIR, exist_ok=True)
 
+
+def updated_symbols_from_live_status(path: str) -> list[str]:
+    """Return symbols with refreshed local live-status detail."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+    details = data.get("symbols_detail", {})
+    if not isinstance(details, dict):
+        return []
+    focus = data.get("focus_symbols", [])
+    if isinstance(focus, list):
+        focused = [str(sym).upper().strip() for sym in focus if str(sym).strip()]
+        focused = [sym for sym in focused if sym in details]
+        if focused:
+            return focused
+    return [str(sym).upper().strip() for sym in details if str(sym).strip()]
+
+
+def _load_json_any(path: str, default):
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            value = json.load(f)
+    except Exception:
+        return default
+    return value
+
+
+def _save_json(path: str, payload) -> str:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    return path
+
+
+def _extract_live_price_payload(live_status: dict) -> dict[str, dict]:
+    details = live_status.get("symbols_detail", {}) if isinstance(live_status, dict) else {}
+    if not isinstance(details, dict):
+        return {}
+    symbols = live_status.get("focus_symbols")
+    if not isinstance(symbols, list) or not symbols:
+        symbols = list(details.keys())
+    prices: dict[str, dict] = {}
+    for raw_sym in symbols:
+        sym = str(raw_sym).upper().strip()
+        card = details.get(sym)
+        if not sym or not isinstance(card, dict):
+            continue
+        price = card.get("current_price") if card.get("current_price") is not None else card.get("price")
+        try:
+            price = float(price)
+        except Exception:
+            continue
+        prices[sym] = {
+            "price": price,
+            "chg_pct": card.get("chg_pct"),
+            "source": "manual_watchlist_refresh",
+            "status": card.get("status_cn") or card.get("status_code"),
+        }
+    return prices
+
+
+def _sync_positions_broker_prices(base_dir: str, prices: dict[str, dict], asof: str) -> list[str]:
+    path = os.path.join(base_dir, "config", "positions.json")
+    data = _load_json_any(path, {})
+    positions = data.get("positions") if isinstance(data, dict) else None
+    if not isinstance(positions, dict):
+        return []
+    updated = []
+    for sym, price_data in prices.items():
+        row = positions.get(sym)
+        if not isinstance(row, dict):
+            continue
+        row["broker_last_price"] = price_data.get("price")
+        row["broker_snapshot_at"] = asof
+        row["broker_price_source"] = price_data.get("source") or "manual_watchlist_refresh"
+        updated.append(sym)
+    if updated:
+        _save_json(path, data)
+    return updated
+
+
+def _sync_portfolio_snapshot_current(base_dir: str, prices: dict[str, dict], asof: str) -> str | None:
+    pos_path = os.path.join(base_dir, "config", "positions.json")
+    pos_data = _load_json_any(pos_path, {})
+    positions = pos_data.get("positions") if isinstance(pos_data, dict) else None
+    if not isinstance(positions, dict):
+        return None
+
+    snap_path = os.path.join(base_dir, "findings", "portfolio_snapshot_current.json")
+    existing = _load_json_any(snap_path, {})
+    existing_rows = {
+        str(row.get("sym")).upper(): row
+        for row in existing.get("positions_detail", [])
+        if isinstance(row, dict) and row.get("sym")
+    } if isinstance(existing, dict) else {}
+
+    rows = []
+    holdings_value = 0.0
+    total_exposure = 0.0
+    var_loss = 0.0
+    for sym, cfg in positions.items():
+        if not isinstance(cfg, dict):
+            continue
+        sym_upper = str(sym).upper()
+        shares = float(cfg.get("shares") or 0.0)
+        cost = float(cfg.get("cost") or 0.0)
+        price = prices.get(sym_upper, {}).get("price")
+        if price is None:
+            price = cfg.get("broker_last_price")
+        if price is None:
+            price = existing_rows.get(sym_upper, {}).get("cur_price")
+        if price is None:
+            price = cost
+        price = float(price or 0.0)
+        row = dict(existing_rows.get(sym_upper, {}))
+        leverage = float(row.get("leverage") or 1.0)
+        beta = float(row.get("beta") or 1.0)
+        market_value = round(price * shares, 4)
+        net_exposure = round(market_value * leverage, 4)
+        row.update({
+            "sym": sym_upper,
+            "shares": shares,
+            "cost": cost,
+            "cur_price": price,
+            "price": price,
+            "price_source": prices.get(sym_upper, {}).get("source") or cfg.get("broker_price_source") or row.get("price_source") or "positions",
+            "market_value": market_value,
+            "net_exposure": net_exposure,
+            "var_5pct_loss": round(net_exposure * beta * 0.05, 4),
+        })
+        if cost:
+            row["unrealized_pnl_pct"] = round((price - cost) / cost * 100, 2)
+        rows.append(row)
+        holdings_value += market_value
+        total_exposure += net_exposure
+        var_loss += row["var_5pct_loss"]
+
+    cash = float(pos_data.get("cash") or 0.0)
+    total_value = round(holdings_value + cash, 2)
+    payload = dict(existing) if isinstance(existing, dict) else {}
+    payload.update({
+        "date": _date.today().strftime("%Y-%m-%d"),
+        "generated_at": asof,
+        "trigger": "manual_price_refresh",
+        "positions_detail": rows,
+    })
+    totals = payload.setdefault("totals", {})
+    totals.update({
+        "cash": cash,
+        "holdings_value": round(holdings_value, 2),
+        "total_value": total_value,
+        "total_exposure": round(total_exposure, 2),
+        "leverage_ratio": round(total_exposure / total_value, 2) if total_value else 0.0,
+        "var_5pct_loss": round(var_loss, 2),
+        "var_5pct_pct": round(var_loss / total_value * 100, 1) if total_value else 0.0,
+    })
+    return _save_json(snap_path, payload)
+
+
+def _write_live_nodes(base_dir: str, live_status: dict, symbols: list[str], asof: str) -> list[str]:
+    details = live_status.get("symbols_detail", {}) if isinstance(live_status, dict) else {}
+    if not isinstance(details, dict):
+        return []
+    written = []
+    for sym in symbols:
+        card = details.get(sym)
+        if not isinstance(card, dict):
+            continue
+        path = os.path.join(base_dir, "findings", "symbols", sym, "current_nodes.json")
+        existing = _load_json_any(path, {})
+        if isinstance(existing, dict) and existing.get("source") == "human_agent_consensus" and existing.get("nodes"):
+            continue
+        buy_zone = card.get("buy_zone") if isinstance(card.get("buy_zone"), dict) else {}
+        nodes = {}
+
+        def add_node(key, price, label):
+            try:
+                price = float(price)
+            except Exception:
+                return
+            nodes[key] = {"price": price, "label": label, "source": "manual_watchlist_refresh"}
+
+        add_node("entry_base", buy_zone.get("max_price") or buy_zone.get("min_price"), "Buy zone")
+        add_node("flex_add", buy_zone.get("min_price"), "Buy zone low")
+        add_node("hard_stop", card.get("hard_stop"), "Hard stop")
+        add_node("target", card.get("target_price"), "Target")
+        if not nodes:
+            continue
+        payload = {
+            "sym": sym,
+            "date": _date.today().strftime("%Y-%m-%d"),
+            "generated_at": asof,
+            "source": "manual_watchlist_refresh",
+            "nodes": nodes,
+            "strategy": {
+                "action": card.get("status_code") or card.get("status_cn") or "watch",
+                "reasoning": card.get("micro_action_guidance") or card.get("thesis") or "",
+            },
+        }
+        _save_json(path, payload)
+        written.append(sym)
+    return written
+
+
+def sync_price_refresh_state(base_dir: str = BASE) -> dict:
+    """Fan out refreshed watchlist prices into dashboard-visible local state."""
+    live_path = os.path.join(base_dir, "findings", "watchlist_live_status.json")
+    live_status = _load_json_any(live_path, {})
+    prices = _extract_live_price_payload(live_status)
+    asof = live_status.get("refreshed_at") if isinstance(live_status, dict) else None
+    asof = asof or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    updated = list(prices.keys())
+
+    if prices:
+        from agents.dashboard_cache import update_latest_prices
+        update_latest_prices(base_dir, prices, asof=asof)
+        _sync_positions_broker_prices(base_dir, prices, asof)
+        _sync_portfolio_snapshot_current(base_dir, prices, asof)
+    nodes_written = _write_live_nodes(base_dir, live_status, updated, asof)
+    return {
+        "updated": updated,
+        "updated_count": len(updated),
+        "nodes_written": nodes_written,
+    }
+
 class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
     
     def log_message(self, format, *args):
@@ -125,6 +354,10 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         # ── 6.4 API: 刷新组合快照 ────────────────────────────────
         elif path == "/api/refresh-portfolio":
             self.handle_api_refresh_portfolio()
+            return
+
+        elif path == "/api/refresh-prices":
+            self.handle_api_refresh_prices()
             return
 
         elif path == "/api/apply-backtest" or path == "/api/apply_backtest":
@@ -195,13 +428,23 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         # 支持通过 ?date=YYYY-MM-DD 渲染指定日期的仪表盘，默认今天
         date_str = query.get("date", [None])[0]
         if not date_str:
-            date_str = _date.today().strftime("%Y-%m-%d")
+            today = _date.today().strftime("%Y-%m-%d")
+            candidates_today = os.path.join(BASE, f"candidates_{today}.json")
+            plan_today = os.path.join(BASE, f"daily_plan_{today}.json")
+            if not os.path.exists(candidates_today) and not os.path.exists(plan_today):
+                import glob, re
+                plans = sorted(glob.glob(os.path.join(BASE, "daily_plan_*.json")))
+                if plans:
+                    m = re.search(r"daily_plan_(20\d{2}-\d{2}-\d{2})\.json", os.path.basename(plans[-1]))
+                    if m:
+                        date_str = m.group(1)
+            if not date_str:
+                date_str = today
 
         try:
             # 重新编译渲染最新的数据
             dashboard_path = write_dashboard(date_str)
             if not os.path.exists(dashboard_path):
-                # 尝试获取渲染上下文，看看有没有发生错误
                 self._set_headers("text/plain; charset=utf-8", 500)
                 self.wfile.write(f"仪表盘文件编译失败: 路径不存在 {dashboard_path}".encode("utf-8"))
                 return
@@ -286,11 +529,14 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # 3. 加载最新的投资组合健康快照
         date_str = _date.today().strftime("%Y-%m-%d")
-        portfolio_path = os.path.join(FIND_DIR, f"portfolio_snapshot_{date_str}.json")
+        portfolio_path = os.path.join(FIND_DIR, "portfolio_snapshot_current.json")
         
-        # 降级：如果今天还没有生成快照，寻找最近一个快照文件
+        # 降级：如果当前态快照还没有生成，寻找最近一个日期归档快照
         if not os.path.exists(portfolio_path):
-            snapshots = sorted(glob.glob(os.path.join(FIND_DIR, "portfolio_snapshot_*.json")))
+            snapshots = sorted(
+                p for p in glob.glob(os.path.join(FIND_DIR, "portfolio_snapshot_*.json"))
+                if not os.path.basename(p).startswith("portfolio_snapshot_current")
+            )
             if snapshots:
                 portfolio_path = snapshots[-1]
 
@@ -387,10 +633,12 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         # 6. 计算每日操作 SOP 的实时状态，方便前端轮询更新
         date_str = _date.today().strftime("%Y-%m-%d")
         
-        # Step 1: 扫描选股
+        # Step 1: 扫描选股（加载候选名录及扫描日期）
         candidates_path = os.path.join(BASE, f"candidates_{date_str}.json")
         has_candidates = os.path.exists(candidates_path)
         candidates_count = 0
+        candidates_list = []
+        candidates_date = "未知"
         if not has_candidates:
             # 智能非交易日回滚：若是休市，回滚读取最近一次的扫描结果作为状态参考
             recent_cands = sorted(glob.glob(os.path.join(BASE, "candidates_*.json")))
@@ -401,7 +649,10 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         if has_candidates:
             try:
                 with open(candidates_path, encoding="utf-8") as f:
-                    candidates_count = len(json.load(f).get("candidates", []))
+                    c_data = json.load(f)
+                    candidates_list = c_data.get("candidates", [])
+                    candidates_count = len(candidates_list)
+                    candidates_date = c_data.get("date", "未知")
             except Exception:
                 pass
                 
@@ -422,9 +673,16 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         for sym in focus_stocks:
             sym_upper = sym.upper()
             prem_path = os.path.join(FIND_DIR, f"premarket_summary_{date_str}_{sym_upper}.json")
+            latest_prem_path = os.path.join(FIND_DIR, "symbols", sym_upper, "latest_premarket_plan.json")
+            current_nodes_path = os.path.join(FIND_DIR, "symbols", sym_upper, "current_nodes.json")
             memo_path = os.path.join(BASE, f"strategic_memo_{sym_upper}.json")
             macro_path = os.path.join(BASE, f"macro_strategy_{sym_upper}.json")
-            if os.path.exists(prem_path) or (os.path.exists(memo_path) and os.path.exists(macro_path)):
+            if (
+                os.path.exists(latest_prem_path) or
+                os.path.exists(current_nodes_path) or
+                os.path.exists(prem_path) or
+                (os.path.exists(memo_path) and os.path.exists(macro_path))
+            ):
                 premarket_ready += 1
             else:
                 premarket_missing.append(sym_upper)
@@ -442,19 +700,37 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 and ACTIVE_TASKS["poll"].poll() is None
             )
 
-        # Step 5: 收盘复盘
-        has_postmarket = os.path.exists(os.path.join(FIND_DIR, f"postmarket_summary_{date_str}.json"))
-        if not has_postmarket:
-            # 智能非交易日回滚：若是休市，回滚读取最近一次的复盘结果作为状态参考
-            recent_posts = sorted(glob.glob(os.path.join(FIND_DIR, "postmarket_summary_*.json")))
-            if recent_posts:
-                has_postmarket = True
+        # Step 5: 收盘复盘（智能评估持仓与结算需求）
+        has_postmarket_today = os.path.exists(os.path.join(FIND_DIR, f"postmarket_summary_{date_str}.json"))
+        has_positions = False
+        pos_path = os.path.join(CFG_DIR, "positions.json")
+        if os.path.exists(pos_path):
+            try:
+                with open(pos_path, "r", encoding="utf-8") as pf:
+                    p_data = json.load(pf)
+                    has_positions = len(p_data.get("positions", {})) > 0
+            except Exception:
+                pass
+        
+        # 判断：如果今天没有复盘且有持仓，则必须运行复盘；若没有持仓，自动豁免复盘
+        if has_postmarket_today:
+            has_postmarket = True
+            postmarket_detail = "✓ 已复盘"
+        elif has_positions:
+            has_postmarket = False
+            postmarket_detail = "⚠️ 待结算"
+        else:
+            has_postmarket = True
+            postmarket_detail = "✓ 无持仓免结算" 
 
         status_data["sop_status"] = {
             "step1_scan": {
                 "done": has_candidates,
                 "label": "扫描选股",
-                "detail": f"{candidates_count} 只候选" if has_candidates else "待运行"
+                "detail": f"{candidates_count} 只候选" if has_candidates else "待运行",
+                "candidates": [c.get("sym") for c in candidates_list],
+                "scan_date": candidates_date,
+                "file_path": os.path.basename(candidates_path)
             },
             "step2_focus": {
                 "done": has_focus,
@@ -467,14 +743,14 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 "detail": premarket_detail
             },
             "step4_poll": {
-                "done": poll_running,
-                "label": "盘中高频轮询",
-                "detail": "运行中" if poll_running else "待启动"
+                "done": True,
+                "label": "极简价格因子同步",
+                "detail": "按需手动同步已就绪"
             },
             "step5_postmarket": {
                 "done": has_postmarket,
                 "label": "盘后复盘",
-                "detail": "已完成" if has_postmarket else "待运行"
+                "detail": postmarket_detail
             }
         }
 
@@ -621,17 +897,35 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
             
         # 4. 盘中秒级实时监测与模拟交易
         elif task_name == "poll":
-            # 优先从 watchlist.json 读取自选股作为轮询参数
+            # 低负载模式：poll 默认只跑今日关注/配置默认标的，避免自选池全量轮询拖垮机器。
             symbols = []
-            watchlist_path = os.path.join(BASE, "watchlist.json")
-            if os.path.exists(watchlist_path):
+            poll_cfg = {}
+            poll_config_path = os.path.join(CFG_DIR, "poll_config.json")
+            try:
+                with open(poll_config_path, encoding="utf-8") as f:
+                    poll_cfg = json.load(f)
+            except Exception:
+                poll_cfg = {}
+            focus_only = poll_cfg.get("poll_scope", "daily_focus_only") == "daily_focus_only"
+            focus_path = os.path.join(CFG_DIR, "daily_focus.json")
+            if os.path.exists(focus_path):
                 try:
-                    with open(watchlist_path, encoding="utf-8") as f:
-                        symbols = json.load(f).get("watchlist", [])
+                    with open(focus_path, encoding="utf-8") as f:
+                        symbols = json.load(f).get("focus_stocks", [])
+                except Exception:
+                    pass
+            if not symbols and not focus_only:
+                try:
+                    with open(poll_config_path, encoding="utf-8") as f:
+                        symbols = json.load(f).get("default_symbols", [])
                 except Exception:
                     pass
             if not symbols:
-                symbols = ["BABA", "MSFT", "NVDA"]  # 默认兜底
+                self._set_headers("application/json; charset=utf-8", 400)
+                self.wfile.write(json.dumps({
+                    "error": "今日关注为空，低负载模式不会启动默认轮询。请先确认今日关注标的。"
+                }, ensure_ascii=False).encode("utf-8"))
+                return
             cmd = [python_exe, os.path.join(BASE, "agents", "poll.py")] + symbols
             
         # 5. 量化策略三层回测
@@ -691,10 +985,14 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 log_file = open(log_file_path, "a", encoding="utf-8", buffering=1)
                 for idx, single_cmd in enumerate(cmds):
                     log_file.write(f"\n[顺序执行 {idx+1}/{len(cmds)}] {' '.join(single_cmd)}\n")
+                    creationflags = 0
+                    if task_name == "poll" and os.name == "nt":
+                        creationflags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
                     proc = subprocess.Popen(
                         single_cmd, cwd=BASE,
                         stdout=log_file, stderr=log_file,
-                        env=env, text=True
+                        env=env, text=True,
+                        creationflags=creationflags,
                     )
                     with tasks_lock:
                         ACTIVE_TASKS[task_name] = proc
@@ -783,6 +1081,56 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
             self._set_headers("application/json; charset=utf-8", 500)
             self.wfile.write(json.dumps({
                 "error": f"刷新失败: {str(e)}"
+            }, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_refresh_prices(self):
+        """Manually trigger calculation engine to refresh latest prices and update the dashboard."""
+        try:
+            print("\n[API] 收到客户端手动刷新点位与因子的请求，正在拉起微观计算引擎...")
+            # 1. 运行 scripts/refresh_prices.py
+            py_exe = get_python_executable()
+            script_path = os.path.join(BASE, "scripts", "refresh_prices.py")
+            res_refresh = subprocess.run([py_exe, script_path], capture_output=True, text=True, encoding="utf-8")
+            if res_refresh.returncode != 0:
+                print(f"  [ERROR] refresh_prices.py 运行失败 (Code: {res_refresh.returncode})")
+                print(res_refresh.stderr)
+            else:
+                print("  [OK] refresh_prices.py 点位刷新成功。")
+
+            # 2. 运行 agents/generate_watchlist_ui.py
+            ui_path = os.path.join(BASE, "agents", "generate_watchlist_ui.py")
+            res_ui = subprocess.run([py_exe, ui_path], capture_output=True, text=True, encoding="utf-8")
+            if res_ui.returncode != 0:
+                print(f"  [ERROR] generate_watchlist_ui.py 编译失败")
+            else:
+                print("  [OK] generate_watchlist_ui.py 编译控制台成功。")
+
+            # 3. 将刷新结果同步到 dashboard cache、持仓价格、组合快照与展示节点
+            sync_result = sync_price_refresh_state(BASE)
+
+            # 4. 重新渲染今日仪表盘 HTML
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if write_dashboard:
+                dashboard_path = write_dashboard(today_str)
+                print(f"  [OK] 主仪表盘重新编译完成：{dashboard_path}")
+            else:
+                print("  [WARNING] write_dashboard 不可用，未重绘仪表盘。")
+
+            updated = sync_result.get("updated") or updated_symbols_from_live_status(os.path.join(FIND_DIR, "watchlist_live_status.json"))
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps({
+                "status": "ok",
+                "message": "微观因子与点位控制台及仪表盘刷新成功！",
+                "updated": updated,
+                "updated_count": len(updated),
+                "nodes_written": sync_result.get("nodes_written", []),
+                "refreshed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }, ensure_ascii=False).encode("utf-8"))
+        except Exception as e:
+            print(f"  [ERROR] API 刷新失败: {e}")
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({
+                "error": f"API 刷新失败: {str(e)}"
             }, ensure_ascii=False).encode("utf-8"))
 
     def handle_api_apply_backtest(self):
@@ -1423,11 +1771,11 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
             with open(th_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(new_trade_record, ensure_ascii=False) + "\n")
 
-            # 3. 强制删除今日已有的 portfolio_snapshot_{date}.json 快照
-            snapshot_path = os.path.join(FIND_DIR, f"portfolio_snapshot_{today_str}.json")
-            if os.path.exists(snapshot_path):
+            # 3. 清理当前态快照，随后立即用最新成交重建；日期归档保留历史轨迹。
+            current_snapshot_path = os.path.join(FIND_DIR, "portfolio_snapshot_current.json")
+            if os.path.exists(current_snapshot_path):
                 try:
-                    os.remove(snapshot_path)
+                    os.remove(current_snapshot_path)
                 except Exception:
                     pass
 

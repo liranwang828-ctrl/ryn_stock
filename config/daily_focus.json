@@ -1,12 +1,12 @@
 {
   "focus_stocks": [
-    "LITE",
-    "RGTI",
-    "BABA",
-    "AMD",
-    "NVDA",
-    "MRVL"
+    "NOW",
+    "VST",
+    "SYM",
+    "TSM",
+    "LITX"
   ],
+
   "_note": "每日固定关注5只，第5只待定。持仓底层标的必须在列。每天产出完整观察记录供盘后配对学习。",
   "_slots": {
     "position_base": [

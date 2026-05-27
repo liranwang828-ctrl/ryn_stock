@@ -116,6 +116,27 @@ def phase0(symbol):
     run("quick_fundamentals", [symbol])
     run("company_profile_fetcher", [symbol])
 
+    # 自动补全期权链前导分析数据
+    print(f"[Phase 0] 自动拉取并计算 {symbol} 期权链前导指标 (GEX / IV Skew / PCR)...")
+    try:
+        from agents.options_chain_analyzer import OptionChainAnalyzer
+        analyzer = OptionChainAnalyzer(symbol)
+        opt_res = analyzer.analyze()
+        if "error" not in opt_res:
+            os.makedirs(FINDINGS_DIR, exist_ok=True)
+            opt_path = os.path.join(FINDINGS_DIR, f"options_{symbol}.json")
+            with open(opt_path, "w", encoding="utf-8") as f:
+                json.dump(opt_res, f, ensure_ascii=False, indent=2)
+            # 同时保存按日期命名的备份
+            from datetime import date as _dt
+            _date_str = str(_dt.today())
+            opt_bak_path = os.path.join(FINDINGS_DIR, f"options_{symbol}_{_date_str}.json")
+            with open(opt_bak_path, "w", encoding="utf-8") as f:
+                json.dump(opt_res, f, ensure_ascii=False, indent=2)
+            print(f"[Phase 0] 期权链前导指标成功保存至 {opt_path}")
+    except Exception as e:
+        print(f"[Phase 0] 自动拉取期权链失败: {e}")
+
     print("[Phase 0] 完成")
     return True
 

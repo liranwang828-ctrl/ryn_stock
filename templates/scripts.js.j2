@@ -1,4 +1,7 @@
   <script>
+    const serverPort = {{ server_port | default(8080) }};
+    const API_HOST = (location.protocol === 'file:') ? `http://127.0.0.1:${serverPort}` : '';
+
     // ── Safe Storage Wrapper ──────────────────────────────────────────────
     const safeStorage = {
       getItem: function(key) {
@@ -80,7 +83,7 @@
         autoRefreshTimeout = setTimeout(() => {
           if (safeStorage.getItem(TAB_KEY) !== 'command') {
             // 在刷新前检查是否有后台任务正在运行，避免强行刷新中断用户监控或计算流程
-            fetch('/api/status')
+            fetch(API_HOST + '/api/status')
               .then(res => res.json())
               .then(data => {
                 try {
@@ -120,6 +123,8 @@
     let logPollInterval = null;
     let statusSyncInterval = null;
     let myChart = null;
+    let isSyncingStatus = false;
+    let isPollingLogs = false;
 
     function runTask(taskName) {
       try {
@@ -154,7 +159,7 @@
           openTerminalDrawer(taskName);
         }
 
-        fetch('/api/run?task=' + taskName)
+        fetch(API_HOST + '/api/run?task=' + taskName)
           .then(res => res.json())
           .then(data => {
             try {
@@ -267,7 +272,7 @@
         }
 
         // 异步调用回测
-        fetch('/api/run?task=backtest&years=' + btYears + '&window_days=' + btWindow)
+        fetch(API_HOST + '/api/run?task=backtest&years=' + btYears + '&window_days=' + btWindow)
           .then(res => res.json())
           .then(data => {
             try {
@@ -296,7 +301,7 @@
     function toggleFocusSymbol(sym, checked) {
       try {
         const url = checked ? '/api/add_focus?symbol=' + sym : '/api/remove_focus?symbol=' + sym;
-        fetch(url)
+        fetch(API_HOST + url)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -342,7 +347,7 @@
           return;
         }
         
-        fetch('/api/add_focus?symbol=' + symbol)
+        fetch(API_HOST + '/api/add_focus?symbol=' + symbol)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -396,7 +401,7 @@
           btn.innerText = "⏳ 正在应用...";
         }
         
-        fetch('/api/apply_backtest')
+        fetch(API_HOST + '/api/apply_backtest')
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -442,6 +447,25 @@
       }
     }
 
+    function highlightConsoleTabAndShowCommand(taskName) {
+      try {
+        const cmdBtn = document.getElementById('btn-command');
+        if (cmdBtn) {
+          showTab('command', cmdBtn);
+        } else {
+          showTab('command');
+        }
+        const scanTabBtn = document.getElementById('console-tab-' + taskName);
+        if (scanTabBtn) {
+          switchConsoleTab(taskName, scanTabBtn);
+        } else {
+          switchConsoleTab(taskName);
+        }
+      } catch (err) {
+        console.error("Error navigating to console tab:", err);
+      }
+    }
+
     function switchConsoleTab(taskName, btn) {
       try {
         document.querySelectorAll('.console-tab-btn').forEach(b => b.classList.remove('active'));
@@ -454,7 +478,7 @@
           terminalTitle.innerText = "task_" + taskName + ".log";
         }
         
-        fetch('/api/status')
+        fetch(API_HOST + '/api/status')
           .then(res => res.json())
           .then(data => {
             const isRunning = !!(data.running_tasks && data.running_tasks[taskName] && data.running_tasks[taskName].running);
@@ -497,7 +521,7 @@
         const terminal = document.getElementById('terminal-body');
         if (terminal) terminal.innerText += "\n[系统] 正在发送终止进程指令...\n";
         
-        fetch('/api/stop?task=' + taskName)
+        fetch(API_HOST + '/api/stop?task=' + taskName)
           .then(res => res.json())
           .then(data => {
             try {
@@ -535,9 +559,12 @@
         fetchLogsOnce(taskName, true);
         
         logPollInterval = setInterval(() => {
-          fetch('/api/logs?task=' + taskName)
+          if (isPollingLogs) return;
+          isPollingLogs = true;
+          fetch(API_HOST + '/api/logs?task=' + taskName)
             .then(res => res.json())
             .then(data => {
+              isPollingLogs = false;
               try {
                 const terminal = document.getElementById('terminal-body');
                 if (terminal) {
@@ -575,6 +602,7 @@
               }
             })
             .catch(err => {
+              isPollingLogs = false;
               console.error('Error fetching logs in interval:', err);
             });
         }, 1000);
@@ -609,7 +637,7 @@
     // 单次拉取指定任务的最新日志并回填终端，非阻塞更新 UI 状态
     function fetchLogsOnce(taskName, isRunning) {
       try {
-        fetch('/api/logs?task=' + taskName)
+        fetch(API_HOST + '/api/logs?task=' + taskName)
           .then(res => res.json())
           .then(data => {
             try {
@@ -706,7 +734,7 @@
           }
         };
 
-        fetch('/api/save_params', {
+        fetch(API_HOST + '/api/save_params', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -732,10 +760,16 @@
     }
 
     function syncStatus() {
+      if (isSyncingStatus) return;
+      isSyncingStatus = true;
       try {
-        fetch('/api/status')
-          .then(res => res.json())
+        fetch(API_HOST + '/api/status')
+          .then(res => {
+            if (!res.ok) throw new Error('Network response not ok');
+            return res.json();
+          })
           .then(data => {
+            isSyncingStatus = false;
             try {
               // 1. 更新 poll 运行状态指示灯
               const pollActive = data.running_tasks && data.running_tasks.poll && data.running_tasks.poll.running;
@@ -919,6 +953,60 @@
                   }
                 }
 
+                // Dynamic Scan Candidates display in Pipeline Card
+                const scanArea = document.getElementById('scan-candidates-area');
+                const scanList = document.getElementById('scan-candidates-list');
+                if (scanArea && s1.done && s1.candidates && s1.candidates.length > 0) {
+                  scanArea.style.display = 'block';
+                  if (scanList) {
+                    scanList.innerHTML = '';
+                    s1.candidates.forEach(sym => {
+                      const badge = document.createElement('span');
+                      badge.className = 'badge badge-blue';
+                      badge.style.cursor = 'pointer';
+                      badge.style.marginRight = '0.35rem';
+                      badge.style.marginBottom = '0.35rem';
+                      badge.style.fontSize = '0.72rem';
+                      badge.style.padding = '0.2rem 0.45rem';
+                      badge.style.background = 'rgba(99, 102, 241, 0.15)';
+                      badge.style.border = '1px solid rgba(99, 102, 241, 0.4)';
+                      badge.style.color = '#a5b4fc';
+                      badge.style.transition = 'all 0.2s';
+                      badge.title = '点击将 ' + sym + ' 加入今日关注列表';
+                      badge.innerHTML = '➕ ' + sym;
+                      badge.setAttribute('onclick', "addToFocus('" + sym + "')");
+                      
+                      badge.onmouseenter = function() {
+                        badge.style.background = 'rgba(99, 102, 241, 0.3)';
+                        badge.style.borderColor = 'rgba(99, 102, 241, 0.8)';
+                      };
+                      badge.onmouseleave = function() {
+                        badge.style.background = 'rgba(99, 102, 241, 0.15)';
+                        badge.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                      };
+                      scanList.appendChild(badge);
+                    });
+                    
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.style.marginTop = '0.45rem';
+                    detailsDiv.style.fontSize = '0.72rem';
+                    detailsDiv.style.color = 'var(--text-muted)';
+                    detailsDiv.style.borderTop = '1px solid rgba(255,255,255,0.05)';
+                    detailsDiv.style.paddingTop = '0.45rem';
+                    detailsDiv.style.display = 'flex';
+                    detailsDiv.style.justifyContent = 'space-between';
+                    detailsDiv.style.alignItems = 'center';
+                    detailsDiv.style.width = '100%';
+                    detailsDiv.innerHTML = `
+                      <span>📅 报告日期: <strong style="color:#a5b4fc;">${s1.scan_date || '未知'}</strong></span>
+                      <a href="javascript:void(0)" onclick="highlightConsoleTabAndShowCommand('scan')" style="color:#60a5fa; text-decoration:underline; font-weight:700;">👉 查看量化扫股筛选原因日志</a>
+                    `;
+                    scanList.appendChild(detailsDiv);
+                  }
+                } else if (scanArea) {
+                  scanArea.style.display = 'none';
+                }
+
                 // Step 2: 确认关注列表
                 const dot2 = document.getElementById('sop-step-2-dot');
                 const badge2 = document.getElementById('sop-step-2-badge');
@@ -1017,15 +1105,20 @@
             } catch (innerErr) {
               console.error('Error handling syncStatus data:', innerErr);
             }
+          })
+          .catch(err => {
+            isSyncingStatus = false;
+            console.error('Error fetching status in interval:', err);
           });
       } catch (err) {
+        isSyncingStatus = false;
         console.error('Error in syncStatus:', err);
       }
     }
 
     function syncStatusWithFeedback(step) {
       try {
-        fetch('/api/status')
+        fetch(API_HOST + '/api/status')
           .then(function(res) { return res.json(); })
           .then(function(data) {
             syncStatus();  // 先正常更新
@@ -1278,7 +1371,7 @@
 
     function addToFocus(symbol) {
       try {
-        fetch('/api/add_focus?symbol=' + symbol)
+        fetch(API_HOST + '/api/add_focus?symbol=' + symbol)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -1301,7 +1394,7 @@
         if (!confirm("确定要将 " + symbol + " 从今日关注列表移出吗？（此操作仅移出关注，不影响实际持仓或自选股）")) {
           return;
         }
-        fetch('/api/remove_focus?symbol=' + symbol)
+        fetch(API_HOST + '/api/remove_focus?symbol=' + symbol)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -1324,7 +1417,7 @@
         if (!confirm("确定要将 " + symbol + " 从自选股及监控轮询中完全移出吗？")) {
           return;
         }
-        fetch('/api/remove_watchlist?symbol=' + symbol)
+        fetch(API_HOST + '/api/remove_watchlist?symbol=' + symbol)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -1385,7 +1478,7 @@
         
         updateButtonStates("⏳...", null, false);
         
-        fetch('/api/add_watchlist?symbol=' + symbol)
+        fetch(API_HOST + '/api/add_watchlist?symbol=' + symbol)
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
@@ -1469,10 +1562,7 @@
       }
 
       try {
-        // 智能处理 file:/// 协议：若是本地静态文件打开，则将请求引向运行中的后端服务器（支持跨域）
-        const serverPort = {{ server_port | default(8080) }};
-        const host = (location.protocol === 'file:') ? `http://localhost:${serverPort}` : '';
-        const fetchUrl = `${host}/api/record_trade`;
+        const fetchUrl = `${API_HOST}/api/record_trade`;
 
         const response = await fetch(fetchUrl, {
           method: 'POST',
@@ -1517,8 +1607,7 @@
 
     function initMasterQuotesCarousel() {
       try {
-        const host = (location.protocol === 'file:') ? `http://localhost:${ {{ server_port | default(8080) }} }` : '';
-        fetch(host + '/api/master-quotes')
+        fetch(API_HOST + '/api/master-quotes')
           .then(res => res.json())
           .then(data => {
             if (data && data.length > 0) {
@@ -1581,11 +1670,10 @@
 
     function syncMarketClock() {
       try {
-        const host = (location.protocol === 'file:') ? `http://localhost:${ {{ server_port | default(8080) }} }` : '';
-        fetch(host + '/api/market-clock')
+        fetch(API_HOST + '/api/market-clock')
           .then(res => res.json())
           .then(data => {
-            if (!data || data.error) return;
+            if (!data || data.error) { updateMarketModeActionCenter(null); return; }
             const phaseEl = document.getElementById('market-clock-phase');
             const countdownEl = document.getElementById('market-clock-countdown');
             if (phaseEl) {
@@ -1633,7 +1721,7 @@
               bgStyle = 'rgba(245, 158, 11, 0.05)';
             } else if (phase === 'regular') {
               titleText = '⚔️ 盘中激战正酣 (Market Regular Hours)';
-              guideText = '美股实盘交易正在进行！最佳行动路径：① 确保 Step 4 运行<b>盘中高频盯盘</b>以自动捕捉高频因子波动；② 随时关注下方大师辩论心智交锋，严格遵守策略安全线；③ 发现机会可随时点击“录入交易”。若盘前工作没做完，仍可补做。';
+              guideText = '美东持续交易正在进行！最佳行动路径：① 运行 Step 4 <b>同步刷新价格与因子</b>极速更新今日个股最新现价、RS 强度与安全线；② 随时关注下方大师辩论心智交锋，严格遵守策略击球区与止损价；③ 发现机会可随时点击“录入交易”。';
               alertClass = 'alert-card alert-green';
               borderStyle = '4px solid var(--green)';
               bgStyle = 'rgba(16, 185, 129, 0.05)';
@@ -1668,8 +1756,9 @@
               oBannerEl.style.borderLeft = borderStyle;
               oBannerEl.style.background = bgStyle;
             }
+            updateMarketModeActionCenter(data);
           })
-          .catch(err => console.error('Error syncing market clock:', err));
+          .catch(err => { console.error('Error syncing market clock:', err); updateMarketModeActionCenter(null); });
       } catch (err) {
         console.error('Error in syncMarketClock:', err);
       }
@@ -1727,7 +1816,7 @@
 
     function refreshPortfolio() {
       try {
-        fetch('/api/refresh-portfolio')
+        fetch(API_HOST + '/api/refresh-portfolio')
           .then(res => res.json())
           .then(data => {
             if (data.error) {
@@ -1745,6 +1834,25 @@
       }
     }
 
+    function refreshLatestPrices() {
+      try {
+        fetch(API_HOST + '/api/refresh-prices')
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              const count = data.updated ? data.updated.length : 0;
+              alert('最新价已刷新并写入本地缓存：' + count + ' 只标的');
+              location.reload();
+            } else {
+              alert('刷新价格失败: ' + (data.error || '未知错误'));
+            }
+          })
+          .catch(err => alert('刷新价格请求失败: ' + err));
+      } catch (err) {
+        console.error('Error in refreshLatestPrices:', err);
+      }
+    }
+
     function generateAllFocusReports() {
       try {
         showTab('command', document.getElementById('btn-command'));
@@ -1752,7 +1860,7 @@
         if (terminal) {
           terminal.innerText = '[批量生成] 正在检查关注列表...\n';
         }
-        fetch('/api/generate-focus-reports')
+        fetch(API_HOST + '/api/generate-focus-reports')
           .then(function(res) { return res.json(); })
           .then(function(data) {
             if (terminal) {
@@ -1814,4 +1922,181 @@
         console.error("Error closing terminal drawer:", err);
       }
     }
-  </script>
+  
+    // ==========================================================================
+    // Phase-Aware Action Center Mapping & Actions Configuration
+    // ==========================================================================
+    const marketModePhaseConfig = {
+      closed: {
+        title: '休市/夜盘时段 (Market Closed)',
+        indicatorColor: '#6b7280',
+        glowColor: 'rgba(107, 114, 128, 0.5)',
+        desc: '当前美股处于休市/夜盘时段。推荐使用 💬 <strong>Skill 2 个股行业调查</strong> 或 <strong>Skill 9 回测参数设计</strong> 与 Agent 沟通，探索策略边界；或在下方运行候选扫描筛选下一交易日标的，运行CIO决策生成深度分析。',
+        primary: [
+          { text: '🔍 运行候选扫描', task: 'scan' },
+          { text: '📊 运行CIO决策', task: 'cio' }
+        ],
+        secondary: [
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ]
+      },
+      premarket: {
+        title: '盘前交易时段 (Pre-Market Session)',
+        indicatorColor: '#fbbf24',
+        glowColor: 'rgba(251, 191, 36, 0.5)',
+        desc: '当前处于盘前交易时段。推荐启动 💬 <strong>Skill 5 策略锚点规划</strong> 与 Agent 沟通制定今日盘前加减仓与防守位；或运行盘前决策生成今日关注股票的策略锚点与退场计划。',
+        primary: [
+          { text: ' 运行盘前决策', task: 'premarket' },
+          { text: '🔄 刷新最新价格', action: 'refreshLatestPrices()' }
+        ],
+        secondary: [
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ]
+      },
+      regular: {
+        title: '盘中持续交易 (Regular Hours)',
+        indicatorColor: '#10b981',
+        glowColor: 'rgba(16, 185, 129, 0.5)',
+        desc: '当前处于持续交易时段。系统已全面升级为极简手动控制模式，推荐随时同步价格与因子，获取最新 RS 相对强度与击球区。如果因盘面波动产生心理焦虑或情绪波动，可以使用 💬 <strong>Skill 7 心智纠偏</strong> 与 Agent 进行对话沟通。',
+        primary: [
+          { text: '🔄 同步刷新价格与因子', action: 'refreshLatestPrices()' }
+        ],
+        secondary: [
+          { text: '📈 盘中详情看板', action: "showTab('intraday')" }
+        ]
+      },
+      postmarket: {
+        title: '盘后结算与总结 (Post-Market Session)',
+        indicatorColor: '#3b82f6',
+        glowColor: 'rgba(59, 130, 246, 0.5)',
+        desc: '当前处于盘后交易时段。推荐运行 💬 <strong>Skill 8 心智复盘与日志</strong> 进行交易反思与纪律打分记账；或运行盘后复盘总结计算今日真实资产NAV，进行教训反思归档。',
+        primary: [
+          { text: '⚙️ 运行盘后复盘', task: 'postmarket' },
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ],
+        secondary: [
+          { text: '📖 研习交易日志', action: "showTab('learning')" }
+        ]
+      }
+    };
+
+    function updateMarketModeActionCenter(data) {
+      try {
+        const modeCenter = document.getElementById('market-mode-action-center');
+        if (!modeCenter) return;
+
+        let phase = 'closed';
+        let countdownText = '--:--:--';
+        
+        if (data && data.phase) {
+          if (data.phase === 'regular') phase = 'regular';
+          else if (data.phase === 'premarket') phase = 'premarket';
+          else if (data.phase === 'postmarket') phase = 'postmarket';
+          else phase = 'closed'; // rest_day, overnight, closed map to closed
+          
+          const target = data.countdown_target === 'close' ? '收盘' : '开盘';
+          countdownText = '距' + target + ' ' + (data.countdown_human || '--:--:--');
+        }
+
+        const config = marketModePhaseConfig[phase] || marketModePhaseConfig.closed;
+        
+        // Update Title, Desc, Indicator, Countdown
+        const titleEl = document.getElementById('market-mode-title');
+        const descEl = document.getElementById('market-mode-desc');
+        const indicatorEl = document.getElementById('market-mode-indicator');
+        const countEl = document.getElementById('market-mode-countdown');
+        
+        if (titleEl) titleEl.innerText = config.title;
+        if (descEl) descEl.innerHTML = config.desc;
+        if (countEl) countEl.innerText = countdownText;
+        if (indicatorEl) {
+          indicatorEl.style.background = config.indicatorColor;
+          indicatorEl.style.boxShadow = '0 0 8px ' + config.glowColor;
+        }
+        
+        // Render Primary Actions
+        const primaryEl = document.getElementById('market-mode-primary-actions');
+        if (primaryEl) {
+          primaryEl.innerHTML = '';
+          config.primary.forEach(btn => {
+            const el = document.createElement('button');
+            el.className = 'market-mode-action-btn primary';
+            el.innerHTML = btn.text;
+            if (btn.task) {
+              el.setAttribute('onclick', "runTask('" + btn.task + "')");
+            } else if (btn.action) {
+              el.setAttribute('onclick', btn.action);
+            }
+            primaryEl.appendChild(el);
+          });
+        }
+        
+        // Render Secondary Actions
+        const secondaryEl = document.getElementById('market-mode-secondary-actions');
+        if (secondaryEl) {
+          secondaryEl.innerHTML = '';
+          config.secondary.forEach(btn => {
+            const el = document.createElement('button');
+            el.className = 'market-mode-action-btn';
+            el.innerHTML = btn.text;
+            if (btn.task) {
+              el.setAttribute('onclick', "runTask('" + btn.task + "')");
+            } else if (btn.action) {
+              el.setAttribute('onclick', btn.action);
+            }
+            secondaryEl.appendChild(el);
+          });
+        }
+      } catch (err) {
+        console.error('Error in updateMarketModeActionCenter:', err);
+      }
+    }
+
+    // Toggle Interactive Skills Directory Card collapse/expand state
+    document.addEventListener('DOMContentLoaded', () => {
+      const skillsCardHeader = document.getElementById('skills-directory-header');
+      const skillsCardContent = document.getElementById('skills-directory-content');
+      const skillsCardArrow = document.getElementById('skills-directory-arrow');
+      
+      if (skillsCardHeader && skillsCardContent && skillsCardArrow) {
+        skillsCardHeader.addEventListener('click', function() {
+          const isCollapsed = skillsCardContent.style.maxHeight === '0px' || skillsCardContent.style.maxHeight === '';
+          if (isCollapsed) {
+            skillsCardContent.style.maxHeight = '1200px';
+            skillsCardArrow.style.transform = 'rotate(180deg)';
+          } else {
+            skillsCardContent.style.maxHeight = '0px';
+            skillsCardArrow.style.transform = 'rotate(0deg)';
+          }
+        });
+      }
+    });
+
+    window.copySkillText = function(text, btnElement) {
+      const copyToClipboard = function(str) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(str);
+        } else {
+          const el = document.createElement('textarea');
+          el.value = str;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          return Promise.resolve();
+        }
+      };
+      
+      copyToClipboard(text).then(() => {
+        if (btnElement) {
+          const originalHTML = btnElement.innerHTML;
+          btnElement.innerHTML = '✅';
+          setTimeout(() => {
+            btnElement.innerHTML = originalHTML;
+          }, 1000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    };
+</script>

@@ -2,7 +2,9 @@
 统一轮询脚本 — 集成快照记录 + ATR止损建议 + RS双轨分析 + 盘初场景框架
 用法：python3.12 agents/poll.py AAOI RKLB SNXX INTC [--lev AAOX:2]
 """
-import sys, os, json, argparse, numpy as np, subprocess
+import os
+os.environ["TZ"] = "America/New_York"
+import sys, json, argparse, numpy as np, subprocess
 from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -43,8 +45,14 @@ def _load_market_regime() -> str:
         pass
     return "sideways"
 
+PENDING_DEBATES = {}
+
 def trigger_quick_debate(sym, a, spy_chg, qqq_chg, vix_cur, vix_dir, rs_streak=0):
-    """异步触发 quick_debate.py，不阻塞轮询"""
+    """异步触发 quick_debate.py，不阻塞轮询，且限制5分钟内不可重复触发以避免电脑卡死"""
+    now_time = _time.time()
+    if sym in PENDING_DEBATES and now_time - PENDING_DEBATES[sym] < 300:
+        return
+    PENDING_DEBATES[sym] = now_time
     data = {
         "cur":      a["cur"], "chg": a["chg"],
         "rs":       round(a["chg"]-spy_chg, 2),
@@ -121,14 +129,14 @@ def _get_cached_history(ticker_obj, sym, key, period, interval=None, ttl=300):
             return cached_val
     try:
         if interval:
-            df = ticker_obj.history(period=period, interval=interval)
+            df = ticker_obj.history(period=period, interval=interval, timeout=3.0)
         else:
-            df = ticker_obj.history(period=period)
+            df = ticker_obj.history(period=period, timeout=3.0)
         if getattr(df, "empty", False):
             if interval:
-                df_retry = ticker_obj.history(period=period, interval=interval)
+                df_retry = ticker_obj.history(period=period, interval=interval, timeout=3.0)
             else:
-                df_retry = ticker_obj.history(period=period)
+                df_retry = ticker_obj.history(period=period, timeout=3.0)
             if not getattr(df_retry, "empty", False):
                 df = df_retry
     except Exception as e:
@@ -140,14 +148,35 @@ def _get_cached_history(ticker_obj, sym, key, period, interval=None, ttl=300):
     return df
 
 def _get_cached_info(ticker_obj, sym, ttl=14400):
-    """获取并缓存 yfinance info"""
+    """获取并缓存 yfinance info，优先使用本地个股基本面胶囊以彻底消除网络阻塞和卡死风险"""
     now = _time.time()
     sym_cache = GLOBAL_CACHE.setdefault(sym, {})
     if "info" in sym_cache:
         cached_time, cached_val = sym_cache["info"]
         if now - cached_time < ttl:
             return cached_val
+            
+    # 优先读取本地数据胶囊 findings/fundamentals_{sym}.json，避免 yfinance 慢查询导致卡死
     try:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if any(x in os.path.abspath(__file__) for x in ["agents", "tests", "scripts", "archive"]) else os.path.dirname(os.path.abspath(__file__))
+        fund_path = os.path.join(base_dir, "findings", f"fundamentals_{sym.upper()}.json")
+        if os.path.exists(fund_path):
+            import json
+            with open(fund_path, "r", encoding="utf-8") as f:
+                fund_data = json.load(f)
+            local_info = {
+                "targetMeanPrice": fund_data.get("target_price"),
+                "fiftyTwoWeekHigh": fund_data.get("hi52"),
+                "fiftyTwoWeekLow": fund_data.get("lo52"),
+            }
+            if local_info.get("fiftyTwoWeekHigh") is not None:
+                sym_cache["info"] = (now, local_info)
+                return local_info
+    except Exception:
+        pass
+
+    try:
+        # 本地缺失时的极简兜底
         info_dict = ticker_obj.info
     except Exception as e:
         if "info" in sym_cache:
@@ -2718,6 +2747,8 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
 
     _new_contradictions = 0  # 本轮新增矛盾次数（高评分但价格下跌）
     _persona_scores = {}  # 收集本轮各股大师评分，供 save_poll_state 写入
+    _veto_details = {}
+    _stop_details = {}
 
     print("── RS排行 ──")
     for sym, rs, a in rs_list:
@@ -2733,6 +2764,12 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
     # 各标的详情 + ATR止损
     for sym, rs, a in rs_list:
         stop, stop_type, stop_desc, rr = atr_stop_suggestion(a, spy_chg)
+        _stop_details[sym] = {
+            "stop": stop,
+            "stop_type": stop_type,
+            "stop_desc": stop_desc,
+            "rr": rr
+        }
         rf_sym = (sector_map or {}).get(sym, {})
         rf_name = rf_sym.get("ref_name", "") if rf_sym else ""
         bounce = (a["cur"]-a["lo"])/a["lo"]*100
@@ -2875,6 +2912,7 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
 
         # ── 全局否决检查（替代 strategy_gate 的黄金否决权）────────────────
         _veto = _global_veto(a, vc, vt, qqq5m, macro_state, et_h, et_m)
+        _veto_details[sym] = _veto
         # 板块联动龙头破位否决检查
         try:
             from agents.sector_leadership import is_leader_broken
@@ -3010,6 +3048,24 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
     except Exception:
         pass
 
+    # ── 🔬 期权链主力墙与关键价格防线日内监控 (Options Wall Alert Desk) ──
+    try:
+        for _sym, _a in (stocks or {}).items():
+            if _sym == "TSM" and _a and "cur" in _a:
+                _p = _a["cur"]
+                # TSM Put Wall = $400, Call Wall = $450
+                if _p <= 405.0:
+                    print(f"\n🚨 [期权警戒] TSM 现价 ${_p:.2f} 逼近主力防守 Put Wall $400.00! 警惕机构防御破位风险！")
+                elif _p >= 445.0:
+                    print(f"\n🚀 [期权突破] TSM 现价 ${_p:.2f} 逼近主力阻力 Call Wall $450.00! 注意可能产生 Gamma 向上挤压！")
+            elif _sym == "LITX" and _a and "cur" in _a:
+                _p = _a["cur"]
+                # LITX Trailing Stop at $110.0 (simulated stop or target trailing protection)
+                if _p <= 112.0:
+                    print(f"\n🚨 [止损防线] LITX 现价 ${_p:.2f} 逼近追踪止损利润保护区 ($110.00)！请准备执行利润保护！")
+    except Exception as _e:
+        print(f"[Option Wall Alert Error]: {_e}")
+
     # ── 热手/冷手追踪 ───────────────────────────────────────────
     from agents.poll_state import load_poll_state as _lps
     _old_state = _lps()
@@ -3086,7 +3142,9 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
                     with open(_snap_pm_path, encoding="utf-8") as _f:
                         _snap_pm = json.load(_f)
 
-                _master = _snap_data.get("master_score", {}) or {}
+                _master = _persona_scores.get(_snap_sym, {}) or {}
+                _veto = _veto_details.get(_snap_sym)
+                _stop_info = _stop_details.get(_snap_sym, {})
                 _snap_price_now = {
                     "price":           float(_snap_data.get("cur", 0.0) or 0.0),
                     "chg_pct":         round(float(_snap_data.get("chg", 0.0) or 0.0), 2),
@@ -3095,11 +3153,13 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
                     "rs_vs_sector":    0.0,
                     "rsi14_5m":        round(float(_snap_data.get("rsi14_5m", 50.0) or 50.0), 1),
                     "vol_ratio":       round(float(_snap_data.get("vol_ratio_5m", 1.0) or 1.0), 2),
-                    "gate_status":     _snap_data.get("gate_status", "未通过"),
-                    "gate_pass":       _snap_data.get("gate_pass_list", []),
-                    "gate_block":      _snap_data.get("gate_missing", []),
+                    "gate_status":     "未通过" if _veto else "已通过",
+                    "gate_pass":       [] if _veto else ["all"],
+                    "gate_block":      [_veto] if _veto else [],
                     "master_avg":      round(float(_master.get("avg", 0) or 0), 2) if _master else None,
                     "master_consensus": _master.get("consensus_code") if _master else None,
+                    "stop":            round(float(_stop_info.get("stop", 0.0) or 0.0), 2),
+                    "stop_type":       _stop_info.get("stop_type", "N/A"),
                 }
 
                 _post_cal = bool(_snap_pm.get("post_open_adj"))
@@ -3128,11 +3188,18 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
         pass
 
     # ── daily_dashboard HTML 生成 ────────────────────────────────────────────
-    try:
-        from agents.dashboard_writer import write_dashboard
-        write_dashboard(_snap_date)
-    except Exception:
-        pass
+    # 优化提示：将磁盘 HTML 写入限频在每 60 秒至多一次，既能保证本地 file:// 用户刷新时看到最新盘中价格与详情，又彻底避免了频繁 I/O 导致系统卡死。
+    global _LAST_HTML_WRITE_TIME
+    if "_LAST_HTML_WRITE_TIME" not in globals():
+        _LAST_HTML_WRITE_TIME = 0.0
+    _now_t = _time.time()
+    if _now_t - _LAST_HTML_WRITE_TIME >= 60:
+        try:
+            from agents.dashboard_writer import write_dashboard
+            write_dashboard(_snap_date)
+            _LAST_HTML_WRITE_TIME = _now_t
+        except Exception:
+            pass
 
     # ── Phase B: 15:45 日内仓位减仓提醒 ─────────────────────────
     if et_h == 15 and 44 <= et_m <= 50:
@@ -3181,9 +3248,44 @@ def _run_poll_tick(symbols, sector_map=None, lev_map=None, cost_map=None, sessio
 
 def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=False):
     import time
+    import threading
+    
+    global _LAST_TICK_TIME
+    _LAST_TICK_TIME = time.time()
+
+    def cpu_watchdog():
+        global _LAST_TICK_TIME
+        start_time = time.time()
+        while True:
+            time.sleep(5)
+            # Give a very generous 300 seconds for the cold-start initial fetches, then 150 seconds for subsequent ticks
+            current_elapsed = time.time() - start_time
+            limit = 300 if current_elapsed < 300 else 150
+            if time.time() - _LAST_TICK_TIME > limit:
+                print(f"\n🚨 [Watchdog] ERROR: Poll loop is frozen/blocked for too long ({time.time() - _LAST_TICK_TIME:.1f}s > {limit}s)! Executing autonomous emergency shutdown...", flush=True)
+                import os
+                os._exit(9)
+
+    watchdog_thread = threading.Thread(target=cpu_watchdog, name="PollWatchdog", daemon=True)
+    watchdog_thread.start()
+
+    poll_cfg = {}
+    try:
+        with open(os.path.join(BASE, "config", "poll_config.json"), encoding="utf-8") as f:
+            poll_cfg = json.load(f)
+    except Exception:
+        poll_cfg = {}
+
     last_passive_poll_time = 0
-    passive_interval = 180  # 3分钟
-    active_interval = 10    # 10秒
+    last_dashboard_cache_time = 0
+    passive_interval = int(poll_cfg.get("passive_interval_seconds", 600))
+    active_interval = int(poll_cfg.get("active_interval_seconds", 60))
+    dashboard_cache_interval = int(poll_cfg.get("dashboard_cache_interval_seconds", 180))
+    active_interval = max(15, active_interval)
+    passive_interval = max(active_interval, passive_interval)
+    dashboard_cache_interval = max(active_interval, dashboard_cache_interval)
+    max_active_symbols = int(poll_cfg.get("max_active_symbols", 6))
+    max_total_symbols = int(poll_cfg.get("max_total_symbols", 8))
     focus_stocks = []
     try:
         _focus_path = os.path.join(BASE, "config", "daily_focus.json")
@@ -3192,14 +3294,32 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
                 focus_stocks = json.load(f).get("focus_stocks", [])
     except Exception:
         focus_stocks = []
+
+    if poll_cfg.get("poll_scope", "daily_focus_only") == "daily_focus_only":
+        focus_order = [str(s).upper().strip() for s in focus_stocks if str(s).strip()]
+        symbols = [s for s in focus_order if s]
+        if not symbols:
+            print("⚠️ 今日关注为空，daily_focus_only 模式不启动默认轮询。")
+            return
     
-    print("\n🚀 [System] 启动极速降频分流盘中监控（双队列缓存版）...")
-    print(f"活跃队列刷新频率: {active_interval}秒 | 被动队列刷新频率: {passive_interval}秒")
+    if max_total_symbols > 0 and len(symbols) > max_total_symbols:
+        focus_order = [s.upper() for s in focus_stocks]
+        ordered = []
+        for sym in [*focus_order, *symbols]:
+            sym_u = str(sym).upper().strip()
+            if sym_u and sym_u not in ordered:
+                ordered.append(sym_u)
+        symbols = ordered[:max_total_symbols]
+
+    print("\n🚀 [System] 启动低负载盘中监控（双队列缓存版）...")
+    print(f"活跃队列刷新频率: {active_interval}秒 | 被动队列刷新频率: {passive_interval}秒 | dashboard缓存: {dashboard_cache_interval}秒")
     print(f"监控总标的列表: {', '.join(symbols)}")
     print("支持 Ctrl+C 随时安全优雅退出。")
     
     try:
         while True:
+            _LAST_TICK_TIME = time.time()
+
             # 1. 动态重新加载最新持仓和盘前入场决策
             try:
                 real_positions = load_real_positions()
@@ -3217,6 +3337,16 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
                 entry_decisions=_entry_decisions,
                 focus_stocks=focus_stocks,
             )
+            if max_active_symbols > 0 and len(active_syms) > max_active_symbols:
+                focus_order = [s.upper() for s in focus_stocks]
+                active_ordered = []
+                for sym in [*focus_order, *symbols]:
+                    sym_u = str(sym).upper().strip()
+                    if sym_u in active_syms and sym_u not in active_ordered:
+                        active_ordered.append(sym_u)
+                keep_active = set(active_ordered[:max_active_symbols])
+                passive_syms = set(passive_syms) | (set(active_syms) - keep_active)
+                active_syms = keep_active
                     
             current_time = time.time()
             should_poll_passive = (current_time - last_passive_poll_time) >= passive_interval
@@ -3242,14 +3372,16 @@ def run_poll(symbols, sector_map=None, lev_map=None, cost_map=None, session=Fals
                 should_poll_passive=should_poll_passive
             )
 
-            try:
-                from agents.dashboard_cache import write_dashboard_cache
-                from agents.dashboard_writer import build_dashboard_context
-                _cache_date = datetime.now().strftime("%Y-%m-%d")
-                _cache_ctx = build_dashboard_context(_cache_date, base_dir=BASE)
-                write_dashboard_cache(BASE, _cache_ctx)
-            except Exception:
-                pass
+            if (current_time - last_dashboard_cache_time) >= dashboard_cache_interval:
+                try:
+                    from agents.dashboard_cache import write_dashboard_cache
+                    from agents.dashboard_writer import build_dashboard_context
+                    _cache_date = datetime.now().strftime("%Y-%m-%d")
+                    _cache_ctx = build_dashboard_context(_cache_date, base_dir=BASE)
+                    write_dashboard_cache(BASE, _cache_ctx)
+                    last_dashboard_cache_time = current_time
+                except Exception:
+                    pass
             
             if should_poll_passive:
                 last_passive_poll_time = current_time
