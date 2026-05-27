@@ -1812,6 +1812,20 @@
       var savedTab = safeStorage.getItem('dashboard_active_tab') || 'overview';
       var bs = document.getElementById('backtest-sandbox');
       if (bs) bs.style.display = (savedTab === 'command') ? '' : 'none';
+      
+      // Dynamic index.html iframe recursion prevention
+      try {
+        const iframe = document.getElementById('research-portal-iframe');
+        if (iframe) {
+          if (window.location.protocol.startsWith('http')) {
+            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+              iframe.src = '/reports/index.html';
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error correcting iframe src:', e);
+      }
     })();
 
     function refreshPortfolio() {
