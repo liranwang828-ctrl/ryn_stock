@@ -1,0 +1,44 @@
+{
+  "date": "2026-05-27",
+  "audited_at": "2026-05-27T23:00:50.174463",
+  "entry_audit": {
+    "override_total": 1,
+    "override_success_count": 0,
+    "override_success_rate": 0.0,
+    "adherence_count": 1,
+    "decisions_audit": [
+      {
+        "sym": "COHR",
+        "action": "ADD_T2",
+        "cost": 361.0,
+        "sys_recommendation": "neutral",
+        "sys_score": 50,
+        "audit_status": "aligned",
+        "day_ret_pct": 3.63,
+        "entry_score": 100.0,
+        "detail": "顺风执行。系统推荐介入（分数 50），用户纪律性跟单建仓，日内表现为 +3.63%。"
+      },
+      {
+        "sym": "LITX",
+        "action": "SELL_CLEAR",
+        "cost": 39.0,
+        "sys_recommendation": "neutral",
+        "sys_score": 50,
+        "audit_status": "user_override_sell",
+        "day_ret_pct": 2166.28,
+        "entry_score": 0.0,
+        "detail": "用户主观落袋为盈或防御性清仓，提早锁定了利润。"
+      }
+    ]
+  },
+  "scenario_audit": {
+    "macro_pred_scenario": "A",
+    "macro_actual_scenario": "A",
+    "macro_scenario_correct": true,
+    "stock_level_scenario_accuracy": 100.0,
+    "stock_scenarios": []
+  },
+  "level_audit": {
+    "key_level_audits": []
+  }
+}

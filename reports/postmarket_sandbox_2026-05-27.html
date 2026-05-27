@@ -1,0 +1,848 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 盘后分析沙盒复盘报告 — 2026-05-27</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-border: rgba(255, 255, 255, 0.05);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --warning: #f59e0b;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            padding: 24px;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Glassmorphism Header */
+        header {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--bg-card-border);
+            padding: 24px 32px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #f8fafc, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .date-badge {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--bg-card-border);
+            padding: 20px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        /* Main Section Card */
+        .section-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+        
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        
+        th {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        
+        .trade-row:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+        
+        .action-badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        
+        .action-buy {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .action-sell {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+        
+        /* Progress Bar for Score */
+        .score-bar-bg {
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        
+        /* Master Tabs Interface */
+        .tabs-container {
+            display: flex;
+            gap: 24px;
+            margin-top: 16px;
+        }
+        
+        .tabs-sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            padding: 14px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        
+        .tab-score {
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Outfit', sans-serif;
+        }
+        
+        .tabs-content {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        .tab-pane {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 14px;
+        }
+        
+        .pane-master-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .pane-verdict {
+            font-size: 0.85rem;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            padding: 3px 10px;
+            border-radius: 30px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            font-weight: 600;
+        }
+        
+        .pane-score-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        .master-quote {
+            font-style: italic;
+            color: #cbd5e1;
+            font-size: 1.05rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        
+        .pane-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .pane-col {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        
+        .pane-col ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .pane-col li {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 14px;
+            line-height: 1.4;
+        }
+        
+        .pane-col li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        /* Audit Cards Layout */
+        .audit-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .audit-card, .level-card {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        
+        .audit-card-header, .level-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding-bottom: 8px;
+        }
+        
+        .audit-sym, .level-sym {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }
+        
+        .audit-badge, .level-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .audit-aligned { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .audit-override { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.2); }
+        .audit-override-sell { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        
+        .level-normal { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); }
+        .level-perfect { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .level-recover { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+        .level-breached { background: rgba(244, 63, 94, 0.15); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.3); }
+        
+        .audit-meta-row, .level-meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .audit-desc, .level-desc {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+    </style>
+    <script>
+        function openMasterTab(evt, paneId) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-pane");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(paneId).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div>
+                <h1>📊 AI 盘后分析沙盒复盘报告</h1>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px;">对称盘前分析沙盒 · 基于实际分时行情与多维大师 LLM 点评</p>
+            </div>
+            <div class="date-badge">美东时间：2026-05-27</div>
+        </header>
+        
+        <!-- Stats Summary Grid -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <span class="stat-label">今日成交总笔数</span>
+                <span class="stat-value" style="color:var(--primary);">2 笔</span>
+                <span class="stat-sub">新买入 0 笔 | 补仓 1 笔</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">当日净流向</span>
+                <span class="stat-value" style="color:var(--danger);">
+                    $-116
+                </span>
+                <span class="stat-sub">买入 $1,444 | 卖出 $1,560</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">多大师综合复盘评分</span>
+                <span class="stat-value" style="color:var(--warning);">70.4 / 100</span>
+                <span class="stat-sub">大师共识：0人看多/优秀 | 7人看平/合理 | 0人看空/警告</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">主观覆写决策审计</span>
+                <span class="stat-value" style="color:var(--success);">0.0% 胜率</span>
+                <span class="stat-sub">覆写总数 1 笔 | 成功 0 笔</span>
+            </div>
+        </div>
+        
+        <!-- 今日成交分时复盘 -->
+        <div class="section-card">
+            <h2 class="section-title">⏱️ 今日成交微观诊断与最优入场点对齐</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>标的</th>
+                            <th>操作</th>
+                            <th>执行价格</th>
+                            <th>股数</th>
+                            <th>点位质量得分</th>
+                            <th>评级</th>
+                            <th>日内分时统计与微观诊断（Optimal Entry Analysis）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+            <tr class="trade-row">
+                <td style="font-weight:600;font-family:'Outfit',sans-serif;">COHR</td>
+                <td><span class="action-badge action-buy">🟢 买入</span></td>
+                <td style="font-family:'Outfit',sans-serif;">$361.00</td>
+                <td style="font-family:'Outfit',sans-serif;">4</td>
+                <td style="font-family:'Outfit',sans-serif;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-weight:700;color:#10b981;">100.0</span>
+                        <div class="score-bar-bg"><div class="score-bar-fill" style="width:100.0%;background-color:#10b981;"></div></div>
+                    </div>
+                </td>
+                <td><span style="font-weight:600;">👑 完美入场</span></td>
+                <td style="max-width:300px;font-size:0.85rem;color:#cbd5e1;line-height:1.4;">
+                    <strong>最优切入点：</strong>在 09:46 ET 左右，日内最低价 $359.22 附近。<br>
+                    <strong>微观诊断：</strong>执行力极佳，买入节点高度贴近日内低点，且价格明显低于 VWAP。无需调整微观因子，保持当前的左侧挂单或回调买入习惯。
+                </td>
+            </tr>
+            
+            <tr class="trade-row">
+                <td style="font-weight:600;font-family:'Outfit',sans-serif;">LITX</td>
+                <td><span class="action-badge action-sell">🔴 卖出</span></td>
+                <td style="font-family:'Outfit',sans-serif;">$39.00</td>
+                <td style="font-family:'Outfit',sans-serif;">40</td>
+                <td style="font-family:'Outfit',sans-serif;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-weight:700;color:#f43f5e;">0.0</span>
+                        <div class="score-bar-bg"><div class="score-bar-fill" style="width:0.0%;background-color:#f43f5e;"></div></div>
+                    </div>
+                </td>
+                <td><span style="font-weight:600;">🔴 追涨/点位过差</span></td>
+                <td style="max-width:300px;font-size:0.85rem;color:#cbd5e1;line-height:1.4;">
+                    <strong>最优切入点：</strong>在 09:47 ET 左右，日内最低价 $858.00 附近。<br>
+                    <strong>微观诊断：</strong>卖出点位偏低。建议未来在触及阻力位时采用【分批止盈/移动止损】策略，避免一次性在日内低点恐慌性抛售。
+                </td>
+            </tr>
+            
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 大师点评 -->
+        <div class="section-card">
+            <h2 class="section-title">👥 多大师 LLM 深度复盘（基于 rules & worldview 真实推理）</h2>
+            <div class="tabs-container">
+                <div class="tabs-sidebar">
+                    
+        <button class="tab-btn active" onclick="openMasterTab(event, 'pane-Minervini')">
+            Minervini
+            <span class="tab-score">72分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Druckenmiller')">
+            Druckenmiller
+            <span class="tab-score">72分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Marks')">
+            Marks
+            <span class="tab-score">72分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Taleb')">
+            Taleb
+            <span class="tab-score">65分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Soros')">
+            Soros
+            <span class="tab-score">72分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Livermore')">
+            Livermore
+            <span class="tab-score">68分</span>
+        </button>
+        
+        <button class="tab-btn " onclick="openMasterTab(event, 'pane-Lynch')">
+            Lynch
+            <span class="tab-score">72分</span>
+        </button>
+        
+                </div>
+                <div class="tabs-content">
+                    
+        <div id="pane-Minervini" class="tab-pane" style="display: block;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Minervini 大师复盘</span>
+                    <span class="pane-verdict">结构尚可，执行有亮点</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：72
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 今天你的组合整体表现平稳，但细节上有几处让我皱眉。COHR的加仓是亮点——$361的买入点贴近日内低点，且低于VWAP，这是研究型交易者的标志性操作，我认可这种超视距介入。但SYM的追高让我想起自己早期的错误：在VCP收缩完成前冲动入场，结果就是成本远高于预设买区，现在浮亏 -4.85%。记住，SEPA要求的是具体入场点，不是模糊的看好。BABA的仓位需要处理，它占用了现金却没有展示出Stage 2的迹象。NVDA的下跌需要关注，如果跌破MA50，我会考虑减仓。整体来看，你的组合结构合理，但执行纪律需要加强——尤其是在追高和仓位管理上。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 在 $361 加仓，点位精准，贴近日内低点，体现了研究驱动的超视距介入能力</li><li>GOOGL 首仓成本 $384.22，接近预设买区，缩量震荡中保持耐心，符合SEPA等待确认的原则</li><li>NOW 持仓浮盈 +2.57%，在S级标的中表现稳健，机构吸筹后的回调可控</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 成本 $56.06，远高于预设买区 $50-51.5，追高建仓得分极低，违背了VCP收缩后的低风险入场原则</li><li>NVDA 持仓成本 $215.34，高于预设买区 $200-210，且今日下跌 -2.8%，股价跌破MA50？需检查均线结构</li><li>BABA 仓位偏重且持续浮亏，成本 $130.07 高于现价 $128.40，未触发止损但构成机会成本，需严格执行减仓计划</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>SYM 明日若无法放量站回 $55，立即减仓一半，硬止损设在 $47，绝不允许深套</li><li>BABA 观察能否放量拉回MA200，若未来三天仍无动能，砍掉三分之一仓位释放现金</li><li>VST 成本 $159.69 略高，等待回踩 $148-150 的B2买点，当前不追加</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Druckenmiller" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Druckenmiller 大师复盘</span>
+                    <span class="pane-verdict">宏观顺风，仓位执行有亮点</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：72
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 今天整体操作有亮点，但纪律问题依然存在。COHR 在 $361 的买入非常漂亮，贴近日内低点，这才是研究型交易该有的样子。NOW 和 GOOGL 的持仓也符合宏观顺风下的核心布局。但 SYM 的追高让我很不舒服——你明明知道买区在 $50-51.5，却以 $56.06 建仓，这不是在投资，是在赌博。LITX 的卖出更是糟糕，在日内低点恐慌清仓，完全违背了分批止盈的原则。记住，宏观流动性目前有利，但仓位管理才是决定长期回报的关键。把 SYM 和 VST 的成本降下来，否则它们会拖累整个组合。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 在 $361 精准抄底，贴近日内低点，执行力极佳，体现了研究驱动的超视距介入能力。</li><li>NOW 今日 +4.08%，S 级标的在估值底部反转，验证了错杀买入逻辑。</li><li>GOOGL 首仓 $384.22 买入点位优秀，符合核心仓位低吸策略。</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 追高建仓成本 $56.06，远高于预设买区 $50-51.5，违背了战术仓位纪律，浮亏 -4.85%。</li><li>LITX 清仓在 $39.00，远低于日内 VWAP $882.43（数据异常但实际卖出价偏低），属于恐慌性抛售，未执行分批止盈。</li><li>VST 首仓 $159.69 高于买区 $148-150，且今日下跌 -3.03%，未等回踩，仓位成本偏高。</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>SYM 必须严格等待 $50 支撑位再补仓，若跌破 $47 硬止损，绝不可市价追单。</li><li>VST 挂单 $148-150 限价补仓，若未成交则耐心等待，不追高。</li><li>BABA 仓位 25 股占比偏高，且无催化剂，建议减仓至 15 股以内，释放现金用于核心标的。</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Marks" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Marks 大师复盘</span>
+                    <span class="pane-verdict">周期防御为主，反身性试错中等</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：72
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 今天你的操作让我看到了两个极端。COHR 的买入堪称典范——你没有被系统硬否决吓退，而是基于深度研究覆写，在 $361 精准抄底，这是第二层思维的正确应用。但 SYM 的追高让我皱眉：成本 $56.06 远高于预设买区，这显然是情绪驱动的结果。记住，当你在追高时，你是在为别人的乐观买单。BABA 的仓位像一块石头，拖累组合效率，你必须执行减仓计划释放现金。VST 的首仓也偏贵，但问题不大，耐心等回踩补仓。整体来看，组合结构合理，但执行细节需要更严格。市场钟摆正在从乐观向中性摆动，现在是检查风险敞口的好时机。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 买入执行力极佳，$361 贴近日内低点，属于研究驱动的超视距介入</li><li>NOW 持仓表现稳健，低估值错杀逻辑正在兑现，符合第二层思维</li><li>FUTU 累计盈利 22.9%，体现了早期逆向布局的耐心回报</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 追高建仓成本 $56.06，远高于预设买区 $50-51.5，违背了纪律，暴露了情绪驱动的风险</li><li>BABA 仓位占比过重且持续亏损，构成闲置机会成本，未执行减仓计划</li><li>VST 首仓成本 $159.69 高于买区上限 $150，且未等回踩，追高痕迹明显</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>明天开盘检查 SYM 是否跌破 $47 硬止损，若跌破立即清仓，否则等待反弹至 $55 减半</li><li>BABA 必须严格限制仓位在 10% 以下，若无法放量拉回 MA200，砍掉三分之一</li><li>VST 挂限价单 $148-150 等待 B2 补仓，当前仓位不动，切勿追高</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Taleb" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Taleb 大师复盘</span>
+                    <span class="pane-verdict">不对称性尚可，尾部风险犹存</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：65
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 你的组合在结构上有了不对称性的雏形——COHR 和 NOW 的买入点体现了对尾部风险的尊重，但 SYM 和 VST 的建仓暴露了典型的脆弱性：追高。SYM 成本 $56，离买区 $50 差了 12%，这不是投资，是赌博。VST 首仓 $159.69，离买区 $148 差了 8%，你给了自己一个不必要的下行空间。BABA 还在持仓？25 股，成本 $130，现在 $128，你是在等它变成黑天鹅吗？记住：保护下行，让上行自然发生。明天把 SYM 的补仓单挂好，BABA 砍掉三分之一，VST 反弹减仓。别让情绪主导你的交易，否则市场会教你什么叫真正的尾部风险。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 在 $361 精准加仓，完美利用日内低点，体现了反脆弱的左侧挂单纪律</li><li>NOW 持仓浮盈 +2.57%，S 级标的的低估值错杀逻辑正在兑现</li><li>GOOGL 成本 $384.22 贴近买区，核心仓位建仓质量高</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 成本 $56.06 远高于买区 $50-51.5，追高建仓暴露了脆弱性，且未按计划补仓</li><li>VST 成本 $159.69 高于买区 $148-150，首仓过重，回踩加仓空间被压缩</li><li>BABA 仓位 25 股占比偏高且持续亏损，构成机会成本，违反减仓纪律</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>明天开盘挂单 SYM 限价 $50.5 补仓 5 股，同时将硬止损下移至 $47.0</li><li>VST 若反弹至 $162 以上，卖出 3 股降低平均成本至 $158 附近</li><li>BABA 若无法放量站回 $130，立即砍掉 10 股，释放现金用于核心仓位</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Soros" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Soros 大师复盘</span>
+                    <span class="pane-verdict">反身性试错中，执行有亮点</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：72
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 你的组合正在构建一个合理的 AI 价值链覆盖，但有两个问题让我不安。第一，SYM 的追高——你明明知道它的波动极高，预设买区在 $50 附近，却以 $56 建仓，这是情绪在主导决策，而不是反身性框架。市场会惩罚这种不守纪律的行为。第二，BABA 的仓位像一块石头拖累你的流动性。你持有它是因为过去的判断，但市场已经告诉你那个假设可能是错的。承认错误，释放现金，才能在下一次反身性循环启动时拥有弹药。COHR 的买入是亮点——你抓住了光通信板块的早期自我强化信号，且执行精准。继续保持这种研究驱动的超视距介入，但必须用严格的止损来保护你的资本。记住，不确定性是常态，快速改变方向才是你的优势。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 的买入执行极佳，$361 接近日内低点，体现了对反身性循环早期介入的敏锐度</li><li>NOW 的持仓表现验证了估值底反转的错杀机会，机构吸筹后的自我强化正在展开</li><li>GOOGL 的建仓点位合理，符合核心仓位的低吸纪律</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 的追高建仓成本 $56.06 严重偏离预设买区 $50-51.5，这是情绪驱动的错误，违背了试错探路的原则</li><li>BABA 仓位占比过高且持续亏损，构成闲置机会成本，必须严格执行减仓纪律</li><li>VST 的建仓价 $159.69 高于预设买区 $148-150，过早介入可能面临回撤压力</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>明天开盘立即挂单卖出 BABA 至少 10 股，释放现金用于更高效的反身性机会</li><li>SYM 若跌破 $50 支撑，必须无条件止损，承认错误是最大的优势</li><li>VST 等待回踩 $148-150 再补仓，当前价格不具备安全边际</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Livermore" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Livermore 大师复盘</span>
+                    <span class="pane-verdict">止损纪律待加强</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：68
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 你今天的操作有亮点，但问题同样明显。COHR 的买入堪称教科书——贴近日内低点，价格低于 VWAP，这是你研究型覆写的胜利。但 SYM 的追高让我皱眉：成本 $56.06，远高于预设买区 $50-51.5，这是情绪驱动的结果。市场在告诉你什么？SYM 今天只涨了 0.9%，远弱于板块，最小阻力方向向下。BABA 继续拖累组合，你明知不加仓的纪律，却仍持有 25 股亏损仓位。记住：亏损的仓位是机会成本，现金才是弹药。VST 成本偏高，但趋势未破，等待回调加仓。整体来看，你的组合分散合理，但执行细节上仍有情绪干扰。市场永远是对的，错的只有你的判断。修正这些错误，你才能走得更远。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 买入 $361 极佳，贴近日内低点，执行力优秀</li><li>GOOGL 首仓 $384.22 接近买区，成本控制良好</li><li>NOW 持仓浮盈，趋势健康</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 追高建仓成本 $56.06，远高于买区 $50-51.5，违背最小阻力方向</li><li>BABA 仓位偏重且持续亏损，未执行减仓计划，占用资金</li><li>VST 成本 $159.69 高于买区 $148-150，未等待回调</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>明日开盘检查 SYM 是否跌破 $47 止损，若破立即清仓</li><li>BABA 若无法放量站回 $130，减仓至 15 股释放现金</li><li>VST 挂单 $148 限价补仓，摊低成本，止损上移至 $142</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pane-Lynch" class="tab-pane" style="display: none;">
+            <div class="pane-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="pane-master-title">Lynch 大师复盘</span>
+                    <span class="pane-verdict">执行力有亮点，但仓位纪律待加强</span>
+                </div>
+                <div class="pane-score-badge" style="background-color:#f59e0b1a;color:#f59e0b;border:1px solid #f59e0b40;">
+                    评定分：72
+                </div>
+            </div>
+            
+            <div class="master-quote">
+                “ 小伙子，今天你的操作有亮点，但问题也很明显。COHR 买得漂亮，$361 接近日内低点，说明你确实在关注盘口，而且对光通信的理解到位。NOW 涨了 4%，持有得不错，这就是我常说的——真正理解一家公司，你才能在波动中拿住。但 SYM 是怎么回事？$56.06 的成本，远高于预设的 $50-51.5 买区，追高买入，然后被套。这就像你去购物，看到一家店排长队，你不管价格直接冲进去，结果发现东西贵了。记住，好公司也要好价格。BABA 的问题更严重，25 股成本高于现价，还占着资金，你明明计划减仓 30 股，为什么没执行？现金是子弹，被套的仓位就是哑弹。VST 首仓 $159.69 也偏高了，为什么不等到 $148-150 再买？耐心是投资者的美德。整体来看，你的组合覆盖了 AI 价值链，方向是对的，但仓位纪律需要加强。明天先把 BABA 减掉，释放现金，然后等 SYM 和 VST 回到买区再动手。记住，投资不是比谁买得多，而是比谁买得准、拿得住。 ”
+            </div>
+            
+            <div class="pane-grid">
+                <div class="pane-col">
+                    <h4 style="color:#10b981;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🟢 今日闪光点</h4>
+                    <ul><li>COHR 的买入时机极佳，$361 接近日内低点，体现了对光通信板块的深度理解和超视距介入能力。</li><li>NOW 持仓表现稳健，+4.08% 涨幅验证了 S 级标的的错杀反转逻辑，持有信心值得肯定。</li><li>FUTU 累计盈利 +22.92%，虽然未减仓，但浮盈本身说明选股眼光不错。</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#f43f5e;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">🔴 警惕隐患点</h4>
+                    <ul><li>SYM 追高建仓成本 $56.06，远高于预设买区 $50-51.5，且未执行 B2 补仓纪律，导致浮亏 -4.85%，这是典型的情绪化交易。</li><li>BABA 持仓 25 股，成本 $130.07 高于现价，且未按计划减仓 30 股，占用了现金，错失了其他机会。</li><li>VST 首仓成本 $159.69 偏高，未等待预设的 $148-150 买区，虽然仓位轻，但违背了分批建仓的纪律。</li></ul>
+                </div>
+                <div class="pane-col">
+                    <h4 style="color:#6366f1;margin-bottom:8px;font-size:0.95rem;display:flex;align-items:center;gap:6px;">📋 明日行动建议</h4>
+                    <ul><li>明天开盘检查 SYM，若无法快速站回 $55 以上，考虑在 $50 附近挂单补仓 B2，但总仓位不超过 2%。</li><li>BABA 必须严格执行减仓计划：明天挂单卖出 30 股，释放现金用于更确定的标的如 NOW 或 GOOGL 的加仓。</li><li>VST 耐心等待回踩 $148-150 再补仓，不要追高，当前仓位 10 股足够。</li></ul>
+                </div>
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- 决策审计与点位校验 -->
+        <div class="section-card">
+            <h2 class="section-title">⚖️ 盘前决策审计与支撑点位有效性验证</h2>
+            <div class="audit-split">
+                <!-- 覆写与纪律审计 -->
+                <div>
+                    <h3 style="margin-bottom:16px;color:var(--primary);font-size:1.1rem;font-family:'Outfit',sans-serif;border-left:3px solid var(--primary);padding-left:8px;">主观覆写与执行纪律审计</h3>
+                    
+            <div class="audit-card">
+                <div class="audit-card-header">
+                    <span class="audit-sym">COHR</span>
+                    <span class="audit-badge audit-aligned">契合系统</span>
+                </div>
+                <div class="audit-card-body">
+                    <div class="audit-meta-row">
+                        <span>盘前系统建议: <strong style="color:#6366f1;">NEUTRAL</strong> (得分 50)</span>
+                        <span>日内涨跌: <strong style="color:#10b981;">+3.63%</strong></span>
+                    </div>
+                    <p class="audit-desc">顺风执行。系统推荐介入（分数 50），用户纪律性跟单建仓，日内表现为 +3.63%。</p>
+                </div>
+            </div>
+            
+            <div class="audit-card">
+                <div class="audit-card-header">
+                    <span class="audit-sym">LITX</span>
+                    <span class="audit-badge audit-override-sell">用户覆写(卖)</span>
+                </div>
+                <div class="audit-card-body">
+                    <div class="audit-meta-row">
+                        <span>盘前系统建议: <strong style="color:#6366f1;">NEUTRAL</strong> (得分 50)</span>
+                        <span>日内涨跌: <strong style="color:#10b981;">+2166.28%</strong></span>
+                    </div>
+                    <p class="audit-desc">用户主观落袋为盈或防御性清仓，提早锁定了利润。</p>
+                </div>
+            </div>
+            
+                </div>
+                <!-- 关键点位审计 -->
+                <div>
+                    <h3 style="margin-bottom:16px;color:var(--success);font-size:1.1rem;font-family:'Outfit',sans-serif;border-left:3px solid var(--success);padding-left:8px;">盘前预设支撑位有效性对齐</h3>
+                    <div style='color:#94a3b8;padding:12px;'>今日无关键支撑位验证记录。</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer style="text-align:center;padding:24px 0;color:var(--text-secondary);font-size:0.8rem;border-top:1px solid rgba(255, 255, 255, 0.05);margin-top:40px;">
+            <p>Antigravity stock_team Postmarket Sandbox System · 2026-05-27 23:02:06</p>
+        </footer>
+    </div>
+</body>
+</html>
+    

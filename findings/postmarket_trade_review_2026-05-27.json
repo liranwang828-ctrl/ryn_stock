@@ -1,0 +1,77 @@
+{
+  "date": "2026-05-27",
+  "total_trades_count": 2,
+  "total_bought_value": 1444.0,
+  "total_sold_value": 1560.0,
+  "net_flow": -116.0,
+  "reviewed_trades": [
+    {
+      "sym": "COHR",
+      "action": "ADD_T2",
+      "cost": 361.0,
+      "shares": 4,
+      "stats": {
+        "sym": "COHR",
+        "query_sym": "COHR",
+        "has_data": true,
+        "open": 383.92,
+        "high": 384.87,
+        "low": 359.22,
+        "close": 374.11,
+        "vwap": 370.33,
+        "low_time": "09:46 ET",
+        "high_time": "09:30 ET",
+        "intraday_type": "morning_dip",
+        "msg": "获取到高精度分时数据"
+      },
+      "review": {
+        "score": 100.0,
+        "range_pct": 6.9,
+        "vs_vwap_pct": -2.52,
+        "verdict": "👑 完美入场",
+        "reason": "今日该股呈现典型的【早盘回踩】形态。开盘后快速向下虚破，于美东时间 09:46 ET 探底 $359.22 确认强支撑，随后一路上扬。此位置是绝佳的左侧建仓点。",
+        "optimal_entry": "在 09:46 ET 左右，日内最低价 $359.22 附近。",
+        "micro_factor_suggestion": "执行力极佳，买入节点高度贴近日内低点，且价格明显低于 VWAP。无需调整微观因子，保持当前的左侧挂单或回调买入习惯。"
+      },
+      "plan_match": {
+        "target_support": null,
+        "plan_adherence": "override_justified",
+        "deviation_note": "系统虽给出了硬否决，但用户依据多 Agent 及 LITE vs COHR 盘前深度研报进行的【深度覆写 (Override)】，买入价 $375 极为精准贴近日内最低价 $369.10，属非常成功的研究型超视距主观介入。"
+      }
+    },
+    {
+      "sym": "LITX",
+      "action": "SELL_CLEAR",
+      "cost": 39.0,
+      "shares": 40,
+      "stats": {
+        "sym": "LITX",
+        "query_sym": "LITE",
+        "has_data": true,
+        "open": 901.55,
+        "high": 901.55,
+        "low": 858.0,
+        "close": 883.85,
+        "vwap": 882.43,
+        "low_time": "09:47 ET",
+        "high_time": "09:30 ET",
+        "intraday_type": "morning_dip",
+        "msg": "获取到高精度分时数据"
+      },
+      "review": {
+        "score": 0.0,
+        "range_pct": 0.0,
+        "vs_vwap_pct": 95.58,
+        "verdict": "🔴 追涨/点位过差",
+        "reason": "清仓/减仓动作。今日该股在美东时间 09:30 ET 触及当日最高点 $901.55，收盘于 $883.85。",
+        "optimal_entry": "在 09:47 ET 左右，日内最低价 $858.00 附近。",
+        "micro_factor_suggestion": "卖出点位偏低。建议未来在触及阻力位时采用【分批止盈/移动止损】策略，避免一次性在日内低点恐慌性抛售。"
+      },
+      "plan_match": {
+        "target_support": null,
+        "plan_adherence": "na",
+        "deviation_note": "未找到盘前针对该股的计划"
+      }
+    }
+  ]
+}
