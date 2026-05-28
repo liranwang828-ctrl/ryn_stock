@@ -16,6 +16,7 @@
 | morning.py / 跑早间 / 完整早间流程 | `python3.12 morning.py` |
 | 看[标的]的基本面 / 研究[标的]数据 / [标的]基本面 / 财务数据 X | `python3.12 agents/quick_fundamentals.py SYM` |
 | 宏观分析 / 今日宏观 / macro / 大盘分析 / 宏观怎么样 | `python3.12 agents/macro_agent.py` |
+| 狙击扫描 X / 单兵狙击 X / 战术扫描 X / 扫一下 X | `.\sniper X` (Windows 快捷指令) 或 `py scripts/tactical_sniper.py X` |
 
 ---
 
