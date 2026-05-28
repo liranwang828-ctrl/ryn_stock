@@ -1,0 +1,15 @@
+{
+  "methodology_14_high_beta_gap": {
+    "vc_threshold_pct": 30.0,
+    "bracket_stop_loss_pct": 1.5,
+    "t1_size_pct": 30.0,
+    "t2_t3_size_pct": 70.0
+  },
+  "methodology_15_low_catalyst_rs": {
+    "vc_threshold_pct": 30.0,
+    "bracket_stop_loss_pct": 0.5,
+    "t1_size_pct": 30.0,
+    "t2_t3_size_pct": 70.0,
+    "nvda_exit_trigger": true
+  }
+}

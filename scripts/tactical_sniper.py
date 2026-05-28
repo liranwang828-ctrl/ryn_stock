@@ -1,11 +1,42 @@
 import sys
 import os
+import json
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
 # Ensure UTF-8 Console Printing
 sys.stdout.reconfigure(encoding='utf-8')
+
+# Global Configurations with Fallbacks
+DEFAULT_RULES = {
+    "methodology_14_high_beta_gap": {
+        "vc_threshold_pct": 30.0,
+        "bracket_stop_loss_pct": 1.5,
+        "t1_size_pct": 30.0,
+        "t2_t3_size_pct": 70.0
+    },
+    "methodology_15_low_catalyst_rs": {
+        "vc_threshold_pct": 30.0,
+        "bracket_stop_loss_pct": 0.5,
+        "t1_size_pct": 30.0,
+        "t2_t3_size_pct": 70.0,
+        "nvda_exit_trigger": True
+    }
+}
+
+def load_tactical_rules():
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "tactical_rules.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                rules = json.load(f)
+                # Verify basic keys exist
+                if "methodology_14_high_beta_gap" in rules and "methodology_15_low_catalyst_rs" in rules:
+                    return rules
+        except Exception as e:
+            print(f"⚠️ 警告: 读取 config/tactical_rules.json 失败 ({e})，使用默认参数...")
+    return DEFAULT_RULES
 
 def main():
     if len(sys.argv) < 2:
@@ -15,13 +46,16 @@ def main():
     ticker_sym = sys.argv[1].upper()
     target_date = sys.argv[2] if len(sys.argv) > 2 else None
     
+    # Load Dynamic Rules
+    rules = load_tactical_rules()
+    
     print(f"==================================================")
     print(f"🎯 盘后/盘中单兵战术狙击器: {ticker_sym} 深度扫描中...")
     print(f"==================================================")
     
     ticker = yf.Ticker(ticker_sym)
     
-    # Download 5m data for the last 5 days to ensure we have today's complete session
+    # Download 5m data for the last 5 days
     try:
         df = ticker.history(period="5d", interval="5m")
     except Exception as e:
@@ -37,7 +71,6 @@ def main():
     unique_dates = df['Date'].unique()
     
     if target_date:
-        # Try to parse target date
         try:
             target_dt = pd.to_datetime(target_date).date()
             if target_dt in unique_dates:
@@ -48,7 +81,6 @@ def main():
         except:
             session_df = df[df['Date'] == unique_dates[-1]].copy()
     else:
-        # Default to the most recent trading session
         session_df = df[df['Date'] == unique_dates[-1]].copy()
         
     if session_df.empty:
@@ -79,7 +111,7 @@ def main():
     open_peak_price = opening_peak_bar['High']
     open_peak_vol = opening_peak_bar['Volume']
     
-    # 2. Pullback Phase Scan (Looking for lowest price in the next 12 bars after peak, up to ~11:00)
+    # 2. Pullback Phase Scan (Looking for lowest price in the next 14 bars after peak)
     peak_loc = session_df.index.get_loc(opening_peak_idx)
     pullback_pool = session_df.iloc[peak_loc+1 : min(peak_loc+15, total_bars)]
     
@@ -110,12 +142,9 @@ def main():
     vwap_dist = ((curr_price - curr_vwap) / curr_vwap) * 100
     
     # 4. Check for VWAP Reclaim
-    # Did we close above VWAP in the last bar, while having previously been below or touching it?
-    # We look at the last 3 bars for a crossing pattern
     reclaim_signal = "NO"
     if len(session_df) >= 3:
         last_3 = session_df.iloc[-3:]
-        # Check if the price crossed VWAP from below to above
         was_below = any(last_3.iloc[:-1]['Close'] < last_3.iloc[:-1]['VWAP'])
         now_above = last_3.iloc[-1]['Close'] > last_3.iloc[-1]['VWAP']
         if was_below and now_above:
@@ -125,11 +154,26 @@ def main():
         else:
             reclaim_signal = "🔴 BELOW VWAP"
             
-    # 5. Determine Sniper Action Decision
+    # 5. Classify Ticker Setup type dynamically based on gap/catalyst structure
+    # For simplicity, we treat high-gap (>8%) or specific tickers as Methodology #14, others as #15
+    # Let's check opening gap relative to yesterday's close if available in session
+    # We load parameters depending on classification
+    is_high_beta_gap = vwap_dist > 5.0 or (latest_bar['Open'] / df.iloc[df.index.get_loc(session_df.index[0]) - 1]['Close'] > 1.08 if df.index.get_loc(session_df.index[0]) > 0 else False)
+    
+    if is_high_beta_gap:
+        setup_name = "Methodology #14: High-Beta Gap"
+        cfg = rules["methodology_14_high_beta_gap"]
+    else:
+        setup_name = "Methodology #15: Low-Catalyst RS"
+        cfg = rules["methodology_15_low_catalyst_rs"]
+        
+    vc_thresh = cfg["vc_threshold_pct"]
+    stop_loss_pct = cfg["bracket_stop_loss_pct"]
+            
+    # 6. Determine Sniper Action Decision using dynamic config parameters
     decision = "⏳ 观望 (WAITING)"
     reason = "盘中数据不足或未见异动"
     
-    # Standard Rules based on Methodologies #14 and #15
     if curr_price < curr_vwap:
         if curr_vol > open_peak_vol * 0.5:
             decision = "🔴 瀑布警报 (WATERFALL DANGER)"
@@ -138,19 +182,19 @@ def main():
             decision = "⏳ 观察洗盘 (WATCHING)"
             reason = f"股价在 VWAP 下方缩量运行，等待 Reclaim 阳线确认 (当前阻力位: {curr_vwap:.2f})"
     else:
-        # Price is above VWAP
-        if vc_ratio <= 30.0:
+        if vc_ratio <= vc_thresh:
             if curr_price >= open_peak_price:
                 decision = "🎯 T2/T3 突破加仓 (BREAKOUT ADD)"
                 reason = f"缩量回调(VC:{vc_ratio:.1f}%)获得VWAP支撑后，股价已突破早盘日高 {open_peak_price:.2f}"
             else:
                 decision = "🎯 T1 单兵狙击点 (SNIPER BUY)"
-                reason = f"开盘天量RS确认，回踩极度缩量(VC:{vc_ratio:.1f}%)，现已收复并站稳VWAP {curr_vwap:.2f}"
+                reason = f"天量RS确认，回踩极度缩量(VC:{vc_ratio:.1f}%, 阈值:{vc_thresh:.0f}%)，现已收复并站稳VWAP {curr_vwap:.2f}"
         else:
             decision = "⚠️ 警惕假拉升 (CAUTION)"
-            reason = f"虽然价格站上 VWAP，但回踩期量能收缩不足(VC:{vc_ratio:.1f}%)，机构洗盘筹码锁定度低"
+            reason = f"虽然价格站上 VWAP，但回踩期量能收缩不足(VC:{vc_ratio:.1f}%, 阈值:{vc_thresh:.0f}%)，机构洗盘筹码锁定度低"
 
     # Print Breathtaking ASCII Dashboard
+    print(f"📊 识别战术模板 : {setup_name}")
     print(f"\n[📊 1. 首K突变 RS 相对强度探测]")
     print(f"   • 开盘峰值时间 : {open_time}")
     print(f"   • 首K冲高日高   : ${open_peak_price:.2f}")
@@ -159,7 +203,7 @@ def main():
     print(f"\n[📉 2. 回调洗盘期量能衰竭度 (Volume Contraction)]")
     print(f"   • 回调洗盘低点 : ${pb_price:.2f} ({pb_time})")
     print(f"   • 极限收缩成交量: {pb_vol:,} 股")
-    print(f"   • 核心 VC 收缩比: {vc_ratio:.2f}% " + ("(🟢 满足 <30% 洗盘标准)" if vc_ratio <= 30 else "(🔴 >30% 浮筹未洗净)"))
+    print(f"   • 核心 VC 收缩比: {vc_ratio:.2f}% " + (f"(🟢 满足 <{vc_thresh:.0f}% 洗盘标准)" if vc_ratio <= vc_thresh else f"(🔴 >{vc_thresh:.0f}% 浮筹未洗净)"))
     
     print(f"\n[⚡ 3. 当前实时量价与 VWAP 关系]")
     print(f"   • 当前监控时间 : {curr_time}")
@@ -172,7 +216,8 @@ def main():
     print(f"   🎯 战术决断: {decision}")
     print(f"   ✍️ 决断理由: {reason}")
     print(f"   ==================================================")
-    print(f"   * 止损参考位: 设在洗盘日低 ${pb_price:.2f} 之下 (约 ${pb_price*0.995:.2f})")
+    print(f"   * 止损配置级别: {stop_loss_pct}% (基于方法论)")
+    print(f"   * 止损参考价位: 设在洗盘日低 ${pb_price:.2f} 之下 (约 ${pb_price*(1 - stop_loss_pct/100.0):.2f})")
     print(f"==================================================\n")
 
 if __name__ == "__main__":
