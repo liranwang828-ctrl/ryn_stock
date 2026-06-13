@@ -10,6 +10,7 @@ from .models import (
 )
 from .store import SessionBusyError, SessionConflictError, SessionNotFoundError, SessionStore
 from .adapters import AdapterError, AdapterResult, ExistingCliAdapter
+from .coordinator import WorkflowCoordinator
 from .transitions import (
     ALLOWED_ACTIONS,
     BEGIN_TRANSITIONS,
@@ -37,6 +38,7 @@ __all__ = [
     "AdapterError",
     "AdapterResult",
     "ExistingCliAdapter",
+    "WorkflowCoordinator",
     "ALLOWED_ACTIONS",
     "BEGIN_TRANSITIONS",
     "CONFIRMATION_REQUIRED",
