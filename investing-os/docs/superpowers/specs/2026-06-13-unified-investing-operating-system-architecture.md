@@ -4,6 +4,8 @@ Date: 2026-06-13
 
 Status: approved design, awaiting written-spec review
 
+Chinese version: [2026-06-13-unified-investing-operating-system-architecture.zh.md](2026-06-13-unified-investing-operating-system-architecture.zh.md)
+
 ## 1. Purpose
 
 Build one personal investing product from the existing `investing-os` and
