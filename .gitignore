@@ -2,6 +2,7 @@
 .tmp/
 .codex/
 .agents/
+.superpowers/
 
 # Credentials and local environments
 **/.env
