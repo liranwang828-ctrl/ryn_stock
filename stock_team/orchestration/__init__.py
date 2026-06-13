@@ -9,6 +9,18 @@ from .models import (
     validate_session,
 )
 from .store import SessionBusyError, SessionConflictError, SessionNotFoundError, SessionStore
+from .transitions import (
+    ALLOWED_ACTIONS,
+    BEGIN_TRANSITIONS,
+    CONFIRMATION_REQUIRED,
+    FAILURE_TRANSITIONS,
+    SUCCESS_TRANSITIONS,
+    TransitionError,
+    allowed_actions,
+    begin_transition,
+    complete_transition,
+    requires_confirmation,
+)
 
 __all__ = [
     "ACTION_INTENTS",
@@ -21,6 +33,16 @@ __all__ = [
     "SessionConflictError",
     "SessionNotFoundError",
     "SessionStore",
+    "ALLOWED_ACTIONS",
+    "BEGIN_TRANSITIONS",
+    "CONFIRMATION_REQUIRED",
+    "FAILURE_TRANSITIONS",
+    "SUCCESS_TRANSITIONS",
+    "TransitionError",
+    "allowed_actions",
+    "begin_transition",
+    "complete_transition",
+    "requires_confirmation",
     "validate_action",
     "validate_session",
 ]
