@@ -92,6 +92,7 @@ strategy_result.json
 # 排除特定标的的宏观备忘与节点策略
 macro_strategy_*.json
 strategic_memo_*.json
+!config/macro_strategy_params.json
 
 # 排除临时多智能体辩论记录
 quick_debate_*.json
