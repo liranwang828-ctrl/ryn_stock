@@ -7,6 +7,10 @@ brain-muscle architecture.
 
 ## Active Entry Points
 
+- `coordinator_cli.py`
+  - Workflow state entry point for `init-day`, `run`, and `show`.
+  - Owns session storage and action dispatch. It does not replace `cli.py`.
+
 - `cli.py`
   - Main contract surface called by investing-os.
   - Current commands include `market-context`, `premarket`, `trade-evidence`,
@@ -52,6 +56,8 @@ brain-muscle architecture.
 - `backtest/`: backtest engines, adapters, and evidence runners.
 - `core/`: operational evidence utilities such as trade evidence export,
   IBKR checks, polling, and premarket helpers.
+- `coordinator_cli.py`: workflow state entry point for session initialization,
+  action dispatch, and session inspection.
 - `data_ingest/`: Polygon, fundamentals, postmarket, and data acquisition code.
 - `config/`: runtime configuration and example request contracts.
 - `docs/`: active contracts, architecture notes, and implementation guidance.
@@ -105,6 +111,14 @@ python -m pytest tests\unit\core\test_tactic_backtest_system.py `
 ```
 
 Expected: `7 passed`.
+
+For the coordinator surface:
+
+```powershell
+python -m pytest tests\unit\orchestration -q
+```
+
+Expected: `28 passed`.
 
 Full-suite failures currently include old agent-path and legacy import issues.
 Do not treat those as regressions from the tactic-backtest work unless the

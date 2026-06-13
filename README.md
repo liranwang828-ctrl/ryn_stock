@@ -13,6 +13,11 @@ can import the package. By default, `stock_team` discovers the sibling
 `investing-os` directory. Set `INVESTING_OS_HOME` only when intentionally using
 another brain repository.
 
+Workflow state lives behind `python -m stock_team.coordinator_cli`, which uses
+the coordinator session store under `investing-os/system/runtime/sessions/`.
+The existing `python -m stock_team.cli` surface remains the evidence and
+calculation command set.
+
 ```powershell
 $py = 'C:\Users\rriww\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
 & $py -m stock_team.cli --help
