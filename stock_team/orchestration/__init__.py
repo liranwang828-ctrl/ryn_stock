@@ -9,6 +9,7 @@ from .models import (
     validate_session,
 )
 from .store import SessionBusyError, SessionConflictError, SessionNotFoundError, SessionStore
+from .adapters import AdapterError, AdapterResult, ExistingCliAdapter
 from .transitions import (
     ALLOWED_ACTIONS,
     BEGIN_TRANSITIONS,
@@ -33,6 +34,9 @@ __all__ = [
     "SessionConflictError",
     "SessionNotFoundError",
     "SessionStore",
+    "AdapterError",
+    "AdapterResult",
+    "ExistingCliAdapter",
     "ALLOWED_ACTIONS",
     "BEGIN_TRANSITIONS",
     "CONFIRMATION_REQUIRED",
