@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://investing-os.local/schemas/session-state.schema.json",
+  "title": "Investing OS Coordinator Session State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "session_type",
+    "state",
+    "state_version",
+    "artifacts",
+    "data_quality",
+    "pending_confirmations",
+    "allowed_actions",
+    "processed_actions",
+    "updated_at"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "session_type": {
+      "type": "string",
+      "enum": [
+        "trading",
+        "observation",
+        "research",
+        "review",
+        "maintenance"
+      ]
+    },
+    "market_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "IDLE",
+        "DAY_INITIALIZED",
+        "STAGE0_RUNNING",
+        "STAGE0_READY",
+        "DISCUSSION_REQUIRED",
+        "FOCUS_CONFIRMED",
+        "STAGE1_RUNNING",
+        "STAGE1_READY",
+        "PLAN_CONFIRMATION",
+        "PLAN_APPROVED",
+        "INTRADAY_ACTIVE",
+        "MARKET_CLOSED",
+        "REVIEW_REQUIRED",
+        "DAY_ARCHIVED",
+        "BLOCKED_DATA",
+        "WAITING_USER",
+        "DEGRADED_OBSERVE",
+        "FAILED_TOOL"
+      ]
+    },
+    "state_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "path",
+          "sha256",
+          "created_at"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "data_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "warnings"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "production_ready",
+            "degraded",
+            "stale",
+            "missing",
+            "unknown"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pending_confirmations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "intent",
+          "requested_at"
+        ],
+        "properties": {
+          "intent": {
+            "type": "string"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "allowed_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "processed_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "idempotency_key",
+          "intent",
+          "result_state",
+          "processed_at"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string"
+          },
+          "result_state": {
+            "type": "string"
+          },
+          "processed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "backlog_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "href"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "last_error": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "error_class",
+            "message",
+            "retryable",
+            "intent",
+            "occurred_at"
+          ],
+          "properties": {
+            "error_class": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "intent": {
+              "type": "string"
+            },
+            "occurred_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
