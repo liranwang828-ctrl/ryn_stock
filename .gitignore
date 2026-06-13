@@ -3,6 +3,7 @@
 .codex/
 .agents/
 .superpowers/
+.worktrees/
 
 # Credentials and local environments
 **/.env
