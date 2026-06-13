@@ -1,6 +1,14 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from stock_team.orchestration.models import (
+    ValidationError,
+    new_trading_session,
+    validate_action,
+    validate_session,
+)
 from stock_team.utils.workspace_paths import investing_os_home
 
 
@@ -139,4 +147,90 @@ def test_action_schema_requires_optimistic_state_and_idempotency():
     assert schema["properties"]["idempotency_key"] == {
         "type": "string",
         "minLength": 1,
+    }
+
+
+def valid_session() -> dict:
+    return {
+        "session_id": "trading-2026-06-15",
+        "session_type": "trading",
+        "market_date": "2026-06-15",
+        "state": "DAY_INITIALIZED",
+        "state_version": 1,
+        "artifacts": [],
+        "data_quality": {"status": "unknown", "warnings": []},
+        "pending_confirmations": [],
+        "allowed_actions": ["start_stage0"],
+        "processed_actions": [],
+        "backlog_links": [],
+        "last_error": None,
+        "updated_at": "2026-06-15T12:00:00+00:00",
+    }
+
+
+def test_validate_session_accepts_canonical_shape():
+    session = valid_session()
+
+    assert validate_session(session) is session
+
+
+def test_validate_session_rejects_unknown_state():
+    session = valid_session()
+    session["state"] = "MADE_UP"
+
+    with pytest.raises(ValidationError, match="state"):
+        validate_session(session)
+
+
+def test_validate_session_rejects_unknown_top_level_key():
+    session = valid_session()
+    session["unexpected"] = True
+
+    with pytest.raises(ValidationError, match="unexpected"):
+        validate_session(session)
+
+
+def test_validate_session_rejects_invalid_market_date():
+    session = valid_session()
+    session["market_date"] = "2026-13-40"
+
+    with pytest.raises(ValidationError, match="market_date"):
+        validate_session(session)
+
+
+def test_validate_action_rejects_empty_idempotency_key():
+    with pytest.raises(ValidationError, match="idempotency_key"):
+        validate_action(
+            {
+                "intent": "start_stage0",
+                "session_id": "trading-2026-06-15",
+                "expected_state": "DAY_INITIALIZED",
+                "user_confirmation": False,
+                "parameters": {},
+                "idempotency_key": "",
+            }
+        )
+
+
+def test_new_trading_session_returns_canonical_minimal_state():
+    session = new_trading_session(
+        session_id="trading-2026-06-15",
+        market_date="2026-06-15",
+        now="2026-06-15T12:00:00+00:00",
+    )
+
+    assert session == {
+        "session_id": "trading-2026-06-15",
+        "session_type": "trading",
+        "market_date": "2026-06-15",
+        "state": "DAY_INITIALIZED",
+        "state_version": 1,
+        "artifacts": [],
+        "data_quality": {"status": "unknown", "warnings": []},
+        "pending_confirmations": [],
+        "allowed_actions": ["start_stage0"],
+        "processed_actions": [],
+        "backlog_links": [],
+        "last_error": None,
+        "updated_at": "2026-06-15T12:00:00+00:00",
     }
