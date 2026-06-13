@@ -1,0 +1,71 @@
+{
+  "artifact_type": "post_market_trade_evidence_request",
+  "version": "1.0",
+  "date": "YYYY-MM-DD",
+  "created_by": "investing-os",
+  "purpose": "Request factual post-market trade evidence from stock_team before cognitive review.",
+  "source_plan_artifacts": {
+    "stage0_market_context_packet": "",
+    "stage1_plan_evidence_packet": "",
+    "intraday_guidance": "",
+    "latest_stock_team_dashboard_manifest": ""
+  },
+  "account_data_request": {
+    "preferred_source": "IBKR",
+    "fallback_sources_allowed": [],
+    "include_orders": true,
+    "include_fills": true,
+    "include_positions": true,
+    "include_account_pnl": true,
+    "include_commissions": true,
+    "timezone": "America/New_York"
+  },
+  "market_context_request": {
+    "include_full_day_intraday_bars": true,
+    "bar_interval": "1min",
+    "include_daily_context": true,
+    "benchmarks": ["QQQ", "SPY", "IWM", "VIXY"],
+    "include_vwap": true,
+    "include_volume_profile": true,
+    "include_key_intraday_nodes": true,
+    "include_opening_30m_structure": true,
+    "opening_windows": ["0-5m", "5-15m", "15-30m"]
+  },
+  "symbols": [
+    {
+      "symbol": "",
+      "review_scope": "all_trades | only_if_traded | position_change_only",
+      "role_from_plan": "",
+      "planned_mode": "",
+      "planned_permission_scope": "",
+      "peer_context": [],
+      "sector_proxy": "",
+      "benchmarks": ["QQQ", "SPY", "VIXY"]
+    }
+  ],
+  "required_outputs": [
+    "market_full_day_tape",
+    "sector_theme_full_day_tape",
+    "symbol_full_day_tape",
+    "opening_30m_structure",
+    "vwap_and_volume_structure",
+    "key_intraday_nodes",
+    "normalized_fills",
+    "orders_if_available",
+    "positions_before_after",
+    "realized_pnl_if_available",
+    "unrealized_pnl_if_available",
+    "fill_against_vwap",
+    "fill_against_intraday_context",
+    "market_context_at_fills",
+    "planned_vs_actual_alignment",
+    "data_quality_notes"
+  ],
+  "forbidden_outputs": [
+    "psychological_interpretation",
+    "final_trading_judgment",
+    "buy_sell_hold_recommendation",
+    "principle_update",
+    "thesis_adoption_or_rejection"
+  ]
+}

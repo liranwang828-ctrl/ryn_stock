@@ -1,0 +1,47 @@
+[
+  {
+    "id": "CAND-2026-06-06-001",
+    "title": "Profit Streak Overconfidence",
+    "cn": "连续盈利后的过度自信",
+    "status": "adopted",
+    "source": "wiki/journals/2026-06-05-major-drawdown-review.md",
+    "summary": "近期盈利、COHR 大赢家、顺风市场和短线小胜放大了手感自信。",
+    "targets": ["queue", "bias", "emotion", "mistake", "checks"]
+  },
+  {
+    "id": "CAND-2026-06-06-002",
+    "title": "No New Short-Term Trade After Stop",
+    "cn": "短线止损后停止新短线",
+    "status": "adopted",
+    "source": "wiki/journals/2026-06-05-major-drawdown-review.md",
+    "summary": "短线失败止损后，心态和手感已经被污染，当日只能处理风险或执行盘前预案。",
+    "targets": ["queue", "intra", "checks"]
+  },
+  {
+    "id": "CAND-2026-06-06-003",
+    "title": "Red Permission State",
+    "cn": "重大回撤后的红色权限",
+    "status": "adopted",
+    "source": "wiki/journals/2026-06-05-major-drawdown-review.md",
+    "summary": "本金受损、情绪崩溃、未处理高风险仓位出现后，系统进入红色权限。",
+    "targets": ["queue", "intra", "risk", "workflow"]
+  },
+  {
+    "id": "CAND-2026-06-06-004",
+    "title": "Thesis / Underlying / Instrument Split",
+    "cn": "主题、底层标的、交易工具分离",
+    "status": "adopted",
+    "source": "wiki/journals/2026-06-05-major-drawdown-review.md",
+    "summary": "AI/存储主线成立，不等于 MU 一定强；MU 强，也不等于 MUU 适合持有。",
+    "targets": ["bias", "risk", "portfolio"]
+  },
+  {
+    "id": "CAND-2026-06-06-005",
+    "title": "RS Pullback Rebound Tactic",
+    "cn": "RS 回撤反弹战术",
+    "status": "evidence_received_pending_review",
+    "source": "wiki/sources/stock-team-rs-pullback-backtest-2026-06-06.md",
+    "summary": "stock_team 回测已收到：整体有正期望，但 high-volume risk-off 为负，不能升级为无限制实盘规则。",
+    "targets": ["queue", "tactic", "sources", "trace"]
+  }
+]

@@ -1,0 +1,295 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "stage": "stage_1_symbol_plan_evidence_request",
+  "date": "2026-06-06",
+  "created_by": "investing-os",
+  "derived_from_stage0_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+  "user_confirmed_focus_pool": ["MU", "NVDA"],
+  "permission_state_before_open": "Yellow",
+  "permission_state_reason": [
+    "Recent major drawdown review remains active.",
+    "Demo assumption: user and brain allow narrowly scoped conditional setups.",
+    "Focus does not mean automatic trade permission."
+  ],
+  "market_assumptions": {
+    "expected_regime": "risk_off_or_unstable_until_evidence_improves",
+    "risk_notes": [
+      "QQQ/SPY/IWM showed high-volume weakness in Stage 0.",
+      "VIX proxy moved higher in Stage 0.",
+      "Memory theme has strong 20D context but weak 5D context."
+    ],
+    "evidence_required": ["QQQ", "SPY", "IWM", "VIXY", "SOXX", "SMH", "MU"]
+  },
+  "symbols": [
+    {
+      "symbol": "MU",
+      "role": "mid_term_swing_candidate",
+      "theme": "memory",
+      "research_status": "partially_researched",
+      "thesis_ref": "Memory / storage cycle candidate. This is not yet a fully approved position thesis.",
+      "plan_mode": "conditional_action_allowed",
+      "focus_question": "Is MU showing real relative strength after market stabilization, or is it only a rebound attempt inside risk-off volatility?",
+      "key_levels": [
+        {
+          "level": null,
+          "meaning": "observe_support",
+          "source": "rule_formula",
+          "formula_request": "calculate MA20, MA50, previous day high/low, 5D anchored VWAP if available"
+        },
+        {
+          "level": null,
+          "meaning": "invalidation_review",
+          "source": "rule_formula",
+          "formula_request": "calculate ATR(14) distance from current price and last close"
+        }
+      ],
+      "allowed_tactics": ["swing_pullback_accumulation"],
+      "formula_overrides": [
+        {
+          "tactic": "swing_pullback_accumulation",
+          "entry_anchor": "MA20",
+          "stop_atr_multiplier": 1.0,
+          "risk_budget_pct": 0.01,
+          "position_cap_pct": 0.08,
+          "reason": "Demo: allow staged swing evidence only if market stabilizes and MU remains RS leader."
+        }
+      ],
+      "pre_authorized_actions": [
+        {
+          "action_id": "MU_staged_swing_entry_demo",
+          "scope": "staged_swing_entry",
+          "tactic": "swing_pullback_accumulation",
+          "valid_until": "market_close",
+          "trigger_window_seconds": 300,
+          "stale_data_limit_seconds": 30,
+          "slippage_limit_pct": 0.25,
+          "requires_manual_confirm": true,
+          "all_conditions_required": true,
+          "conditions": [
+            "QQQ and SOXX are not high-volume risk-off",
+            "MU relative strength versus SOXX and QQQ remains positive",
+            "MU holds or reclaims approved swing anchor",
+            "IBKR snapshot confirms no linked MUU leveraged exposure exception",
+            "position cap and max loss remain inside budget"
+          ]
+        }
+      ],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": [
+          "data_fresh",
+          "same_permission_state",
+          "no_exception_triggered",
+          "position_cap_not_exceeded",
+          "daily_loss_limit_not_exceeded",
+          "no_linked_leveraged_exposure_exception"
+        ]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "MUU_linked_leveraged_exposure",
+          "trigger": "interest in MU is linked to existing MUU leveraged exposure",
+          "effect": "no_trade",
+          "source": "investing-os"
+        },
+        {
+          "exception_id": "memory_rs_failure",
+          "trigger": "MU loses RS versus SOXX and QQQ after market stabilization",
+          "effect": "pause_for_brain_review",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": [
+        "new_short_term_risk_without_user_confirmation",
+        "leveraged_expansion",
+        "linked_leveraged_exposure_expansion",
+        "role_drift_from_watchlist_to_trade"
+      ],
+      "risk_budget": {
+        "max_loss": 500,
+        "position_cap": 0.08,
+        "attention_budget_minutes": 15
+      },
+      "falsification_conditions": [
+        "MU underperforms SOXX after QQQ stabilizes.",
+        "MU loses relative strength while memory proxy context remains weak.",
+        "Any interest in MU is linked to existing MUU leveraged exposure rather than fresh evidence."
+      ],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_state_conditional_only",
+          "if": "permission_state_before_open == Yellow",
+          "then": "return condition pass/fail only; no automatic action",
+          "source": "investing-os"
+        },
+        {
+          "rule_id": "linked_leveraged_exposure_check",
+          "if": "symbol interest is connected to trapped leveraged exposure",
+          "then": "flag linked_leveraged_exposure_detected for brain review",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": [
+        "1D/5D/20D return vs SOXX and QQQ",
+        "volume ratio",
+        "ATR(14)",
+        "MA20/MA50 distance",
+        "premarket gap if available",
+        "latest factual catalysts"
+      ]
+    },
+    {
+      "symbol": "NVDA",
+      "role": "short_term_candidate",
+      "theme": "ai_infrastructure",
+      "research_status": "core_position_research_pending",
+      "thesis_ref": "Core AI leader. Intraday noise should not override core thesis.",
+      "plan_mode": "conditional_action_allowed",
+      "focus_question": "Does NVDA provide market/AI leadership context without creating an intraday action impulse?",
+      "key_levels": [
+        {
+          "level": null,
+          "meaning": "no_action_context",
+          "source": "rule_formula",
+          "formula_request": "calculate MA20, MA50, previous day high/low, ATR(14)"
+        }
+      ],
+      "allowed_tactics": ["rs_pullback_rebound"],
+      "formula_overrides": [
+        {
+          "tactic": "rs_pullback_rebound",
+          "entry_anchor": "VWAP",
+          "stop_atr_multiplier": 1.0,
+          "risk_budget_pct": 0.006,
+          "position_cap_pct": 0.05,
+          "reason": "Demo: one narrow short-term entry only if QQQ is stable and NVDA confirms RS plus VWAP reclaim."
+        }
+      ],
+      "pre_authorized_actions": [
+        {
+          "action_id": "NVDA_one_preplanned_entry_demo",
+          "scope": "one_preplanned_entry",
+          "tactic": "rs_pullback_rebound",
+          "valid_until": "market_close",
+          "trigger_window_seconds": 120,
+          "stale_data_limit_seconds": 30,
+          "slippage_limit_pct": 0.3,
+          "requires_manual_confirm": true,
+          "all_conditions_required": true,
+          "conditions": [
+            "QQQ is not high-volume risk-off",
+            "NVDA RS versus QQQ and SMH remains positive",
+            "NVDA reclaims VWAP or approved anchor",
+            "volume confirms rebound",
+            "position cap and max loss remain inside budget"
+          ]
+        }
+      ],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": [
+          "data_fresh",
+          "same_permission_state",
+          "no_exception_triggered",
+          "position_cap_not_exceeded",
+          "daily_loss_limit_not_exceeded",
+          "no_linked_leveraged_exposure_exception"
+        ]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "qqq_high_volume_breakdown",
+          "trigger": "QQQ resumes high-volume downside after trigger",
+          "effect": "pause_for_brain_review",
+          "source": "investing-os"
+        },
+        {
+          "exception_id": "missed_trigger_chase",
+          "trigger": "price is already outside trigger window or slippage limit",
+          "effect": "pause_for_brain_review",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": [
+        "intraday_noise_reaction",
+        "short_term_thesis_override",
+        "core_position_turns_into_trade",
+        "chase_after_missed_trigger",
+        "second_entry_without_preapproval"
+      ],
+      "risk_budget": {
+        "max_loss": 300,
+        "position_cap": 0.05,
+        "attention_budget_minutes": 20
+      },
+      "falsification_conditions": [
+        "Only thesis-level business evidence can challenge core status.",
+        "Market volatility alone is not thesis falsification."
+      ],
+      "rule_collision_contract": [
+        {
+          "rule_id": "preauthorized_action_fast_check",
+          "if": "all pre_authorized_action conditions are true and fast_consistency_check passes",
+          "then": "return preauthorized_definition_complete and required_data_available or required_data_missing; do not output buy/sell/hold",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": [
+        "1D/5D/20D return vs QQQ and SMH",
+        "volume ratio",
+        "ATR(14)",
+        "MA20/MA50 distance",
+        "latest factual catalysts"
+      ]
+    }
+  ],
+  "global_forbidden_actions": [
+    "invent new short-term tactic intraday",
+    "expand linked leveraged exposure without explicit review",
+    "average down without pre-approved rule",
+    "treat focus pool as trading permission"
+  ],
+  "global_exception_rules": [
+    {
+      "exception_id": "market_breakdown",
+      "trigger": "QQQ/SPY high-volume breakdown or VIX proxy spike",
+      "effect": "downgrade_to_red",
+      "source": "investing-os"
+    },
+    {
+      "exception_id": "data_stale",
+      "trigger": "required runtime data older than stale_data_limit_seconds",
+      "effect": "pause_for_brain_review",
+      "source": "investing-os"
+    },
+    {
+      "exception_id": "account_mismatch",
+      "trigger": "IBKR position, order, or exposure snapshot conflicts with plan",
+      "effect": "pause_for_brain_review",
+      "source": "investing-os"
+    },
+    {
+      "exception_id": "linked_leveraged_exposure_exception",
+      "trigger": "trade rationale becomes linked leveraged exposure expansion without fresh evidence",
+      "effect": "no_trade",
+      "source": "investing-os"
+    }
+  ],
+  "stock_team_output_expected": {
+    "packet_type": "pre_market_packet",
+    "required_sections": [
+      "brain_decision_echo",
+      "market_context_echo",
+      "symbol_factor_calculations",
+      "rule_collision_results",
+      "missing_data",
+      "forbidden_sections_absent"
+    ],
+    "forbidden_sections": [
+      "buy_sell_hold_recommendation",
+      "permission_state_change",
+      "final_thesis_adoption",
+      "psychological_interpretation"
+    ]
+  }
+}

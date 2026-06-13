@@ -1,0 +1,393 @@
+# Investing-OS Growth Dashboard Design
+
+## Purpose
+
+Build a visual dashboard that helps the user see how investing-os grows after each trade review, research report, and system update.
+
+The dashboard should answer:
+
+- What is my current trading state?
+- Which abilities improved or weakened after a review?
+- Which lessons are only candidates, and which have become rules?
+- Where does each lesson live in investing-os?
+- What should I do next before trading permission returns to normal?
+
+This is not a trading terminal.
+
+It is a cognition and system-growth interface.
+
+## First Version Direction
+
+Use the selected layout from the visual companion:
+
+- left: trader profile and current permission state
+- center: capability hexagon with recent changes
+- right: promotion queue / candidate lessons
+- bottom: experience flow and current tasks
+
+Tone:
+
+- serious enough for risk management
+- motivating enough to make review feel like growth
+- light role-growth layer, but no gamification that encourages trading for points
+
+## Core Sections
+
+### 1. Trader Profile
+
+Shows the current operating state.
+
+Fields:
+
+- trader archetype
+- current level / stage
+- permission state
+- active unresolved risk
+- next required system action
+
+Example:
+
+```yaml
+archetype: System-Oriented Trader
+stage: Recovery
+permission_state: Red
+active_risk: MUU trapped leveraged position
+next_action: premarket MUU decision packet
+```
+
+### 2. Capability Radar / 六边形能力图
+
+Visualizes personal trading capability as a six-axis radar chart, not as plain text.
+
+- Research
+- Risk
+- Discipline
+- Execution
+- Emotion
+- Review
+
+Each dimension should show:
+
+- current score
+- recent change
+- source event
+- evidence link
+- full history of score changes
+
+Example:
+
+```yaml
+discipline:
+  current: 42
+  delta: -2
+  source: 2026-06-05 major drawdown review
+  reason: short-term stop-loss followed by continued trading
+```
+
+Scores are not performance scores.
+
+They are self-awareness and system-maturity indicators.
+
+Score changes must be traceable.
+
+Each delta needs:
+
+```yaml
+date:
+source_report:
+dimension:
+previous_score:
+new_score:
+delta:
+reason:
+related_lessons:
+```
+
+Important constraint:
+
+- Scores must not be based on P/L.
+- A losing day can increase Review, Risk, or Emotion if the system learned.
+- A winning day can reduce Discipline if the process was poor.
+
+### 3. Promotion Queue
+
+Shows candidate lessons waiting for user decision.
+
+Each candidate should show:
+
+- id
+- title
+- source
+- area
+- status
+- destination candidates
+- required decision
+
+Statuses:
+
+- pending_user_approval
+- pending_backtest
+- keep_observing
+- adopted
+- rejected
+- revised
+
+### 4. Experience Flow
+
+Shows how an event moves through the system.
+
+Example:
+
+```text
+Major Drawdown Review
+-> promotion-queue
+-> cognition/mistake-patterns
+-> cognition/emotional-patterns
+-> cognition/bias-map
+-> execution permission candidate
+-> future checklist / principle after approval
+```
+
+The purpose is to make it clear that journals are not the final destination.
+
+Journals feed cognition, decision, execution, and evolution layers.
+
+### 4.1 Structure Map / 文件结构网络图
+
+The dashboard should include a visual tree / radial network of the repository.
+
+Center:
+
+- `Investing-OS`
+
+First-level branches:
+
+- `cognition/`
+- `decision/`
+- `execution/`
+- `evolution/`
+- `wiki/`
+- `integrations/`
+- `system/checks/`
+
+Second-level nodes:
+
+- specific files such as `cognition/bias-map.md`, `evolution/promotion-queue.md`, `execution/intraday.md`, and `system/checks/short-term-trade-checklist.md`
+
+Candidate lessons should appear as separate nodes around the structure map.
+
+When a candidate lesson is selected:
+
+- show the lesson detail panel
+- show recommended landing files
+- draw lines from the lesson to all recommended files
+- highlight target files
+
+The user should not need to choose landing inside the webpage.
+
+The visual is for understanding; actual decision happens in conversation.
+
+### 4.2 Traceability Layer / 可追溯层
+
+The dashboard should become a long-term maintained traceability view.
+
+Every major review should produce a standard report.
+
+Every lesson should know:
+
+- source report
+- source event
+- extracted lesson
+- recommended landing
+- user decision
+- adopted files
+- review due date
+
+Every adopted rule or file entry should be able to show its source.
+
+Long-term supporting data files:
+
+```text
+system/traceability/
+  reports-index.json
+  lesson-index.json
+  file-lineage-index.json
+  capability-history.json
+  schema.md
+```
+
+The markdown files remain the source of truth.
+
+The traceability indexes make the dashboard navigable.
+
+Initial manual formats:
+
+- `system/traceability/schema.md`
+- `templates/review-report-standard.md`
+- `templates/lesson-lineage.md`
+
+Until automation exists, every major review should use the standard report format and create lesson lineage records for important lessons.
+
+### 5. Current Tasks
+
+Shows system tasks generated by recent work.
+
+Examples:
+
+- build MUU premarket decision packet
+- run stock_team historical experiment
+- review promotion candidates
+- update short-term checklist after approval
+
+Tasks should be grouped by:
+
+- before next premarket
+- stock_team
+- investing-os
+- weekend review
+
+## Data Sources
+
+First version can read from markdown files manually or by simple parsing later.
+
+Initial source files:
+
+- `evolution/promotion-queue.md`
+- `cognition/mistake-patterns.md`
+- `cognition/emotional-patterns.md`
+- `cognition/bias-map.md`
+- `cognition/strengths-and-weaknesses.md`
+- `wiki/journals/`
+- `execution/`
+- `system/data/market-context/`
+
+The dashboard should not replace these files.
+
+It visualizes them.
+
+## Lesson Placement Model
+
+When a new review insight appears, the dashboard should help classify it:
+
+| Insight Type | First Destination | Possible Promotion |
+|---|---|---|
+| one-day observation | journal | keep observing |
+| repeated mental pattern | cognition | bias / mistake pattern |
+| execution failure | execution / checks | checklist rule |
+| risk breach | risk / permission state | guardrail |
+| thesis update | wiki / decision | thesis or plan |
+| tactic idea | decision / stock_team experiment | restricted tactic |
+| durable belief | principles | constitution / principle |
+
+This prevents every painful lesson from becoming a permanent identity rule too quickly.
+
+## Major Drawdown Example
+
+The 2026-06-05 major drawdown should appear as a complete example:
+
+Capability changes:
+
+- Risk: improved awareness of leveraged path risk
+- Discipline: degraded due to post-loss trading
+- Emotion: improved recognition of repair desire
+- Execution: degraded due to re-entry and size escalation
+- Review: improved due to deep structured review
+
+Promotion candidates:
+
+- profit streak overconfidence
+- short-term stop-loss no-trade
+- Red permission state after major drawdown
+- thesis / underlying / leveraged instrument split
+- restricted RS rebound tactic pending backtest
+
+Current state:
+
+- permission_state: Red
+- unresolved_risk: MUU
+- next_action: premarket MUU decision packet
+
+## Interaction Design
+
+First version interactions:
+
+- click a capability to see recent evidence
+- click a candidate lesson to see source and destination
+- click an experience flow item to see where it lives in the repo
+- click current task to see required next action
+- click a file node to see file purpose, current entries, and source lineage
+- click a radar point to see score history and source reports
+
+No trading actions.
+
+No buy / sell / hold buttons.
+
+No performance leaderboard.
+
+## Visual Style
+
+Use a quiet, utilitarian dashboard style:
+
+- dense but readable
+- restrained color
+- clear status chips
+- no decorative hero page
+- no market-excitement visuals
+
+Color meaning:
+
+- green: adopted / stable
+- amber: candidate / needs review
+- red: permission restricted / active risk
+- blue: research / evidence
+- gray: archived / inactive
+
+## Safety Constraints
+
+- The dashboard must not issue trade commands.
+- It must distinguish candidate lessons from adopted rules.
+- It must not reward excessive trading activity.
+- It must show unresolved risk before growth achievements.
+- It must make Red permission state visually obvious.
+- It must preserve user decision authority.
+
+## Implementation Shape
+
+First implementation should be a local static HTML dashboard:
+
+- `dashboards/growth-dashboard.html`
+- optional `dashboards/assets/`
+- no server required
+- can be opened directly in browser
+
+Future versions may add:
+
+- generated data JSON
+- markdown parsing
+- history timeline
+- stock_team experiment results
+- weekly growth report
+
+The dashboard should eventually read from:
+
+- standard reports
+- lesson lineage records
+- promotion queue
+- capability history
+- file lineage index
+
+## Open Questions
+
+1. Should capability scores be numeric, descriptive, or both?
+2. Should the trader avatar be symbolic only, or have visible levels?
+3. Should candidate approval happen inside the dashboard later, or remain manual in markdown?
+4. Should the first version be static demo data, or parse current markdown files immediately?
+
+## Approval Gate
+
+Implementation should not begin until the user confirms:
+
+- the layout direction is correct
+- the six capability dimensions are acceptable
+- the dashboard should be static HTML first
+- the role-growth layer should remain light and not gamified around trading frequency

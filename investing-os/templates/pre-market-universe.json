@@ -1,0 +1,79 @@
+{
+  "artifact_type": "pre_market_universe",
+  "version": "1.0",
+  "date": "YYYY-MM-DD",
+  "created_by": "investing-os",
+  "purpose": "Stage 0 market context universe. This is not a trading permission list.",
+  "source_inputs": {
+    "positions": [
+      {
+        "source": "IBKR | cached_ibkr | manual_snapshot",
+        "as_of_et": "YYYY-MM-DDTHH:MM:SS-04:00",
+        "symbols": []
+      }
+    ],
+    "prior_review": {
+      "path": "wiki/journals/YYYY-MM-DD-review.md",
+      "status": "reviewed_for_stage0_input",
+      "key_risks": []
+    },
+    "cognition_state": {
+      "permission_basis": "normal | yellow | red | recovery_boundary",
+      "active_risks": []
+    }
+  },
+  "permission_state_before_open": "Red | Yellow | Normal | Recovery",
+  "forbidden_actions": [
+    "new_short_term_trade_without_plan",
+    "new_leveraged_product_trade_without_explicit_brain_approval",
+    "loss_repair_reentry"
+  ],
+  "selection_policy": {
+    "allowed_sources": [
+      "current_positions",
+      "active_watchlist",
+      "researched_or_explicitly_approved_candidates",
+      "market_or_sector_proxies"
+    ],
+    "forbidden_interpretations": [
+      "focus_pool",
+      "trade_permission",
+      "buy_sell_hold_recommendation",
+      "symbol_selection_by_stock_team"
+    ]
+  },
+  "themes": [
+    "semiconductors",
+    "ai_infrastructure",
+    "memory",
+    "cloud",
+    "optical"
+  ],
+  "universe": [
+    {
+      "symbol": "SYMBOL",
+      "role": "core | swing | mid_term_swing_candidate | short_term_candidate | watchlist | sector_proxy | market_proxy",
+      "theme": "theme_name",
+      "research_status": "core_position_research_pending | researched_draft | partially_researched | candidate_only | proxy",
+      "source": "current_positions | active_watchlist | researched_candidate | explicit_user_request | proxy",
+      "brain_note": "Why this symbol is allowed in the Stage 0 universe."
+    }
+  ],
+  "proxies": [
+    {
+      "symbol": "QQQ",
+      "role": "market_proxy",
+      "theme": "market_context",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Nasdaq 100 / growth risk context."
+    }
+  ],
+  "forbidden_sections_absent": [
+    "buy_sell_hold_recommendation",
+    "trading_permission_state",
+    "symbol_selection_recommendation",
+    "final_thesis_adoption",
+    "psychological_interpretation"
+  ]
+}

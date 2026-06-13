@@ -1,0 +1,31 @@
+[
+  {
+    "id": "RPT-2026-06-05-MAJOR-DRAWDOWN",
+    "title": "2026-06-05 Major Drawdown Review",
+    "cn": "2026-06-05 最大单日回撤复盘",
+    "path": "wiki/journals/2026-06-05-major-drawdown-review.md",
+    "html_path": "dashboards/reports/2026-06-05-major-drawdown-review.html",
+    "type": "post_market_review",
+    "status": "absorbed",
+    "lessons": [
+      "CAND-2026-06-06-001",
+      "CAND-2026-06-06-002",
+      "CAND-2026-06-06-003",
+      "CAND-2026-06-06-004",
+      "CAND-2026-06-06-005"
+    ],
+    "summary": "短线战术在 risk-off 环境失效，杠杆工具放大亏损，形成 MUU trapped position，并触发红色权限。"
+  },
+  {
+    "id": "SRC-2026-06-06-RS-BACKTEST",
+    "title": "Stock Team RS Pullback Backtest Evidence",
+    "cn": "stock_team RS 回撤反弹回测证据",
+    "path": "wiki/sources/stock-team-rs-pullback-backtest-2026-06-06.md",
+    "type": "evidence_source",
+    "status": "absorbed_pending_review",
+    "lessons": [
+      "CAND-2026-06-06-005"
+    ],
+    "summary": "213 次交易、胜率 62.91%、PF 1.33；QQQ high-volume risk-off 为负期望。"
+  }
+]

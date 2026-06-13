@@ -1,0 +1,178 @@
+{
+  "snapshot_id": "tactical-rules-20260605-example",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "created_at": "2026-06-05T00:00:00+08:00",
+  "valid_from": "2026-06-05",
+  "review_due": "2026-07-05",
+  "status": "draft",
+  "source": {
+    "repository": "investing-os",
+    "principles": [
+      "PRIN-001",
+      "PRIN-002",
+      "PRIN-003",
+      "PRIN-004",
+      "PRIN-005",
+      "PRIN-006"
+    ],
+    "generated_by": "manual",
+    "notes": "Example snapshot only. Not approved for runtime consumption."
+  },
+  "rules": [
+    {
+      "id": "leveraged_tool_discipline",
+      "source_principle": "PRIN-001",
+      "discipline_intent": "Prevent leveraged products from silently becoming ordinary long-term holdings.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "requires_underlying_structure_check": true,
+        "requires_max_holding_duration": true,
+        "requires_stop_condition": true
+      },
+      "forbidden_actions": [
+        "upgrade_leveraged_tool_to_long_term_holding_intraday",
+        "increase_leverage_due_to_regret_or_fomo"
+      ],
+      "allowed_actions": [
+        "alert_missing_stop",
+        "alert_missing_holding_duration",
+        "alert_underlying_structure_break"
+      ],
+      "evidence": "PRIN-001 source principle and future trade reviews.",
+      "falsification": "Revise if repeated reviews show the rule blocks valid planned leveraged expressions without reducing risk."
+    },
+    {
+      "id": "hand_feel_trade_limit",
+      "source_principle": "PRIN-002",
+      "discipline_intent": "Keep hand-feel trades small, time-bounded, and reviewable.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "requires_chart_volume_vwap_confirmation": true,
+        "requires_time_window_check": true,
+        "max_trades_per_day": "TBD"
+      },
+      "forbidden_actions": [
+        "hand_feel_trade_without_confirmation",
+        "late_session_hand_feel_trade_without_new_catalyst"
+      ],
+      "allowed_actions": [
+        "alert_missing_confirmation",
+        "alert_late_session_exception_required"
+      ],
+      "evidence": "PRIN-002 and CASE-002.",
+      "falsification": "Revise after enough hand-feel trade samples show different timing or confirmation rules."
+    },
+    {
+      "id": "profit_taking_cooling_period",
+      "source_principle": "PRIN-003",
+      "discipline_intent": "Prevent regret-driven follow-up selling after first profit taking.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "first_take_profit_ratio_min": 0.2,
+        "first_take_profit_ratio_max": 0.3,
+        "cooling_minutes_min": 15,
+        "cooling_minutes_max": 30,
+        "valid_followup_sell_triggers": [
+          "vwap_break",
+          "trailing_take_profit_break",
+          "second_target_reached",
+          "sector_weakness",
+          "volume_price_distortion"
+        ]
+      },
+      "forbidden_actions": [
+        "followup_sell_due_to_regret_during_cooling_period"
+      ],
+      "allowed_actions": [
+        "alert_cooling_period",
+        "alert_valid_sell_trigger_required"
+      ],
+      "evidence": "PRIN-003 and CASE-001.",
+      "falsification": "Revise if repeated reviews show the cooling period prevents valid planned exits or increases risk."
+    },
+    {
+      "id": "sector_sympathy_rules",
+      "source_principle": "PRIN-004",
+      "discipline_intent": "Require catalyst diffusion logic before sympathy trades.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "requires_industry_or_sector_catalyst": true,
+        "requires_peer_confirmation": true,
+        "requires_chart_volume_vwap_confirmation": true
+      },
+      "forbidden_actions": [
+        "buy_peer_only_because_it_moved",
+        "treat_single_company_catalyst_as_sector_wide"
+      ],
+      "allowed_actions": [
+        "alert_catalyst_scope_required",
+        "alert_peer_confirmation_required"
+      ],
+      "evidence": "PRIN-004 source principle.",
+      "falsification": "Revise after sector-specific reviews identify where sympathy diffusion is reliable."
+    },
+    {
+      "id": "vwap_volume_confirmation",
+      "source_principle": "PRIN-005",
+      "discipline_intent": "Use VWAP as context, not command, and require volume/context confirmation.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "relative_volume_activity_threshold": 1.2,
+        "breakout_volume_multiple": 1.5,
+        "strong_breakout_volume_multiple": 2.0,
+        "pullback_volume_contraction_min": 0.5,
+        "pullback_volume_contraction_max": 0.7,
+        "requires_underlying_vwap_for_leveraged_products": true
+      },
+      "forbidden_actions": [
+        "treat_vwap_as_standalone_command",
+        "go_long_below_vwap_without_reclaim_and_volume_confirmation"
+      ],
+      "allowed_actions": [
+        "alert_vwap_context_required",
+        "alert_volume_confirmation_missing"
+      ],
+      "evidence": "PRIN-005, CASE-002, and CASE-003.",
+      "falsification": "Revise VWAP and volume parameters only after enough setup-specific trade reviews."
+    },
+    {
+      "id": "cognitive_attention_budget",
+      "source_principle": "PRIN-006",
+      "discipline_intent": "Prevent low-conviction short-term trades from consuming high-conviction attention.",
+      "status": "monitor_only",
+      "parameter_status": "provisional",
+      "parameters": {
+        "max_continuous_monitoring_minutes": 30,
+        "requires_pause_after_attention_breach": true,
+        "requires_add_rule_before_averaging_down": true
+      },
+      "forbidden_actions": [
+        "turn_signal_into_thesis",
+        "average_down_without_predefined_add_rule",
+        "let_low_conviction_trade_hijack_sleep"
+      ],
+      "allowed_actions": [
+        "alert_attention_budget_breach",
+        "prompt_fact_thesis_risk_restart"
+      ],
+      "evidence": "PRIN-006 and 2026-06-04 daily review.",
+      "falsification": "Revise if repeated journal reviews show focused monitoring improves decisions without attention or sleep damage."
+    }
+  ],
+  "degraded_mode": {
+    "if_daily_plan_missing": "read_only_alerts",
+    "forbid_new_discretionary_orders": true,
+    "allowed_actions": [
+      "monitor_existing_positions",
+      "emit_risk_alerts",
+      "create_review_tasks",
+      "request_manual_plan"
+    ]
+  }
+}

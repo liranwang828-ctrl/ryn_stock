@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Investing-OS Growth Dashboard</title>
+  <script src="assets/growth-dashboard-data.js"></script>
+  <script src="assets/growth-dashboard-indexes.js"></script>
+  <style>
+    :root {
+      --bg: #f4f6f8; --panel: #fff; --text: #172033; --muted: #667085;
+      --line: #d7dee8; --red: #b42318; --amber: #b54708; --blue: #175cd3;
+      --green: #067647; --purple: #6941c6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, "Microsoft YaHei", sans-serif; }
+    header, section, aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    header { margin: 14px; padding: 16px 18px; }
+    h1 { margin: 0; font-size: 22px; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    h3 { margin: 14px 0 8px; font-size: 14px; }
+    .sub { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .layout { display: grid; grid-template-columns: minmax(760px, 1fr) 390px; gap: 14px; padding: 0 14px 14px; }
+    section, aside { padding: 14px; }
+    .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    .box { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: #fbfcfe; font-size: 13px; }
+    .chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 700; }
+    .red { color: var(--red); background: #fef3f2; border-color: #fecdca; }
+    .amber { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
+    .blue { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
+    .green { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
+    .muted { color: var(--muted); }
+    .map { height: 720px; border: 1px solid #e4e7ec; border-radius: 8px; background: radial-gradient(circle at 50% 45%, #eef6ff 0, #fff 28%, #fbfcfe 100%); }
+    svg { width: 100%; height: 100%; display: block; }
+    .link { stroke: #b8c1d1; stroke-width: 1.3; }
+    .lesson-line { stroke: #f59e0b; stroke-width: 2.2; stroke-dasharray: 6 5; opacity: 0; }
+    .lesson-line.active { opacity: 1; }
+    .core { fill: #eff8ff; stroke: var(--blue); stroke-width: 2; }
+    .system { fill: #f9fafb; stroke: #77839a; stroke-width: 1.5; }
+    .file { fill: #fff; stroke: #98a2b3; stroke-width: 1.2; }
+    .file.active { fill: #fffaeb; stroke: #f59e0b; stroke-width: 2.3; }
+    .file-click { cursor: pointer; }
+    .lesson { fill: #fffbeb; stroke: #f59e0b; stroke-width: 2; cursor: pointer; }
+    .lesson.active { fill: #fedf89; stroke: #b54708; stroke-width: 3; }
+    text { fill: var(--text); font-size: 11px; text-anchor: middle; pointer-events: none; white-space: pre-line; }
+    .file-label { font-size: 10px; }
+    .detail { min-height: 170px; }
+    .path { margin: 6px 0; padding: 7px 9px; border-left: 4px solid #f59e0b; border-radius: 4px; background: #fffbeb; font-size: 13px; }
+    .path.blue-path { border-left-color: var(--blue); background: #eff8ff; }
+    .path.green-path { border-left-color: var(--green); background: #ecfdf3; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .top-link { display: inline-flex; margin-top: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: #fbfcfe; font-size: 12px; font-weight: 700; }
+    .radar-wrap { display: grid; grid-template-columns: 250px 1fr; gap: 12px; align-items: center; }
+    .radar { height: 240px; border: 1px solid var(--line); border-radius: 8px; background: #fcfcfd; }
+    .grid { fill: none; stroke: #d9e0ea; stroke-width: 1; }
+    .axis { stroke: #c7ceda; stroke-width: 1; }
+    .prev { fill: rgba(102,112,133,.14); stroke: #98a2b3; stroke-width: 1.5; }
+    .curr { fill: rgba(23,92,211,.24); stroke: var(--blue); stroke-width: 2.4; }
+    .point { fill: var(--blue); stroke: white; stroke-width: 2; cursor: pointer; }
+    .score-row { display: grid; grid-template-columns: 90px 45px 45px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid #edf0f4; font-size: 12px; }
+    .tasks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+    code { font-family: Consolas, monospace; font-size: 12px; }
+    @media (max-width: 1120px) { .layout, .status, .tasks, .radar-wrap { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title"></h1>
+    <div class="sub" id="subtitle"></div>
+    <a class="top-link" href="operating-console.html">Operating Console / 返回操作入口</a>
+    <div class="status">
+      <div class="box"><span class="chip red" id="permission"></span><br><strong>Trading Permission / 交易权限</strong></div>
+      <div class="box"><strong>Active Risk / 未处理风险</strong><br><span id="activeRisk"></span></div>
+      <div class="box"><strong>Next Action / 下一步</strong><br><span id="nextAction"></span></div>
+      <div class="box"><strong>Boundary / 边界</strong><br><span id="boundary"></span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section>
+      <h2>Structure Map / 文件结构树枝图</h2>
+      <div class="map"><svg id="map" viewBox="0 0 800 720" role="img" aria-label="Investing-OS structure map"></svg></div>
+    </section>
+    <aside>
+      <h2>Lineage Inspector / 来源追踪</h2>
+      <div class="detail">
+        <span class="chip amber" id="lessonStatus">select lesson</span>
+        <h3 id="lessonTitle">点击文件节点或候选经验点</h3>
+        <p id="lessonSummary" class="muted">Click a file node to see its absorbed lessons, or click a pending lesson to see proposed landing.</p>
+        <div><strong>Source / 来源</strong><br><code id="lessonSource">-</code></div>
+        <h3 id="landingTitle">Recommended Landing / 推荐落点</h3>
+        <div id="landingList"></div>
+      </div>
+      <h3>Report Archive / 报告归档</h3>
+      <div id="reportArchive"></div>
+    </aside>
+  </div>
+
+  <div class="layout">
+    <section>
+      <h2>Trader State Radar / 交易者状态六边形</h2>
+      <div class="radar-wrap">
+        <svg class="radar" id="radar" viewBox="0 0 250 240" aria-label="Capability radar"></svg>
+        <div>
+          <div id="scoreRows"></div>
+          <div class="box" id="capabilityDetail">点击雷达点查看分数来源 / Click a radar point to see source.</div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2>Current Operating Tasks / 当前工作</h2>
+      <div class="tasks" id="tasks"></div>
+      <h3>Brain-Muscle Interface / 主脑-肌肉接口</h3>
+      <div class="box">
+        investing-os 负责许可、解释、沉淀和最终决策；stock_team 负责只读计算、盯盘事实、回测和 evidence packet。网页只显示主脑已吸收的证据，不直接调用肌肉。
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const data = window.GROWTH_DASHBOARD_DATA;
+    if (window.GROWTH_DASHBOARD_INDEXES) {
+      const indexes = window.GROWTH_DASHBOARD_INDEXES;
+      data.reports = indexes.reports || data.reports;
+      data.fileLineage = indexes.fileLineage || data.fileLineage;
+      data.capabilityHistory = indexes.capabilityHistory || [];
+      if (indexes.lessons) {
+        const visualById = Object.fromEntries(data.lessons.map(item => [item.id, item]));
+        data.lessons = indexes.lessons.map(item => ({ ...(visualById[item.id] || {}), ...item }));
+      }
+    }
+    const map = document.getElementById("map");
+    const center = { x: 400, y: 325 };
+
+    function el(name, attrs = {}, text = "") {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+      if (text) node.textContent = text;
+      return node;
+    }
+    function line(x1, y1, x2, y2, cls, id = "") {
+      map.appendChild(el("line", { x1, y1, x2, y2, class: cls, id }));
+    }
+    function text(x, y, value, cls = "") {
+      const t = el("text", { x, y, class: cls });
+      value.split("\n").forEach((part, i) => {
+        const span = el("tspan", { x, dy: i ? 13 : 0 }, part);
+        t.appendChild(span);
+      });
+      map.appendChild(t);
+    }
+
+    function renderMap() {
+      data.systems.forEach(s => line(center.x, center.y, s.x, s.y, "link"));
+      data.systems.forEach(s => s.files.forEach(fid => {
+        const f = data.files[fid]; line(s.x, s.y, f.x, f.y, "link");
+      }));
+      visibleLessons().forEach(lesson => lesson.targets.forEach(fid => {
+        const f = data.files[fid]; line(lesson.x, lesson.y, f.x, f.y, "lesson-line", `line-${lesson.id}-${fid}`);
+      }));
+      map.appendChild(el("circle", { cx: center.x, cy: center.y, r: 58, class: "core" }));
+      text(center.x, center.y - 5, "Investing-OS\n主脑", "");
+      data.systems.forEach(s => {
+        map.appendChild(el("circle", { cx: s.x, cy: s.y, r: 42, class: "system" }));
+        text(s.x, s.y - 5, s.label);
+      });
+      Object.entries(data.files).forEach(([id, f]) => {
+        const r = el("rect", { id: `file-${id}`, x: f.x - 48, y: f.y - 15, width: 96, height: 30, rx: 6, class: "file file-click" });
+        r.addEventListener("click", () => selectFile(id));
+        map.appendChild(r);
+        text(f.x, f.y + 4, f.label, "file-label");
+      });
+      visibleLessons().forEach(lesson => {
+        const g = el("g", { id: `lesson-${lesson.id}`, role: "button", tabindex: 0 });
+        g.appendChild(el("circle", { cx: lesson.x, cy: lesson.y, r: 34, class: "lesson" }));
+        const label = el("text", { x: lesson.x, y: lesson.y - 4 });
+        label.appendChild(el("tspan", { x: lesson.x }, lesson.id.slice(-3)));
+        label.appendChild(el("tspan", { x: lesson.x, dy: 13 }, lesson.cn.slice(0, 8)));
+        g.appendChild(label);
+        g.addEventListener("click", () => selectLesson(lesson.id));
+        map.appendChild(g);
+      });
+    }
+
+    function visibleLessons() {
+      return data.lessons.filter(lesson => lesson.status !== "adopted");
+    }
+
+    function selectLesson(id) {
+      const lesson = data.lessons.find(x => x.id === id);
+      document.querySelectorAll(".lesson").forEach(n => n.classList.remove("active"));
+      document.querySelector(`#lesson-${id} .lesson`)?.classList.add("active");
+      document.querySelectorAll(".lesson-line").forEach(n => n.classList.remove("active"));
+      document.querySelectorAll(".file").forEach(n => n.classList.remove("active"));
+      lesson.targets.forEach(fid => {
+        document.getElementById(`line-${id}-${fid}`)?.classList.add("active");
+        document.getElementById(`file-${fid}`)?.classList.add("active");
+      });
+      document.getElementById("lessonStatus").textContent = lesson.status;
+      document.getElementById("lessonStatus").className = `chip ${lesson.status === "adopted" ? "green" : "amber"}`;
+      document.getElementById("lessonTitle").textContent = `${lesson.cn} / ${lesson.title}`;
+      document.getElementById("lessonSummary").textContent = lesson.summary;
+      document.getElementById("lessonSource").textContent = lesson.source;
+      document.getElementById("landingTitle").textContent = "Recommended Landing / 推荐落点";
+      document.getElementById("landingList").innerHTML = lesson.targets.map(fid => `<div class="path">${data.files[fid].path}</div>`).join("");
+    }
+
+    function selectFile(id) {
+      const file = data.files[id];
+      const lineage = data.fileLineage[id] || [];
+      document.querySelectorAll(".lesson").forEach(n => n.classList.remove("active"));
+      document.querySelectorAll(".lesson-line").forEach(n => n.classList.remove("active"));
+      document.querySelectorAll(".file").forEach(n => n.classList.remove("active"));
+      document.getElementById(`file-${id}`)?.classList.add("active");
+      document.getElementById("lessonStatus").textContent = lineage.length ? "lineage_available" : "no_lineage_yet";
+      document.getElementById("lessonStatus").className = `chip ${lineage.length ? "blue" : "amber"}`;
+      document.getElementById("lessonTitle").textContent = `${file.label}`;
+      document.getElementById("lessonSummary").textContent = file.path;
+      document.getElementById("lessonSource").textContent = "system/traceability/file-lineage-index";
+      document.getElementById("landingTitle").textContent = "Absorbed Lessons / 已吸收经验";
+      document.getElementById("landingList").innerHTML = lineage.length
+        ? lineage.map(item => {
+            const lesson = data.lessons.find(x => x.id === item.lesson);
+            const report = data.reports.find(x => x.id === item.report);
+            const reportPath = report ? (report.html_path || report.path) : item.report;
+            const sourcePath = report ? report.path : item.report;
+            return `<div class="path blue-path"><strong>${item.lesson}</strong> ${lesson ? lesson.cn : ""}<br><span class="muted">${item.status} | </span><a href="../${reportPath}">${reportPath}</a><br><span class="muted">source: ${sourcePath}</span></div>`;
+          }).join("")
+        : `<div class="path">这个文件还没有记录到 dashboard lineage。后续复盘吸收后会自动补充。</div>`;
+    }
+
+    function points(items, key) {
+      return items.map((item, i) => {
+        const angle = -Math.PI / 2 + i * Math.PI * 2 / items.length;
+        const r = item[key] / 100 * 90;
+        return `${125 + Math.cos(angle) * r},${120 + Math.sin(angle) * r}`;
+      }).join(" ");
+    }
+    function renderRadar() {
+      const radar = document.getElementById("radar");
+      [20, 40, 60, 80, 100].forEach(v => {
+        const pts = data.capabilities.map((_, i) => {
+          const angle = -Math.PI / 2 + i * Math.PI * 2 / data.capabilities.length;
+          const r = v / 100 * 90;
+          return `${125 + Math.cos(angle) * r},${120 + Math.sin(angle) * r}`;
+        }).join(" ");
+        radar.appendChild(el("polygon", { points: pts, class: "grid" }));
+      });
+      data.capabilities.forEach((c, i) => {
+        const angle = -Math.PI / 2 + i * Math.PI * 2 / data.capabilities.length;
+        const x = 125 + Math.cos(angle) * 102;
+        const y = 120 + Math.sin(angle) * 102;
+        radar.appendChild(el("line", { x1: 125, y1: 120, x2: x, y2: y, class: "axis" }));
+        const t = el("text", { x, y: y + 4 }, c.cn);
+        radar.appendChild(t);
+      });
+      radar.appendChild(el("polygon", { points: points(data.capabilities, "previous"), class: "prev" }));
+      radar.appendChild(el("polygon", { points: points(data.capabilities, "score"), class: "curr" }));
+      data.capabilities.forEach((c, i) => {
+        const angle = -Math.PI / 2 + i * Math.PI * 2 / data.capabilities.length;
+        const r = c.score / 100 * 90;
+        const p = el("circle", { cx: 125 + Math.cos(angle) * r, cy: 120 + Math.sin(angle) * r, r: 4.5, class: "point" });
+        p.addEventListener("click", () => showCapability(c.id));
+        radar.appendChild(p);
+      });
+      document.getElementById("scoreRows").innerHTML = data.capabilities.map(c => {
+        const delta = c.score - c.previous;
+        return `<div class="score-row"><strong>${c.label}</strong><span>${c.score}</span><span class="${delta >= 0 ? "green" : "red"}">${delta >= 0 ? "+" : ""}${delta}</span><span>${c.cn}</span></div>`;
+      }).join("");
+    }
+
+    function showCapability(id) {
+      const c = data.capabilities.find(x => x.id === id);
+      document.getElementById("capabilityDetail").innerHTML = `<strong>${c.cn} / ${c.label}</strong><br>Score: ${c.score}, Previous: ${c.previous}<br>Source: <code>${c.source}</code><br>${c.reason}`;
+    }
+
+    function init() {
+      document.getElementById("title").textContent = data.state.title;
+      document.getElementById("subtitle").textContent = data.state.subtitle;
+      document.getElementById("permission").textContent = `${data.state.permission} / ${data.state.permissionCn}`;
+      document.getElementById("activeRisk").textContent = data.state.activeRisk;
+      document.getElementById("nextAction").textContent = data.state.nextAction;
+      document.getElementById("boundary").textContent = data.state.boundary;
+      document.getElementById("tasks").innerHTML = data.tasks.map(t => `<div class="box"><strong>${t.group}</strong><br>${t.text}</div>`).join("");
+      document.getElementById("reportArchive").innerHTML = data.reports.map(r => {
+        const readable = r.html_path || r.path;
+        return `<div class="path green-path"><strong>${r.cn}</strong><br><a href="../${readable}">${readable}</a><br><span class="muted">${r.status} | lessons: ${r.lessons.length} | source: ${r.path}</span></div>`;
+      }).join("");
+      renderMap(); renderRadar();
+      const firstVisible = visibleLessons()[0];
+      if (firstVisible) selectLesson(firstVisible.id); else selectFile("queue");
+    }
+    init();
+  </script>
+</body>
+</html>

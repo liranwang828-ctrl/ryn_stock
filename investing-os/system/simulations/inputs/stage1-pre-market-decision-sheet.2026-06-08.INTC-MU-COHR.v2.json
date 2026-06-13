@@ -1,0 +1,146 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from_stage0_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.2026-06-08.INTC-MU-COHR.v2.md",
+  "permission_state_before_open": "Yellow",
+  "market_assumptions": {
+    "expected_regime": "risk_off_pressure_from_stage0",
+    "risk_notes": [
+      "user confirmed focus pool after Stage 0 discussion: INTC + MU + COHR",
+      "broad market showed short-term risk-off pressure in Stage 0",
+      "semiconductor proxies are weak on 5D but still positive on 20D",
+      "today's Stage 1 is evidence-only unless user later writes a separate plan"
+    ],
+    "evidence_required": ["QQQ", "SPY", "VIXY", "SMH", "SOXX", "account_snapshot"]
+  },
+  "symbols": [
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "stage1_evidence_missing",
+          "trigger": "fresh symbol packet missing or fallback-only",
+          "effect": "no_trade",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "treat turnaround narrative as thesis", "treat weak rebound as core-quality evidence"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["weak RS versus QQQ/SOXX", "no catalyst confirmation", "fails to hold relevant moving-average context"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_state_conditional_only",
+          "if": "permission_state_before_open == Yellow",
+          "then": "evidence-only unless a separate plan is written and manually confirmed",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "fresh catalyst check"]
+    },
+    {
+      "symbol": "MU",
+      "role": "watchlist",
+      "theme": "memory",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "stage1_evidence_missing",
+          "trigger": "fresh symbol packet missing or fallback-only",
+          "effect": "no_trade",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "memory-cycle excitement treated as entry signal", "average down without written plan"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["memory theme loses relative strength", "fails QQQ/SOXX relative-strength check", "fresh catalyst check is stale"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_state_conditional_only",
+          "if": "permission_state_before_open == Yellow",
+          "then": "evidence-only unless a separate plan is written and manually confirmed",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "fresh catalyst check"]
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "theme": "optical",
+      "research_status": "researched_draft",
+      "thesis_ref": "wiki/companies/COHR.md",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "stage1_evidence_missing",
+          "trigger": "fresh symbol packet missing or fallback-only",
+          "effect": "no_trade",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "chase near highs", "add while lagging optical/semiconductor peers"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["lags LITE/AAOI/SOXX materially", "fails to confirm optical theme strength", "breaks thesis-candidate risk boundary"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_state_conditional_only",
+          "if": "permission_state_before_open == Yellow",
+          "then": "evidence-only unless a separate swing plan is reviewed and manually confirmed",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "peer confirmation", "fresh catalyst check"]
+    }
+  ],
+  "global_forbidden_actions": [
+    "invent new short-term tactic intraday",
+    "use leverage to repair losses",
+    "average down without pre-approved rule",
+    "upgrade observe-only symbols without fresh Stage 0 and Stage 1 packets",
+    "treat Stage 1 evidence as trade permission"
+  ]
+}

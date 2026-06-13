@@ -1,0 +1,184 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from_stage0_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.2026-06-08.cognition-v1.md",
+  "permission_state_before_open": "Yellow",
+  "market_assumptions": {
+    "expected_regime": "unknown_until_fresh_stage0_packet",
+    "risk_notes": [
+      "first cognition-system operating pass",
+      "leader subset is research priority, not trade permission",
+      "fresh VIX / QQQ / SPY / SMH / SOXX packet required before any upgrade",
+      "transition_market exposure should downgrade new risk unless catalyst evidence is strong"
+    ],
+    "evidence_required": ["QQQ", "SPY", "VIX", "SMH", "SOXX", "account_snapshot"]
+  },
+  "symbols": [
+    {
+      "symbol": "RKLB",
+      "role": "watchlist",
+      "theme": "ai_infrastructure",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": [
+          "data_fresh",
+          "same_permission_state",
+          "no_exception_triggered",
+          "position_cap_not_exceeded",
+          "daily_loss_limit_not_exceeded",
+          "not_repair_trading"
+        ]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "stage1_evidence_missing",
+          "trigger": "fresh symbol packet missing",
+          "effect": "no_trade",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "leader-subset membership treated as entry signal"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["fresh Stage 1 packet shows weak relative strength or stale catalyst"],
+      "rule_collision_contract": [],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "theme confirmation", "fresh catalyst check"]
+    },
+    {
+      "symbol": "NVDA",
+      "role": "watchlist",
+      "theme": "ai_infrastructure",
+      "research_status": "partially_researched",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": [
+          "data_fresh",
+          "same_permission_state",
+          "no_exception_triggered",
+          "position_cap_not_exceeded",
+          "daily_loss_limit_not_exceeded",
+          "not_repair_trading"
+        ]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "stage1_evidence_missing",
+          "trigger": "fresh symbol packet missing",
+          "effect": "no_trade",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["short-term thesis drift", "core position turns into trade"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["fresh Stage 1 packet shows leader quality no longer active"],
+      "rule_collision_contract": [],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SMH/SOXX confirmation", "fresh catalyst check"]
+    },
+    {
+      "symbol": "AVGO",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [],
+      "forbidden_actions": ["new intraday action", "technical signal treated as thesis"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["sector confirmation absent", "relative strength weakens versus QQQ"],
+      "rule_collision_contract": [],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SMH/SOXX confirmation", "fresh catalyst check"]
+    },
+    {
+      "symbol": "PLTR",
+      "role": "watchlist",
+      "theme": "ai_infrastructure",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [],
+      "forbidden_actions": ["new intraday action", "momentum treated as durable thesis"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["fresh catalyst check fails", "leader quality not confirmed"],
+      "rule_collision_contract": [],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "fresh catalyst check"]
+    },
+    {
+      "symbol": "NET",
+      "role": "watchlist",
+      "theme": "cloud",
+      "research_status": "candidate_only",
+      "thesis_ref": "",
+      "plan_mode": "observe",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_exception_triggered", "position_cap_not_exceeded", "daily_loss_limit_not_exceeded", "not_repair_trading"]
+      },
+      "exception_rules": [],
+      "forbidden_actions": ["new intraday action", "leader-subset membership treated as entry signal"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["fresh packet shows weak RS or stale catalyst"],
+      "rule_collision_contract": [],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "fresh catalyst check"]
+    }
+  ],
+  "global_forbidden_actions": [
+    "invent new short-term tactic intraday",
+    "use leverage to repair losses",
+    "average down without pre-approved rule",
+    "treat leader-subset membership as a trade command",
+    "upgrade observe-only symbols without fresh Stage 0 and Stage 1 packets"
+  ]
+}

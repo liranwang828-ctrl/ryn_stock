@@ -1,0 +1,124 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Logs & Diagnostics
+logs/
+*.log
+findings/exit_decision_*.lock
+findings/premarket_summary_*.lock
+
+# Temporary & Environment files
+.env
+.env.*
+!.env.template
+*.tmp
+*.temp
+*.bak
+run.lock
+
+# Reports & Large compiled datasets
+reports/daily_dashboard_*.html
+reports/2026-*.html
+reports/research_*.html
+reports/preview_dashboard.html
+reports/trading_nodes_guide.html
+findings/intraday_snapshot_*.jsonl
+findings/premarket_summary_*.json
+findings/CommunityAgent_*.json
+findings/FundAgent_*.json
+findings/MacroAgent_*.json
+findings/RiskAgent_*.json
+findings/SectorAgent_*.json
+findings/SentimentAgent_*.json
+findings/TechAgent_*.json
+findings/debate_*.jsonl
+findings/narrative_*.json
+findings/portfolio_snapshot_*.json
+findings/exit_decision_*.json
+findings/order_sheet_*.json
+findings/today_focus.json
+findings/entry_decision_*.json
+learning/poll_state_*.json
+learning/decision_trace.jsonl
+learning/master_score_log_*.jsonl
+paper_trading/strict/
+paper_trading/base/
+paper_trading/loose/
+paper_trading/trades.jsonl
+paper_trading/portfolio.json
+paper_trading/loose/trades.jsonl
+paper_trading/loose/portfolio.json
+knowledge/snapshots_*.jsonl
+knowledge/trading_history.jsonl
+watchlist.json
+daily_plan_*.json
+daily_checklist_*.json
+candidates_*.json
+opening_scenarios_*.json
+premarket_analysis_*.json
+session_state_*.json
+sweep_progress.txt
+
+# SQLite 数据库与二进制运行数据
+*.db
+*.sqlite
+
+# 排除整个 findings 目录（包含分析师的动态临时报告）
+findings/
+
+# Exclude generated learning data while retaining the learning module source.
+learning/*
+!learning/__init__.py
+!learning/features.py
+!learning/README.md
+!learning/trading_patterns.md
+
+# 本地历史归档数据
+archive/local_history/
+
+# 排除根目录下智能体生成的临时交互产物
+data_raw_primary.json
+data_raw_secondary.json
+data_verified.json
+discussion_board.jsonl
+strategy_result.json
+
+# 排除特定标的的宏观备忘与节点策略
+macro_strategy_*.json
+strategic_memo_*.json
+
+# 排除临时多智能体辩论记录
+quick_debate_*.json
+
+# 开发者交接文档（用户要求忽略）
+ANTIGRAVITY_HANDOFF.md
+persona_stances.jsonl
+
+# 排除开发辅助工具草稿及运行状态缓存
+.superpowers/
+
+# 排除已废弃的陈旧代码包
+archive/deprecated_*/
+
+# Scratch files
+scratch/
+scratch_*
+text_search.txt
+research_package/
+reports/discussion_*.html
+reports/intraday_plan_*.html
+reports/layout_comparison_*.html
+reports/postmarket_sandbox_*.html
+reports/watchlist_console.html
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

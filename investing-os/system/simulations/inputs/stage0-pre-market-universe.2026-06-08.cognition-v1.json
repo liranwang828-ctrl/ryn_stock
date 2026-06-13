@@ -1,0 +1,155 @@
+{
+  "artifact_type": "pre_market_universe",
+  "version": "1.0",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "purpose": "Stage 0 market context universe before the brain chooses a focus pool. This is not trading permission.",
+  "selection_policy": {
+    "allowed_sources": [
+      "current_positions",
+      "active_watchlist",
+      "researched_or_explicitly_approved_candidates",
+      "market_or_sector_proxies",
+      "research_priority_universe"
+    ],
+    "forbidden_interpretations": [
+      "focus_pool",
+      "trade_permission",
+      "buy_sell_hold_recommendation",
+      "symbol_selection_by_stock_team"
+    ]
+  },
+  "themes": [
+    "market_context",
+    "semiconductors",
+    "ai_infrastructure",
+    "memory",
+    "cloud",
+    "software",
+    "optical",
+    "space"
+  ],
+  "universe": [
+    {
+      "symbol": "NVDA",
+      "role": "core",
+      "theme": "ai_infrastructure",
+      "research_status": "partially_researched",
+      "source": "active_watchlist",
+      "brain_note": "Existing watchlist and research leader subset member; context only."
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "theme": "optical",
+      "research_status": "researched_draft",
+      "source": "active_watchlist",
+      "brain_note": "Existing swing candidate; requires plan review before any action."
+    },
+    {
+      "symbol": "ORCL",
+      "role": "watchlist",
+      "theme": "cloud",
+      "research_status": "candidate_only",
+      "source": "active_watchlist",
+      "brain_note": "Research lifecycle candidate; no rebound impulse re-entry."
+    },
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "source": "active_watchlist",
+      "brain_note": "Short-term candidate only; cannot be treated as core."
+    },
+    {
+      "symbol": "RKLB",
+      "role": "watchlist",
+      "theme": "space",
+      "research_status": "candidate_only",
+      "source": "research_priority_universe",
+      "brain_note": "Leader subset under research from cycle factor search; context only."
+    },
+    {
+      "symbol": "AVGO",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "source": "research_priority_universe",
+      "brain_note": "Leader subset under research from cycle factor search; context only."
+    },
+    {
+      "symbol": "PLTR",
+      "role": "watchlist",
+      "theme": "ai_infrastructure",
+      "research_status": "candidate_only",
+      "source": "research_priority_universe",
+      "brain_note": "Leader subset under research from cycle factor search; context only."
+    },
+    {
+      "symbol": "NET",
+      "role": "watchlist",
+      "theme": "cloud",
+      "research_status": "candidate_only",
+      "source": "research_priority_universe",
+      "brain_note": "Leader subset under research from cycle factor search; context only."
+    }
+  ],
+  "proxies": [
+    {
+      "symbol": "QQQ",
+      "role": "market_proxy",
+      "theme": "market_context",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Nasdaq 100 / growth risk context."
+    },
+    {
+      "symbol": "SPY",
+      "role": "market_proxy",
+      "theme": "market_context",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "S&P 500 broad market context."
+    },
+    {
+      "symbol": "IWM",
+      "role": "market_proxy",
+      "theme": "risk_appetite",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Small-cap risk appetite context."
+    },
+    {
+      "symbol": "VIXY",
+      "role": "market_proxy",
+      "theme": "volatility",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "VIX proxy for volatility direction."
+    },
+    {
+      "symbol": "SOXX",
+      "role": "sector_proxy",
+      "theme": "semiconductors",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Semiconductor sector proxy."
+    },
+    {
+      "symbol": "SMH",
+      "role": "sector_proxy",
+      "theme": "ai_infrastructure",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "AI infrastructure / semiconductor leadership proxy."
+    }
+  ],
+  "forbidden_sections_absent": [
+    "buy_sell_hold_recommendation",
+    "trading_permission_state",
+    "symbol_selection_recommendation",
+    "final_thesis_adoption",
+    "psychological_interpretation"
+  ]
+}

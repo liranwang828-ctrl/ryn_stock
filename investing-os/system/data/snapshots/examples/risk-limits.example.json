@@ -1,0 +1,51 @@
+{
+  "snapshot_id": "risk-limits-20260605-example",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "created_at": "2026-06-05T00:00:00+08:00",
+  "valid_from": "2026-06-05",
+  "review_due": "2026-07-05",
+  "status": "draft",
+  "source": {
+    "repository": "investing-os",
+    "principles": ["PRIN-001", "PRIN-002", "PRIN-006"],
+    "generated_by": "manual",
+    "notes": "Example only. Not approved for runtime consumption."
+  },
+  "limits": [
+    {
+      "id": "low_conviction_attention_limit",
+      "scope": "strategy",
+      "applies_to": ["short_term_trade", "hand_feel_trade"],
+      "metric": "continuous_monitoring_minutes",
+      "threshold": 30,
+      "unit": "minutes",
+      "enforcement": "monitor_only",
+      "parameter_status": "provisional",
+      "allowed_actions": ["alert_attention_budget_breach", "create_review_task"],
+      "forbidden_actions": ["average_down_without_predefined_add_rule", "let_low_conviction_trade_hijack_sleep"],
+      "evidence": "PRIN-006 and 2026-06-04 daily review.",
+      "falsification": "Revise if repeated journals show focused monitoring improves decisions without sleep or attention damage."
+    },
+    {
+      "id": "leveraged_product_manual_review",
+      "scope": "asset_class",
+      "applies_to": ["leveraged_product"],
+      "metric": "missing_stop_or_duration",
+      "threshold": true,
+      "unit": "boolean",
+      "enforcement": "manual_review_required",
+      "parameter_status": "manual_guardrail",
+      "allowed_actions": ["alert_missing_stop", "request_manual_review"],
+      "forbidden_actions": ["upgrade_leveraged_tool_to_long_term_holding_intraday", "increase_leverage_due_to_fomo"],
+      "evidence": "PRIN-001.",
+      "falsification": "Revise only if a reviewed leveraged-product framework replaces this guardrail."
+    }
+  ],
+  "degraded_mode": {
+    "if_risk_data_missing": "manual_review_required",
+    "forbid_new_discretionary_orders": true,
+    "allowed_actions": ["emit_risk_alerts", "request_manual_review", "create_review_tasks"]
+  }
+}
+

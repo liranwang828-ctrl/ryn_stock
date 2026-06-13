@@ -1,0 +1,54 @@
+{
+  "semiconductor": {
+    "leader": "NVDA",
+    "followers": ["AMD", "ARM", "AVGO"],
+    "laggards": ["INTC"],
+    "notes": {
+      "NVDA": "高 Beta 算力主线，情绪风向标",
+      "AMD": "高 Beta 核心跟风，受 NVDA 溢出效应极强",
+      "ARM": "高 Beta IP 架构，高度绑定 NVDA 算力生态",
+      "INTC": "低 Beta 转型期重组股，逆周期防御"
+    },
+    "correlation_rules": {
+      "leader_break_pct": -3.0,
+      "vol_ratio_trigger": 1.2,
+      "veto_new_entry": true,
+      "tighten_stop_multiplier": 0.5,
+      "description": "如果龙头 NVDA 带量下跌超过 3%，跟风个股禁止开仓，且盘中跟踪止损间距折半（乘以0.5）"
+    }
+  },
+  "china_internet": {
+    "leader": "BABA",
+    "followers": ["PDD", "JD", "BIDU"],
+    "notes": {
+      "BABA": "中概股权重核心与基本面风向标",
+      "PDD": "高成长高 Beta 跨境电商，具备极高超额弹性",
+      "JD": "重资产零售电商，Beta 跟风较强",
+      "BIDU": "AI/搜索业务转型，Beta 弱跟随"
+    },
+    "correlation_rules": {
+      "leader_break_pct": -4.0,
+      "vol_ratio_trigger": 1.2,
+      "veto_new_entry": true,
+      "tighten_stop_multiplier": 0.6,
+      "description": "如果中概核心 BABA 带量跌超 4%，暂停其他中概新开仓，且止损宽度收紧至原先的 60%"
+    }
+  },
+  "enterprise_software": {
+    "leader": "MSFT",
+    "followers": ["CRM", "NOW", "ADBE"],
+    "notes": {
+      "MSFT": "万亿市值 AI 软件龙头，美股流动性基石",
+      "CRM": "SaaS 云软件核心跟风",
+      "NOW": "IT 服务工作流跟风，基本面较稳",
+      "ADBE": "创意软件垄断，受 AI 竞争叙事压制"
+    },
+    "correlation_rules": {
+      "leader_break_pct": -2.5,
+      "vol_ratio_trigger": 1.1,
+      "veto_new_entry": true,
+      "tighten_stop_multiplier": 0.5,
+      "description": "若流动性核心 MSFT 跌超 2.5%，高估值 SaaS 全面防守，禁止新开仓且止损间距折半"
+    }
+  }
+}

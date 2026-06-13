@@ -1,0 +1,486 @@
+{
+  "date": "2026-06-05",
+  "generated_at": "2026-06-06T04:00:29.021Z",
+  "data_sources": {
+    "polygon": "5min and daily aggregates for stocks/ETFs",
+    "vix": "Yahoo chart ^VIX because Polygon index endpoint was unavailable"
+  },
+  "summaries": {
+    "QQQ": {
+      "regular_open": 730.06,
+      "regular_close": 702.72,
+      "regular_return_pct": -3.74,
+      "regular_high": 731.69,
+      "regular_low": 702.25,
+      "regular_high_from_open_pct": 0.22,
+      "regular_low_from_open_pct": -3.81,
+      "regular_volume": 88320292,
+      "daily_volume": 100320274,
+      "avg20_daily_volume": 39145735,
+      "daily_volume_ratio_vs_20d": 2.56
+    },
+    "SPY": {
+      "regular_open": 752.31,
+      "regular_close": 735.33,
+      "regular_return_pct": -2.26,
+      "regular_high": 752.82,
+      "regular_low": 734.9,
+      "regular_high_from_open_pct": 0.07,
+      "regular_low_from_open_pct": -2.31,
+      "regular_volume": 75956170,
+      "daily_volume": 93948351,
+      "avg20_daily_volume": 46860460,
+      "daily_volume_ratio_vs_20d": 2,
+      "rs_vs_qqq_pct": 1.48
+    },
+    "SOXX": {
+      "regular_open": 577.86,
+      "regular_close": 538.0001,
+      "regular_return_pct": -6.9,
+      "regular_high": 580.5,
+      "regular_low": 538,
+      "regular_high_from_open_pct": 0.46,
+      "regular_low_from_open_pct": -6.9,
+      "regular_volume": 21420037,
+      "daily_volume": 22376634,
+      "avg20_daily_volume": 8836343,
+      "daily_volume_ratio_vs_20d": 2.53,
+      "rs_vs_qqq_pct": -3.16
+    },
+    "SMH": {
+      "regular_open": 605.09,
+      "regular_close": 568.5,
+      "regular_return_pct": -6.05,
+      "regular_high": 607,
+      "regular_low": 568.5,
+      "regular_high_from_open_pct": 0.32,
+      "regular_low_from_open_pct": -6.05,
+      "regular_volume": 21171005,
+      "daily_volume": 22037923,
+      "avg20_daily_volume": 10184008,
+      "daily_volume_ratio_vs_20d": 2.16,
+      "rs_vs_qqq_pct": -2.31
+    },
+    "MU": {
+      "regular_open": 944.4,
+      "regular_close": 863.01,
+      "regular_return_pct": -8.62,
+      "regular_high": 961.89,
+      "regular_low": 859.06,
+      "regular_high_from_open_pct": 1.85,
+      "regular_low_from_open_pct": -9.04,
+      "regular_volume": 65368429,
+      "daily_volume": 77252157,
+      "avg20_daily_volume": 55009630,
+      "daily_volume_ratio_vs_20d": 1.4,
+      "rs_vs_qqq_pct": -4.88
+    },
+    "MULL": {
+      "regular_open": 699.42,
+      "regular_close": 573.16,
+      "regular_return_pct": -18.05,
+      "regular_high": 726.165,
+      "regular_low": 570,
+      "regular_high_from_open_pct": 3.82,
+      "regular_low_from_open_pct": -18.5,
+      "regular_volume": 522792,
+      "daily_volume": 653515,
+      "avg20_daily_volume": 440219,
+      "daily_volume_ratio_vs_20d": 1.48,
+      "rs_vs_qqq_pct": -14.31
+    },
+    "MUU": {
+      "regular_open": 805.185,
+      "regular_close": 657,
+      "regular_return_pct": -18.4,
+      "regular_high": 835,
+      "regular_low": 654.85,
+      "regular_high_from_open_pct": 3.7,
+      "regular_low_from_open_pct": -18.67,
+      "regular_volume": 4176182,
+      "daily_volume": 5128833,
+      "avg20_daily_volume": 3209335,
+      "daily_volume_ratio_vs_20d": 1.6,
+      "rs_vs_qqq_pct": -14.66
+    },
+    "LITX": {
+      "regular_open": 41.18,
+      "regular_close": 35.81,
+      "regular_return_pct": -13.04,
+      "regular_high": 47.14,
+      "regular_low": 35.8,
+      "regular_high_from_open_pct": 14.47,
+      "regular_low_from_open_pct": -13.06,
+      "regular_volume": 6880723,
+      "daily_volume": 7737205,
+      "avg20_daily_volume": 7447351,
+      "daily_volume_ratio_vs_20d": 1.04,
+      "rs_vs_qqq_pct": -9.3
+    },
+    "COHX": {
+      "regular_open": 64.58,
+      "regular_close": 54.769,
+      "regular_return_pct": -15.19,
+      "regular_high": 68.79,
+      "regular_low": 54.33,
+      "regular_high_from_open_pct": 6.52,
+      "regular_low_from_open_pct": -15.87,
+      "regular_volume": 848616,
+      "daily_volume": 937662,
+      "avg20_daily_volume": 1175939,
+      "daily_volume_ratio_vs_20d": 0.8,
+      "rs_vs_qqq_pct": -11.45
+    },
+    "COHR": {
+      "regular_open": 405.27,
+      "regular_close": 375.01,
+      "regular_return_pct": -7.47,
+      "regular_high": 417.755,
+      "regular_low": 375,
+      "regular_high_from_open_pct": 3.08,
+      "regular_low_from_open_pct": -7.47,
+      "regular_volume": 5832325,
+      "daily_volume": 6418714,
+      "avg20_daily_volume": 6480421,
+      "daily_volume_ratio_vs_20d": 0.99,
+      "rs_vs_qqq_pct": -3.73
+    },
+    "PLTR": {
+      "regular_open": 140.325,
+      "regular_close": 134.7001,
+      "regular_return_pct": -4.01,
+      "regular_high": 141.97,
+      "regular_low": 134.025,
+      "regular_high_from_open_pct": 1.17,
+      "regular_low_from_open_pct": -4.49,
+      "regular_volume": 29204861,
+      "daily_volume": 38241593,
+      "avg20_daily_volume": 41742040,
+      "daily_volume_ratio_vs_20d": 0.92,
+      "rs_vs_qqq_pct": -0.27
+    },
+    "VRT": {
+      "regular_open": 313.755,
+      "regular_close": 299.5,
+      "regular_return_pct": -4.54,
+      "regular_high": 315,
+      "regular_low": 294.395,
+      "regular_high_from_open_pct": 0.4,
+      "regular_low_from_open_pct": -6.17,
+      "regular_volume": 6645679,
+      "daily_volume": 7397802,
+      "avg20_daily_volume": 5756291,
+      "daily_volume_ratio_vs_20d": 1.29,
+      "rs_vs_qqq_pct": -0.8
+    },
+    "NVDA": {
+      "regular_open": 214.53,
+      "regular_close": 204.65,
+      "regular_return_pct": -4.61,
+      "regular_high": 214.87,
+      "regular_low": 204.33,
+      "regular_high_from_open_pct": 0.16,
+      "regular_low_from_open_pct": -4.75,
+      "regular_volume": 175315436,
+      "daily_volume": 219773311,
+      "avg20_daily_volume": 175198680,
+      "daily_volume_ratio_vs_20d": 1.25,
+      "rs_vs_qqq_pct": -0.87
+    }
+  },
+  "vix": {
+    "source": "Yahoo chart ^VIX",
+    "regular_open": 16.04,
+    "regular_close": 21.01,
+    "regular_change_points": 4.97,
+    "regular_change_pct": 30.99,
+    "regular_high": 21.16,
+    "regular_low": 15.93
+  },
+  "key_timeline": [
+    {
+      "local_time": "20:54",
+      "label": "COHR first buy",
+      "QQQ": {
+        "price": 730.88,
+        "ret_from_regular_open_pct": 0.11,
+        "volume_bar": 51315
+      },
+      "SPY": {
+        "price": 752.69,
+        "ret_from_regular_open_pct": 0.05,
+        "volume_bar": 81150
+      },
+      "SOXX": {
+        "price": 581.44,
+        "ret_from_regular_open_pct": 0.62,
+        "volume_bar": 2334
+      },
+      "SMH": {
+        "price": 608.61,
+        "ret_from_regular_open_pct": 0.58,
+        "volume_bar": 2231
+      },
+      "MU": {
+        "price": 950.5,
+        "ret_from_regular_open_pct": 0.65,
+        "volume_bar": 69953
+      },
+      "MULL": {
+        "price": 720.43,
+        "ret_from_regular_open_pct": 3,
+        "volume_bar": 874
+      },
+      "MUU": {
+        "price": 815.26,
+        "ret_from_regular_open_pct": 1.25,
+        "volume_bar": 7929
+      },
+      "COHR": {
+        "price": 406.21,
+        "ret_from_regular_open_pct": 0.23,
+        "volume_bar": 2376
+      }
+    },
+    {
+      "local_time": "22:21",
+      "label": "MULL first buy",
+      "QQQ": {
+        "price": 726.12,
+        "ret_from_regular_open_pct": -0.54,
+        "volume_bar": 608819
+      },
+      "SPY": {
+        "price": 749.745,
+        "ret_from_regular_open_pct": -0.34,
+        "volume_bar": 592526
+      },
+      "SOXX": {
+        "price": 573.91,
+        "ret_from_regular_open_pct": -0.68,
+        "volume_bar": 374380
+      },
+      "SMH": {
+        "price": 599.23,
+        "ret_from_regular_open_pct": -0.97,
+        "volume_bar": 287809
+      },
+      "MU": {
+        "price": 941,
+        "ret_from_regular_open_pct": -0.36,
+        "volume_bar": 876100
+      },
+      "MULL": {
+        "price": 693,
+        "ret_from_regular_open_pct": -0.92,
+        "volume_bar": 6871
+      },
+      "MUU": {
+        "price": 796.45,
+        "ret_from_regular_open_pct": -1.08,
+        "volume_bar": 59073
+      },
+      "COHR": {
+        "price": 405.235,
+        "ret_from_regular_open_pct": -0.01,
+        "volume_bar": 109618
+      },
+      "VIX": {
+        "price": 16.42,
+        "change_from_open_points": 0.38
+      }
+    },
+    {
+      "local_time": "00:32",
+      "label": "MULL major loss sell",
+      "QQQ": {
+        "price": 717.185,
+        "ret_from_regular_open_pct": -1.76,
+        "volume_bar": 2518039
+      },
+      "SPY": {
+        "price": 744.24,
+        "ret_from_regular_open_pct": -1.07,
+        "volume_bar": 899486
+      },
+      "SOXX": {
+        "price": 557.92,
+        "ret_from_regular_open_pct": -3.45,
+        "volume_bar": 229157
+      },
+      "SMH": {
+        "price": 585.44,
+        "ret_from_regular_open_pct": -3.25,
+        "volume_bar": 186843
+      },
+      "MU": {
+        "price": 906.345,
+        "ret_from_regular_open_pct": -4.03,
+        "volume_bar": 1211495
+      },
+      "MULL": {
+        "price": 639.51,
+        "ret_from_regular_open_pct": -8.57,
+        "volume_bar": 37395
+      },
+      "MUU": {
+        "price": 735.15,
+        "ret_from_regular_open_pct": -8.7,
+        "volume_bar": 119029
+      },
+      "COHR": {
+        "price": 397.515,
+        "ret_from_regular_open_pct": -1.91,
+        "volume_bar": 65026
+      },
+      "VIX": {
+        "price": 18.51,
+        "change_from_open_points": 2.47
+      }
+    },
+    {
+      "local_time": "00:55",
+      "label": "MULL re-entry after loss",
+      "QQQ": {
+        "price": 716.81,
+        "ret_from_regular_open_pct": -1.81,
+        "volume_bar": 788980
+      },
+      "SPY": {
+        "price": 744.54,
+        "ret_from_regular_open_pct": -1.03,
+        "volume_bar": 724106
+      },
+      "SOXX": {
+        "price": 557.62,
+        "ret_from_regular_open_pct": -3.5,
+        "volume_bar": 319104
+      },
+      "SMH": {
+        "price": 585.255,
+        "ret_from_regular_open_pct": -3.28,
+        "volume_bar": 249672
+      },
+      "MU": {
+        "price": 905.23,
+        "ret_from_regular_open_pct": -4.15,
+        "volume_bar": 721282
+      },
+      "MULL": {
+        "price": 638.43,
+        "ret_from_regular_open_pct": -8.72,
+        "volume_bar": 15837
+      },
+      "MUU": {
+        "price": 734.16,
+        "ret_from_regular_open_pct": -8.82,
+        "volume_bar": 53416
+      },
+      "COHR": {
+        "price": 396.24,
+        "ret_from_regular_open_pct": -2.23,
+        "volume_bar": 38989
+      },
+      "VIX": {
+        "price": 18.55,
+        "change_from_open_points": 2.51
+      }
+    },
+    {
+      "local_time": "01:08",
+      "label": "MULL second loss sell",
+      "QQQ": {
+        "price": 715.13,
+        "ret_from_regular_open_pct": -2.05,
+        "volume_bar": 824683
+      },
+      "SPY": {
+        "price": 743.5,
+        "ret_from_regular_open_pct": -1.17,
+        "volume_bar": 366921
+      },
+      "SOXX": {
+        "price": 553.845,
+        "ret_from_regular_open_pct": -4.16,
+        "volume_bar": 159260
+      },
+      "SMH": {
+        "price": 581.795,
+        "ret_from_regular_open_pct": -3.85,
+        "volume_bar": 147186
+      },
+      "MU": {
+        "price": 899.39,
+        "ret_from_regular_open_pct": -4.77,
+        "volume_bar": 660564
+      },
+      "MULL": {
+        "price": 626.97,
+        "ret_from_regular_open_pct": -10.36,
+        "volume_bar": 2316
+      },
+      "MUU": {
+        "price": 724.1,
+        "ret_from_regular_open_pct": -10.07,
+        "volume_bar": 36804
+      },
+      "COHR": {
+        "price": 392.19,
+        "ret_from_regular_open_pct": -3.23,
+        "volume_bar": 43094
+      },
+      "VIX": {
+        "price": 18.6,
+        "change_from_open_points": 2.56
+      }
+    },
+    {
+      "local_time": "01:29",
+      "label": "MUU latest buy",
+      "QQQ": {
+        "price": 715.65,
+        "ret_from_regular_open_pct": -1.97,
+        "volume_bar": 523428
+      },
+      "SPY": {
+        "price": 744.03,
+        "ret_from_regular_open_pct": -1.1,
+        "volume_bar": 668425
+      },
+      "SOXX": {
+        "price": 556.38,
+        "ret_from_regular_open_pct": -3.72,
+        "volume_bar": 159534
+      },
+      "SMH": {
+        "price": 584.13,
+        "ret_from_regular_open_pct": -3.46,
+        "volume_bar": 217983
+      },
+      "MU": {
+        "price": 905.095,
+        "ret_from_regular_open_pct": -4.16,
+        "volume_bar": 579468
+      },
+      "MULL": {
+        "price": 634.78,
+        "ret_from_regular_open_pct": -9.24,
+        "volume_bar": 934
+      },
+      "MUU": {
+        "price": 735,
+        "ret_from_regular_open_pct": -8.72,
+        "volume_bar": 59821
+      },
+      "COHR": {
+        "price": 392.35,
+        "ret_from_regular_open_pct": -3.19,
+        "volume_bar": 25441
+      },
+      "VIX": {
+        "price": 18.4,
+        "change_from_open_points": 2.36
+      }
+    }
+  ]
+}

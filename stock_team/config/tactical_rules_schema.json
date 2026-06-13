@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TacticalRules",
+  "type": "OBJECT",
+  "properties": {
+    "version": { "type": "STRING" },
+    "last_updated": { "type": "STRING" },
+    "accounts": {
+      "type": "OBJECT",
+      "properties": {
+        "strict": { "$ref": "#/definitions/AccountConfig" },
+        "base": { "$ref": "#/definitions/AccountConfig" },
+        "loose": { "$ref": "#/definitions/AccountConfig" }
+      },
+      "required": ["strict", "base", "loose"]
+    },
+    "macro_strategy_params": {
+      "type": "OBJECT",
+      "properties": {
+        "market_regime": {
+          "type": "OBJECT",
+          "properties": {
+            "vix_panic_threshold": { "type": "NUMBER" },
+            "vix_panic_dir": { "type": "STRING" },
+            "vix_elevated": { "type": "NUMBER" },
+            "vix_normal": { "type": "NUMBER" },
+            "spy_bull_min": { "type": "NUMBER" },
+            "spy_bear_max": { "type": "NUMBER" },
+            "qqq5m_veto": { "type": "NUMBER" },
+            "ma20_dev_veto_pct": { "type": "NUMBER" },
+            "ma20_dev_warn_pct": { "type": "NUMBER" }
+          },
+          "required": ["vix_panic_threshold", "vix_panic_dir", "vix_elevated", "vix_normal", "spy_bull_min", "spy_bear_max", "qqq5m_veto", "ma20_dev_veto_pct", "ma20_dev_warn_pct"]
+        },
+        "observation": {
+          "type": "OBJECT",
+          "properties": {
+            "obs_minutes": { "type": "INTEGER" },
+            "no_trade_after_et_h": { "type": "INTEGER" },
+            "no_trade_after_et_m": { "type": "INTEGER" }
+          },
+          "required": ["obs_minutes", "no_trade_after_et_h", "no_trade_after_et_m"]
+        },
+        "scene_entry_quality": {
+          "type": "OBJECT",
+          "additionalProperties": { "type": "STRING" }
+        },
+        "catalyst_window": {
+          "type": "OBJECT",
+          "properties": {
+            "pre_reduce_days": { "type": "INTEGER" },
+            "post_window_days": { "type": "INTEGER" },
+            "pre_reduce_pct": { "type": "NUMBER" }
+          },
+          "required": ["pre_reduce_days", "post_window_days", "pre_reduce_pct"]
+        },
+        "scenario_downgrade": {
+          "type": "OBJECT",
+          "properties": {
+            "warn_within_pct": { "type": "NUMBER" },
+            "k5_bull_to_base": { "type": "NUMBER" },
+            "k6_base_to_bear": { "type": "NUMBER" }
+          },
+          "required": ["warn_within_pct", "k5_bull_to_base", "k6_base_to_bear"]
+        },
+        "entry_plan": {
+          "type": "OBJECT",
+          "properties": {
+            "add1_tolerance_pct": { "type": "NUMBER" },
+            "add1_high_dist_pct": { "type": "NUMBER" }
+          },
+          "required": ["add1_tolerance_pct", "add1_high_dist_pct"]
+        }
+      },
+      "required": ["market_regime", "observation", "scene_entry_quality", "catalyst_window", "scenario_downgrade", "entry_plan"]
+    },
+    "micro_strategy_params": {
+      "type": "OBJECT",
+      "properties": {
+        "flex_signals": {
+          "type": "OBJECT",
+          "properties": {
+            "min_signals_required": { "type": "INTEGER" },
+            "rsi14_5m_oversold": { "type": "NUMBER" },
+            "rsi14_5m_overbought": { "type": "NUMBER" },
+            "vwap_add_threshold": { "type": "NUMBER" },
+            "vwap_reduce_threshold": { "type": "NUMBER" },
+            "vol_ratio_shrink": { "type": "NUMBER" },
+            "vol_ratio_expand": { "type": "NUMBER" },
+            "time_window_start_h": { "type": "INTEGER" },
+            "time_window_end_h": { "type": "INTEGER" }
+          },
+          "required": ["min_signals_required", "rsi14_5m_oversold", "rsi14_5m_overbought", "vwap_add_threshold", "vwap_reduce_threshold", "vol_ratio_shrink", "vol_ratio_expand", "time_window_start_h", "time_window_end_h"]
+        },
+        "add_price_gate": {
+          "type": "OBJECT",
+          "properties": {
+            "add1_tolerance_pct": { "type": "NUMBER" },
+            "cost_fallback_pct": { "type": "NUMBER" },
+            "profit_reduce_min_pct": { "type": "NUMBER" },
+            "analyst_target_reduce_pct": { "type": "NUMBER" }
+          },
+          "required": ["add1_tolerance_pct", "cost_fallback_pct", "profit_reduce_min_pct", "analyst_target_reduce_pct"]
+        },
+        "thesis_health": {
+          "type": "OBJECT",
+          "properties": {
+            "hard_stop_near_warn_pct": { "type": "NUMBER" },
+            "scene_downgrade_warn_pct": { "type": "NUMBER" },
+            "time_stop_warn_days": { "type": "INTEGER" },
+            "breakeven_trigger_pct": { "type": "NUMBER" },
+            "trail_ma20_trigger_pct": { "type": "NUMBER" }
+          },
+          "required": ["hard_stop_near_warn_pct", "scene_downgrade_warn_pct", "time_stop_warn_days", "breakeven_trigger_pct", "trail_ma20_trigger_pct"]
+        },
+        "reversal": {
+          "type": "OBJECT",
+          "properties": {
+            "rsi14_5m_extreme_oversold": { "type": "NUMBER" },
+            "rsi14_5m_oversold": { "type": "NUMBER" },
+            "vol_ratio_exhaustion": { "type": "NUMBER" },
+            "reversal_score_threshold": { "type": "NUMBER" }
+          },
+          "required": ["rsi14_5m_extreme_oversold", "rsi14_5m_oversold", "vol_ratio_exhaustion", "reversal_score_threshold"]
+        },
+        "global_veto": {
+          "type": "OBJECT",
+          "properties": {
+            "vix_panic": { "type": "NUMBER" },
+            "qqq5m_drop": { "type": "NUMBER" },
+            "ma20_dev_max": { "type": "NUMBER" }
+          },
+          "required": ["vix_panic", "qqq5m_drop", "ma20_dev_max"]
+        }
+      },
+      "required": ["flex_signals", "add_price_gate", "thesis_health", "reversal", "global_veto"]
+    }
+  },
+  "required": ["version", "last_updated", "accounts", "macro_strategy_params", "micro_strategy_params"],
+  "definitions": {
+    "AccountConfig": {
+      "type": "OBJECT",
+      "properties": {
+        "label": { "type": "STRING" },
+        "description": { "type": "STRING" },
+        "t1_entry_score": { "type": "NUMBER" },
+        "t1_rs_threshold": { "type": "NUMBER" },
+        "max_positions": { "type": "INTEGER" },
+        "risk_per_trade_pct": { "type": "NUMBER" },
+        "max_position_pct": { "type": "NUMBER" },
+        "t2a_price_above": { "type": "NUMBER" },
+        "t2a_vol_min": { "type": "NUMBER" },
+        "t2a_rsi_max": { "type": "NUMBER" },
+        "t2a_qqq_min": { "type": "NUMBER" },
+        "t2b_pullback_min": { "type": "NUMBER" },
+        "t2b_pullback_max": { "type": "NUMBER" },
+        "t2b_vol_max": { "type": "NUMBER" },
+        "t2b_vwap_floor": { "type": "NUMBER" },
+        "t2b_rsi_min": { "type": "NUMBER" },
+        "t2b_qqq_min": { "type": "NUMBER" },
+        "t2b_need_macd_pos": { "type": "BOOLEAN" },
+        "t2_stop_mode": { "type": "STRING", "enum": ["t1_cost", "buffer"] },
+        "t2_stop_buffer_atr": { "type": "NUMBER" },
+        "t3_vol_min": { "type": "NUMBER" },
+        "t3_rsi_max": { "type": "NUMBER" },
+        "t3_stop_mode": { "type": "STRING" },
+        "block_vol_decline": { "type": "NUMBER" },
+        "block_qqq_drop": { "type": "NUMBER" },
+        "block_rsi_floor": { "type": "NUMBER" },
+        "block_vwap_pct": { "type": "NUMBER" },
+        "swing_catalyst_min": { "type": "NUMBER" }
+      },
+      "required": [
+        "label", "description", "t1_entry_score", "t1_rs_threshold", "max_positions",
+        "risk_per_trade_pct", "max_position_pct", "t2a_price_above", "t2a_vol_min",
+        "t2a_rsi_max", "t2a_qqq_min", "t2b_pullback_min", "t2b_pullback_max",
+        "t2b_vol_max", "t2b_vwap_floor", "t2b_rsi_min", "t2b_qqq_min",
+        "t2b_need_macd_pos", "t2_stop_mode", "t2_stop_buffer_atr", "t3_vol_min",
+        "t3_rsi_max", "t3_stop_mode", "block_vol_decline", "block_qqq_drop",
+        "block_rsi_floor", "block_vwap_pct", "swing_catalyst_min"
+      ]
+    }
+  }
+}

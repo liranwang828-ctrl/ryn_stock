@@ -1,0 +1,32 @@
+{
+  "artifact_type": "stage_context_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os-research",
+  "study_id": "research_stage_context_from_vwap_volume_rs_v1",
+  "date_range": {
+    "start": "2024-06-01",
+    "end": "2026-05-29"
+  },
+  "context_fields": [
+    "qqq_regime",
+    "vix_regime",
+    "market_volume_regime",
+    "sector_regime"
+  ],
+  "data": {
+    "mode": "joined_fixture_events",
+    "stage_context_source": {
+      "mode": "daily_market_local_cache",
+      "cache_dir": "D:/gemini/lianghua/stock_team/learning",
+      "sector_symbol": "SMH"
+    },
+    "events_source": {
+      "mode": "tactic_backtest_json",
+      "path": "D:/gemini/lianghua/stock_team/findings/research_tactic_vwap_reclaim_volume_rs_v1.json"
+    }
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "date": "2026-06-06",
+  "created_by": "investing-os",
+  "permission_state_before_open": "Red",
+  "market_assumptions": {
+    "expected_regime": "risk_uncertain_after_major_drawdown",
+    "risk_notes": [
+      "short-term and leveraged new risk are restricted",
+      "focus on evidence and risk review, not loss repair"
+    ],
+    "evidence_required": ["QQQ", "SPY", "VIX", "SOXX"]
+  },
+  "COHR": {
+    "symbol": "COHR",
+    "role": "swing",
+    "thesis_ref": "AI optical infrastructure swing candidate; moat narrower than NVDA/GOOGL/MSFT; requires price and peer confirmation",
+    "plan_mode": "observe",
+    "allowed_tactics": ["rs_pullback_rebound"],
+    "formula_overrides": {
+      "entry_anchor": "MA50",
+      "stop_atr_multiplier": 1.0,
+      "reason": "demo: test whether brain can tighten formula precision without writing direct price"
+    },
+    "forbidden_actions": [
+      "new_unplanned_short_term_risk",
+      "loss_repair_averaging",
+      "leveraged_expansion"
+    ],
+    "key_levels": {
+      "entry_base": null,
+      "support_floor": null
+    },
+    "max_loss": 500.0,
+    "position_cap": 0.1,
+    "invalidation_conditions": [
+      "relative_strength_breaks_after_market_stabilizes",
+      "peer_group_confirms weakness",
+      "thesis evidence becomes stale"
+    ],
+    "rule_collision_contract": [
+      {
+        "rule_id": "gap_risk_reduction",
+        "if": "absolute_gap_pct_above_2",
+        "then": "compute brain-defined size multiplier only",
+        "source": "investing-os"
+      }
+    ],
+    "evidence_required": ["QQQ", "SOXX", "LITE", "AAOI", "ATR", "relative_strength"]
+  }
+}

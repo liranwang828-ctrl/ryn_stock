@@ -1,0 +1,431 @@
+{
+  "_comment": "系统值得关注标的最优点位大表单数据库 — master_watchlist.json",
+  "_last_updated": "2026-05-26",
+  "watchlist": {
+    "NOW": {
+      "sym": "NOW",
+      "name": "ServiceNow",
+      "tier": "S",
+      "stance_type": "core_long_term",
+      "thesis": "企业级 AI Agent 工作流应用龙头，Now Assist Pro Plus 续约率 >95%，AI 货币化能力全板块最成熟。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 94.0,
+        "max_price": 96.0
+      },
+      "hard_stop": 82.0,
+      "target_price": 135.0,
+      "upside_pct": 40.0,
+      "rebound_from_bottom_pct": 22.0,
+      "last_notes": "Fwd PE 20.2x 处于 5 年最低 5% 分位，4/22 EPS miss 导致的暴跌提供了完美的估值底反转错杀机会，5/15-5/19 机构大举暴量吸筹确认。"
+    },
+    "CRM": {
+      "sym": "CRM",
+      "name": "Salesforce",
+      "tier": "A",
+      "stance_type": "tactical_trend",
+      "thesis": "企业 SaaS 龙头，已 price-in 大量利空（per-seat 模式威胁），5/27 盘后发布 Q1 财报，Agentforce 3.0 有巨大想象空间。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 160.0,
+        "max_price": 165.0
+      },
+      "hard_stop": 150.0,
+      "target_price": 220.0,
+      "upside_pct": 27.0,
+      "rebound_from_bottom_pct": 15.0,
+      "last_notes": "Fwd PE 12.2x 处于上市 20 年来最低估值分位。财报前绝对不要抢跑开仓规避波动风险，财报后若跌破 $165 观察建仓，若突破 $190 追建 25% 仓位。"
+    },
+    "NVDA": {
+      "sym": "NVDA",
+      "name": "NVIDIA",
+      "tier": "A",
+      "stance_type": "core_long_term",
+      "thesis": "全球 AI 算力与 GPU 数据中心绝对霸主，Rubin 新架构确保 5 年 HBM 订单锁定，CUDA 生态壁垒无法逾越。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 200.0,
+        "max_price": 210.0
+      },
+      "hard_stop": 190.0,
+      "target_price": 280.0,
+      "upside_pct": 20.0,
+      "rebound_from_bottom_pct": 140.0,
+      "last_notes": "长持仓位核心，不宜做过多短线高频。5/28 验证核心客户指引，关注 AI Capex 是否继续上修。"
+    },
+    "VST": {
+      "sym": "VST",
+      "name": "Vistra",
+      "tier": "B",
+      "stance_type": "core_long_term",
+      "thesis": "AI 算力电力保障核心标的，核电输出对接大型数据中心，PEG 仅 0.9，估值明显低估。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 148.0,
+        "max_price": 150.0
+      },
+      "hard_stop": 142.0,
+      "target_price": 180.0,
+      "upside_pct": 25.0,
+      "rebound_from_bottom_pct": 60.0,
+      "last_notes": "执行精细化 5/5/5 分批方案。首仓 B1 @ $159.69 已部署。等回踩 B2 $148-150 继续低吸。"
+    },
+    "SYM": {
+      "sym": "SYM",
+      "name": "Symbotic",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "物理 AI 与物流自动化先锋，GAAP 盈利开始转正，订单排队饱满。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 50.0,
+        "max_price": 51.5
+      },
+      "hard_stop": 47.0,
+      "target_price": 70.0,
+      "upside_pct": 35.0,
+      "rebound_from_bottom_pct": 35.0,
+      "last_notes": "SYM 波动极高。昨日追高建仓得分极低（19.8），日内深套。B2 补仓必须严格限制在 $50 支撑位，严禁市价追单。"
+    },
+    "COHR": {
+      "sym": "COHR",
+      "name": "Coherent",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "AI 数据中心光模块的核心光器件供应商，NVIDIA 直接战略投资背书，业绩正加速好转。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 369.0,
+        "max_price": 375.0
+      },
+      "hard_stop": 350.0,
+      "target_price": 440.0,
+      "upside_pct": 20.0,
+      "rebound_from_bottom_pct": 45.0,
+      "last_notes": "超视距成功主观覆写介入。建仓价 $375 极其完美贴近日低，收盘大涨。后续等 $369 回踩考虑加仓。"
+    },
+    "LITX": {
+      "sym": "LITX",
+      "name": "LITE 2x Long",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "Lumentum（LITE）2x 杠杆做多 ETF。光通信板块主升浪的核心受益者，受益于 3-day 纳入 Nasdaq 催化剂。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 42.0,
+        "max_price": 43.5
+      },
+      "hard_stop": 39.0,
+      "target_price": 55.0,
+      "upside_pct": 30.0,
+      "rebound_from_bottom_pct": 65.0,
+      "last_notes": "加仓均价 $43.00 点位质量分高达 100 分。杠杆 ETF 波动大，需警惕尾部风险，大盘转弱或贴顶时必须及时止盈或降为正股。"
+    },
+    "GOOGL": {
+      "sym": "GOOGL",
+      "name": "Alphabet",
+      "tier": "B",
+      "stance_type": "core_long_term",
+      "thesis": "搜索垄断 + 云端 AI 服务，估值水平在 MAG7 里最合理，反弹健康蓄势。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 378.0,
+        "max_price": 382.0
+      },
+      "hard_stop": 365.0,
+      "target_price": 430.0,
+      "upside_pct": 20.0,
+      "rebound_from_bottom_pct": 22.0,
+      "last_notes": "首仓 B1 @ $384.22 已买入。点位得分 88 分非常优秀。盘中以缩量震荡为主，保持观察。"
+    },
+    "TSM": {
+      "sym": "TSM",
+      "name": "TSMC",
+      "tier": "B",
+      "stance_type": "core_long_term",
+      "thesis": "半导体代工之王，最强基本面（PEG 0.8 / 增速 +35% / 利润率 58%），晶圆代工涨价催化。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 170.0,
+        "max_price": 175.0
+      },
+      "hard_stop": 160.0,
+      "target_price": 230.0,
+      "upside_pct": 28.0,
+      "rebound_from_bottom_pct": 45.0,
+      "last_notes": "等回调入场，绝不追高。$170-175 是真正的黄金击球区。"
+    },
+    "MU": {
+      "sym": "MU",
+      "name": "Micron",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "HBM3E 超级内存周期受益者，UBS 一夜之间 triple 目标价至 $1200+，发生了强烈的 Narrative Re-rating 级别上修。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 750.0,
+        "max_price": 800.0
+      },
+      "hard_stop": 700.0,
+      "target_price": 1100.0,
+      "upside_pct": 33.0,
+      "rebound_from_bottom_pct": 32.0,
+      "last_notes": "由于二元化不买建议导致错过 17% 暴涨，教训极其深刻。但目前 RSI14 达 84.8 极度超买，绝对不追。等 6/24 财报情绪释放，或回调到 $750-800 试探 1-2% 仓位。"
+    },
+    "CRWD": {
+      "sym": "CRWD",
+      "name": "CrowdStrike",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "网安自主 SOC Agent 绝对霸主，7/19 故障影响已恢复 85%，平台化推进顺利。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 580.0,
+        "max_price": 600.0
+      },
+      "hard_stop": 530.0,
+      "target_price": 780.0,
+      "upside_pct": -21.0,
+      "rebound_from_bottom_pct": 119.0,
+      "last_notes": "股价创历史新高并与分析师目标价深度倒挂 -21%，反弹从底暴涨 119% 处于极度透支期，绝对不追。等 50DMA（$580-600）回调或 6/3 财报后确定。"
+    },
+    "PANW": {
+      "sym": "PANW",
+      "name": "Palo Alto Net",
+      "tier": "B",
+      "stance_type": "core_long_term",
+      "thesis": "网络安全最全平台龙头，估值在三大网安里最便宜，大单获取能力强。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 225.0,
+        "max_price": 235.0
+      },
+      "hard_stop": 210.0,
+      "target_price": 310.0,
+      "upside_pct": -12.0,
+      "rebound_from_bottom_pct": 43.0,
+      "last_notes": "同样处于目标价倒挂状态（-12%），静等 200DMA 均线回踩。"
+    },
+    "NET": {
+      "sym": "NET",
+      "name": "Cloudflare",
+      "tier": "B",
+      "stance_type": "tactical_trend",
+      "thesis": "网络边缘安全 + Workers AI 推理平台，真正的 Usage-based 计费模式。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 210.0,
+        "max_price": 215.0
+      },
+      "hard_stop": 195.0,
+      "target_price": 260.0,
+      "upside_pct": 6.0,
+      "rebound_from_bottom_pct": 38.0,
+      "last_notes": "AI 基础设施真受益者，但 EV/Rev 32.5x 偏贵，等回调到 22x（$210-215）后再买。"
+    },
+    "UAL": {
+      "sym": "UAL",
+      "name": "United Airlines",
+      "tier": "B",
+      "stance_type": "observe",
+      "thesis": "联合航空。与大盘 AI 板块具有零相关性，是不可多得的组合 Beta 对冲工具，估值低廉，现金流强。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 104.0,
+        "max_price": 106.0
+      },
+      "hard_stop": 98.0,
+      "target_price": 130.0,
+      "upside_pct": 25.0,
+      "rebound_from_bottom_pct": 35.0,
+      "last_notes": "对冲主线持仓。可在现价 $104-106 附近直接部署 3-4% 仓位。"
+    },
+    "TENB": {
+      "sym": "TENB",
+      "name": "Tenable",
+      "tier": "C",
+      "stance_type": "observe",
+      "thesis": "网络安全漏洞扫描龙头。商业模式是 Per-asset 真 Usage（扫描的 AI 资产越多付费越多），被市场错杀。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 23.5,
+        "max_price": 24.5
+      },
+      "hard_stop": 21.0,
+      "target_price": 32.0,
+      "upside_pct": 10.0,
+      "rebound_from_bottom_pct": 62.0,
+      "last_notes": "虽然真错杀且估值最低（fPE 12），但营收增速降为 9.6% 偏慢。跌到 $24 可试探性买入 1% 仓位。"
+    },
+    "MDB": {
+      "sym": "MDB",
+      "name": "MongoDB",
+      "tier": "C",
+      "stance_type": "observe",
+      "thesis": "非关系型数据库龙头，AI 时代向量数据层错杀股（被 pgvector 恐慌打压），EV/Rev 9x 处于历史底部。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 240.0,
+        "max_price": 246.0
+      },
+      "hard_stop": 220.0,
+      "target_price": 380.0,
+      "upside_pct": 45.0,
+      "rebound_from_bottom_pct": 18.0,
+      "last_notes": "虽属真 Usage 反转核心，但最新营收增速降速严重。等待跌回 $245 附近再进行轻仓试探。"
+    },
+    "SNOW": {
+      "sym": "SNOW",
+      "name": "Snowflake",
+      "tier": "C",
+      "stance_type": "observe",
+      "thesis": "云端数据仓库巨头，典型的 Usage-based 计费模式，正处于新 CEO 业务重组震荡期。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 155.0,
+        "max_price": 165.0
+      },
+      "hard_stop": 145.0,
+      "target_price": 220.0,
+      "upside_pct": 29.0,
+      "rebound_from_bottom_pct": 12.0,
+      "last_notes": "虽有反弹信号，但 PEG 4.82 偏贵，必须等 $165 以下再重新评估。"
+    },
+    "RKLB": {
+      "sym": "RKLB",
+      "name": "Rocket Lab",
+      "tier": "C",
+      "stance_type": "tactical_trend",
+      "thesis": "SpaceX IPO 启动后，市场上唯一的硬核中型火箭和空间系统替身 Alpha 股，商业航天唯一长期生存者。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 128.0,
+        "max_price": 132.0
+      },
+      "hard_stop": 115.0,
+      "target_price": 180.0,
+      "upside_pct": 35.0,
+      "rebound_from_bottom_pct": 30.0,
+      "last_notes": "SpaceX 5/20 公开 S-1 提交，路演冲顶高潮期（Phase 2）RKLB 是最具确定性的跟涨标的。等 $128-132 回调建 0.5% 信仰仓。"
+    },
+    "PLTR": {
+      "sym": "PLTR",
+      "name": "Palantir",
+      "tier": "D",
+      "stance_type": "observe",
+      "thesis": "垂直 AI 平台政府军，增长和利润率爆表（Rule of 40 = 119），但估值已经极度透支未来 5 年的完美成长（EV/Rev 61x）。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 105.0,
+        "max_price": 115.0
+      },
+      "hard_stop": 95.0,
+      "target_price": 160.0,
+      "upside_pct": 34.0,
+      "rebound_from_bottom_pct": 110.0,
+      "last_notes": "估值极高，内部人疯狂卖出，防守空间极差，一旦财报出现增速降级将触发惨烈杀估值。禁止建正股重仓！只推荐用期权 Spread 替代，或仅做 2-3% 卫星配置。"
+    },
+    "BRZE": {
+      "sym": "BRZE",
+      "name": "Braze",
+      "tier": "D",
+      "stance_type": "observe",
+      "thesis": "D2C 营销自动化，商业模式是 Per-MAU。连续两个季度 EPS Miss，业绩处于减速死亡螺旋，且 5/27 财报将至。",
+      "business_model": "per_mau",
+      "buy_zone": {
+        "min_price": 18.0,
+        "max_price": 20.0
+      },
+      "hard_stop": 15.0,
+      "target_price": 32.0,
+      "upside_pct": 20.0,
+      "rebound_from_bottom_pct": 61.0,
+      "last_notes": "财报前五天硬约束：5/27 财报发布前绝对禁止任何买入！财报若 miss 触发闪崩，等 $20 以下捡带血筹码（0.5-1%），beat 则等 $28 试探。"
+    },
+    "DDOG": {
+      "sym": "DDOG",
+      "name": "Datadog",
+      "tier": "E",
+      "stance_type": "observe",
+      "thesis": "应用监控与可观测性卖铲人，虽最适合与当前持仓互补，但价格贴着 52w 高点且反弹强度 >119% 已经严重超买透支。",
+      "business_model": "usage_based",
+      "buy_zone": {
+        "min_price": 122.0,
+        "max_price": 128.0
+      },
+      "hard_stop": 110.0,
+      "target_price": 240.0,
+      "upside_pct": -0.3,
+      "rebound_from_bottom_pct": 119.0,
+      "last_notes": "分析师目标价 $223.9 与现价倒挂 -0.3%，贴顶，资金拥挤。规避追高！等回调至 $128-135 试仓。"
+    },
+    "FTNT": {
+      "sym": "FTNT",
+      "name": "Fortinet",
+      "tier": "E",
+      "stance_type": "observe",
+      "thesis": "网络安全防火墙巨头，股价同样贴着 52 周高点且年度大涨 72%，估值过高。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 100.0,
+        "max_price": 108.0
+      },
+      "hard_stop": 95.0,
+      "target_price": 120.0,
+      "upside_pct": -20.0,
+      "rebound_from_bottom_pct": 72.0,
+      "last_notes": "价格严重透支，分析师目标价深度倒挂 -20%。避开，绝不碰。"
+    },
+    "ZS": {
+      "sym": "ZS",
+      "name": "Zscaler",
+      "tier": "E",
+      "stance_type": "observe",
+      "thesis": "云原生安全 SASE 龙头。5/26 今晚发布财报，Gamma 波动极其危险。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 140.0,
+        "max_price": 150.0
+      },
+      "hard_stop": 130.0,
+      "target_price": 200.0,
+      "upside_pct": 15.0,
+      "rebound_from_bottom_pct": 23.0,
+      "last_notes": "财报地雷，离财报不足 5 天，禁止介入。"
+    },
+    "IOT": {
+      "sym": "IOT",
+      "name": "Samsara",
+      "tier": "E",
+      "stance_type": "observe",
+      "thesis": "物联网监控。看似 AI 真实为 Per-device 工业软件模式（无 AI 计费弹性），反弹偏弱（仅 29% 缩量反弹），被估值下修警告。",
+      "business_model": "per_device",
+      "buy_zone": {
+        "min_price": 24.0,
+        "max_price": 26.0
+      },
+      "hard_stop": 22.0,
+      "target_price": 38.0,
+      "upside_pct": 10.0,
+      "rebound_from_bottom_pct": 29.0,
+      "last_notes": "典型的商业模式和反弹虚弱双重陷阱。连续七个季度 beat 但股价腰斩，证明市场已在重估其非 AI 属性。6/4 财报前不动，基本规避。"
+    },
+    "PATH": {
+      "sym": "PATH",
+      "name": "UiPath",
+      "tier": "E",
+      "stance_type": "observe",
+      "thesis": "RPA 软件，极其容易被大语言模型（LLM）直接跨系统生成所替代，面临结构性衰退威胁。",
+      "business_model": "per_seat",
+      "buy_zone": {
+        "min_price": 10.0,
+        "max_price": 12.0
+      },
+      "hard_stop": 8.0,
+      "target_price": 18.0,
+      "upside_pct": 5.0,
+      "rebound_from_bottom_pct": 6.0,
+      "last_notes": "典型的技术替代性衰退标的。增速仅剩 6%，估值毫无吸引力，永久规避。"
+    }
+  }
+}

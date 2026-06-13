@@ -1,0 +1,51 @@
+{
+  "artifact_type": "tactic_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os-optimizer",
+  "tactic_id": "rs_pullback_rebound_optimized",
+  "symbols": [
+    "MU",
+    "NVDA"
+  ],
+  "date_range": {
+    "start": "2024-06-01",
+    "end": "2024-08-30"
+  },
+  "validation": {
+    "windows": [
+      {
+        "name": "train",
+        "start": "2024-06-01",
+        "end": "2024-07-15"
+      },
+      {
+        "name": "test",
+        "start": "2024-07-16",
+        "end": "2024-08-30"
+      }
+    ],
+    "regime_fields": [
+      "market_regime"
+    ],
+    "min_trades_per_window": 0,
+    "monte_carlo": {
+      "enabled": true,
+      "simulations": 1000
+    }
+  },
+  "data": {
+    "mode": "local_cache",
+    "tactic_params": {
+      "action_window_start": "09:30",
+      "action_window_end": "16:00",
+      "min_volume_ratio": 1.0,
+      "take_profit_pct": 2.0,
+      "stop_loss_pct": 2.0,
+      "leverage": 2
+    }
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

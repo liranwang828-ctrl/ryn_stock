@@ -1,0 +1,80 @@
+{
+  "MU": {
+    "symbol": "MU",
+    "role": "watchlist",
+    "theme": "memory",
+    "research_status": "partially_researched",
+    "thesis_ref": "Memory / storage cycle candidate. Evidence needed before any risk; must not be used for loss repair.",
+    "allowed_tactics": ["research_only", "rs_pullback_rebound_candidate"],
+    "formula_overrides": {
+      "rs_pullback_rebound": {
+        "entry_anchor": "MA20",
+        "stop_atr_multiplier": 1.0,
+        "reason": "demo: tighter risk after major drawdown"
+      }
+    },
+    "forbidden_actions": ["loss_repair_averaging", "leveraged_expansion", "unplanned_short_term_entry"],
+    "key_levels": {
+      "entry_base": null,
+      "support_floor": null
+    },
+    "max_loss": 0,
+    "position_cap": 0.0,
+    "invalidation_conditions": ["relative_strength_fails_after_market_stabilizes", "memory_theme_underperforms_semis"]
+  },
+  "NVDA": {
+    "symbol": "NVDA",
+    "role": "core",
+    "theme": "ai_infrastructure",
+    "research_status": "core_position_research_pending",
+    "thesis_ref": "Core AI leader. Intraday plan is ignore/observe unless thesis-level evidence changes.",
+    "allowed_tactics": ["core_hold_observation"],
+    "forbidden_actions": ["intraday_noise_reaction", "short_term_thesis_override"],
+    "key_levels": {
+      "entry_base": null,
+      "support_floor": null
+    },
+    "max_loss": 0,
+    "position_cap": 0.0,
+    "invalidation_conditions": ["thesis_level_business_deterioration"]
+  },
+  "COHR": {
+    "symbol": "COHR",
+    "role": "swing",
+    "theme": "optical",
+    "research_status": "researched_draft",
+    "thesis_ref": "AI optical infrastructure swing candidate; requires market and peer confirmation.",
+    "allowed_tactics": ["rs_pullback_rebound"],
+    "formula_overrides": {
+      "rs_pullback_rebound": {
+        "entry_anchor": "MA50",
+        "stop_atr_multiplier": 1.0,
+        "reason": "demo: test stricter pullback after volatility"
+      }
+    },
+    "forbidden_actions": ["loss_repair_averaging", "unplanned_size_increase", "emotional_reentry"],
+    "key_levels": {
+      "entry_base": null,
+      "support_floor": null
+    },
+    "max_loss": 500.0,
+    "position_cap": 0.1,
+    "invalidation_conditions": ["peer_group_confirms_weakness", "relative_strength_breaks_after_market_stabilizes"]
+  },
+  "INTC": {
+    "symbol": "INTC",
+    "role": "short_term_or_swing_candidate",
+    "theme": "semiconductors",
+    "research_status": "candidate_only",
+    "thesis_ref": "Semiconductor tactical exposure; role must be clarified before action.",
+    "allowed_tactics": ["observe_only"],
+    "forbidden_actions": ["role_drift", "unplanned_short_term_entry", "loss_repair_averaging"],
+    "key_levels": {
+      "entry_base": null,
+      "support_floor": null
+    },
+    "max_loss": 0,
+    "position_cap": 0.0,
+    "invalidation_conditions": ["fails_relative_strength_vs_soxx", "role_not_confirmed"]
+  }
+}

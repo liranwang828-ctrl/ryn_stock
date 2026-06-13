@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-06-06T14:00:00Z",
+  "accounts": {
+    "strict": {
+      "label": "严格",
+      "description": "高精度，少操作，每步都要求更强确认",
+      "t1_entry_score": 8.0,
+      "t1_rs_threshold": 2.0,
+      "max_positions": 4,
+      "risk_per_trade_pct": 0.01,
+      "max_position_pct": 0.12,
+      "t2a_price_above": 1.010,
+      "t2a_vol_min": 1.0,
+      "t2a_rsi_max": 72,
+      "t2a_qqq_min": -0.1,
+      "t2b_pullback_min": 0.3,
+      "t2b_pullback_max": 1.5,
+      "t2b_vol_max": 0.65,
+      "t2b_vwap_floor": 1.000,
+      "t2b_rsi_min": 42,
+      "t2b_qqq_min": -0.2,
+      "t2b_need_macd_pos": true,
+      "t2_stop_mode": "t1_cost",
+      "t2_stop_buffer_atr": 0.0,
+      "t3_vol_min": 1.40,
+      "t3_rsi_max": 78,
+      "t3_stop_mode": "target1",
+      "block_vol_decline": 1.4,
+      "block_qqq_drop": -0.4,
+      "block_rsi_floor": 38,
+      "block_vwap_pct": 0.98,
+      "swing_catalyst_min": 2.0
+    },
+    "base": {
+      "label": "基准",
+      "description": "均衡参数，与方法论#11一致",
+      "t1_entry_score": 7.5,
+      "t1_rs_threshold": 1.5,
+      "max_positions": 6,
+      "risk_per_trade_pct": 0.01,
+      "max_position_pct": 0.15,
+      "t2a_price_above": 1.005,
+      "t2a_vol_min": 0.85,
+      "t2a_rsi_max": 78,
+      "t2a_qqq_min": -0.2,
+      "t2b_pullback_min": 0.3,
+      "t2b_pullback_max": 2.5,
+      "t2b_vol_max": 0.72,
+      "t2b_vwap_floor": 0.995,
+      "t2b_rsi_min": 38,
+      "t2b_qqq_min": -0.3,
+      "t2b_need_macd_pos": true,
+      "t2_stop_mode": "t1_cost",
+      "t2_stop_buffer_atr": 0.0,
+      "t3_vol_min": 1.25,
+      "t3_rsi_max": 82,
+      "t3_stop_mode": "target1",
+      "block_vol_decline": 1.5,
+      "block_qqq_drop": -0.5,
+      "block_rsi_floor": 35,
+      "block_vwap_pct": 0.97,
+      "swing_catalyst_min": 2.0
+    },
+    "loose": {
+      "label": "宽松",
+      "description": "更多操作，给股票更多空间，测试宽松边界",
+      "t1_entry_score": 5.0,
+      "t1_rs_threshold": 0.8,
+      "max_positions": 6,
+      "risk_per_trade_pct": 0.01,
+      "max_position_pct": 0.15,
+      "t2a_price_above": 1.002,
+      "t2a_vol_min": 0.70,
+      "t2a_rsi_max": 82,
+      "t2a_qqq_min": -0.3,
+      "t2b_pullback_min": 0.2,
+      "t2b_pullback_max": 3.5,
+      "t2b_vol_max": 0.80,
+      "t2b_vwap_floor": 0.990,
+      "t2b_rsi_min": 33,
+      "t2b_qqq_min": -0.5,
+      "t2b_need_macd_pos": false,
+      "t2_stop_mode": "buffer",
+      "t2_stop_buffer_atr": 0.2,
+      "t3_vol_min": 1.10,
+      "t3_rsi_max": 85,
+      "t3_stop_mode": "target1",
+      "block_vol_decline": 1.8,
+      "block_qqq_drop": -0.8,
+      "block_rsi_floor": 30,
+      "block_vwap_pct": 0.95,
+      "swing_catalyst_min": 1.0
+    }
+  },
+  "macro_strategy_params": {
+    "market_regime": {
+      "vix_panic_threshold": 25.0,
+      "vix_panic_dir": "↑升",
+      "vix_elevated": 20.0,
+      "vix_normal": 18.0,
+      "spy_bull_min": 0.3,
+      "spy_bear_max": -0.5,
+      "qqq5m_veto": -0.5,
+      "ma20_dev_veto_pct": 10.0,
+      "ma20_dev_warn_pct": 5.0
+    },
+    "observation": {
+      "obs_minutes": 30,
+      "no_trade_after_et_h": 15,
+      "no_trade_after_et_m": 30
+    },
+    "scene_entry_quality": {
+      "A": "high",
+      "H": "high",
+      "B": "medium",
+      "C": "low",
+      "E": "low",
+      "D": "none",
+      "F": "none",
+      "G": "none"
+    },
+    "catalyst_window": {
+      "pre_reduce_days": 3,
+      "post_window_days": 1,
+      "pre_reduce_pct": 20
+    },
+    "scenario_downgrade": {
+      "warn_within_pct": 2.0,
+      "k5_bull_to_base": 0.5,
+      "k6_base_to_bear": 1.0
+    },
+    "entry_plan": {
+      "add1_tolerance_pct": 2.0,
+      "add1_high_dist_pct": 5.0
+    }
+  },
+  "micro_strategy_params": {
+    "flex_signals": {
+      "min_signals_required": 3,
+      "rsi14_5m_oversold": 35.0,
+      "rsi14_5m_overbought": 75.0,
+      "vwap_add_threshold": -1.5,
+      "vwap_reduce_threshold": 1.5,
+      "vol_ratio_shrink": 0.7,
+      "vol_ratio_expand": 1.3,
+      "time_window_start_h": 10,
+      "time_window_end_h": 15
+    },
+    "add_price_gate": {
+      "add1_tolerance_pct": 2.0,
+      "cost_fallback_pct": 5.0,
+      "profit_reduce_min_pct": 10.0,
+      "analyst_target_reduce_pct": 90.0
+    },
+    "thesis_health": {
+      "hard_stop_near_warn_pct": 3.0,
+      "scene_downgrade_warn_pct": 2.0,
+      "time_stop_warn_days": 3,
+      "breakeven_trigger_pct": 8.0,
+      "trail_ma20_trigger_pct": 15.0
+    },
+    "reversal": {
+      "rsi14_5m_extreme_oversold": 25.0,
+      "rsi14_5m_oversold": 35.0,
+      "vol_ratio_exhaustion": 0.3,
+      "reversal_score_threshold": 4.0
+    },
+    "global_veto": {
+      "vix_panic": 25.0,
+      "qqq5m_drop": -0.5,
+      "ma20_dev_max": 10.0
+    }
+  }
+}

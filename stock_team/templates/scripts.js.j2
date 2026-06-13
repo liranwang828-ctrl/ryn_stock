@@ -1,0 +1,2148 @@
+  <script>
+    const serverPort = {{ server_port | default(8080) }};
+    const API_HOST = (location.protocol === 'file:') ? `http://127.0.0.1:${serverPort}` : '';
+
+    // ── Safe Storage Wrapper ──────────────────────────────────────────────
+    const safeStorage = {
+      getItem: function(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          console.warn("localStorage.getItem blocked or failed:", e);
+          return null;
+        }
+      },
+      setItem: function(key, val) {
+        try {
+          localStorage.setItem(key, val);
+        } catch (e) {
+          console.warn("localStorage.setItem blocked or failed:", e);
+        }
+      },
+      removeItem: function(key) {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn("localStorage.removeItem blocked or failed:", e);
+        }
+      }
+    };
+
+    // 自动刷新并保持当前激活的 Tab 状态
+    const TAB_KEY = 'dashboard_active_tab';
+    let autoRefreshTimeout = null;
+
+    function showTab(name, btn) {
+      try {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        const pane = document.getElementById('tab-' + name);
+        if (pane) pane.classList.add('active');
+        if (btn) btn.classList.add('active');
+        
+        safeStorage.setItem(TAB_KEY, name);
+        location.hash = name;
+
+        // 如果在控制中心，关闭自动页面刷新，避免阻断操作 and 日志流
+        if (name === 'command') {
+          if (autoRefreshTimeout) {
+            clearTimeout(autoRefreshTimeout);
+            autoRefreshTimeout = null;
+          }
+          // 显示回测沙盒（仅控制中心）
+          var bs = document.getElementById('backtest-sandbox');
+          if (bs) bs.style.display = '';
+          // 触发一次服务器状态同步，初始化滑块
+          syncStatus();
+          if (!statusSyncInterval) {
+            statusSyncInterval = setInterval(syncStatus, 5000);
+          }
+        } else {
+          if (statusSyncInterval) {
+            clearInterval(statusSyncInterval);
+            statusSyncInterval = null;
+          }
+          // 隐藏回测沙盒（离开控制中心）
+          var bs = document.getElementById('backtest-sandbox');
+          if (bs) bs.style.display = 'none';
+          // 当离开控制中心 tab 时，暂停日志轮询，节省网络带宽与连接资源
+          if (logPollInterval) {
+            stopLogPolling();
+          }
+          resetAutoRefresh();
+        }
+      } catch (err) {
+        console.error('Error in showTab:', err);
+      }
+    }
+
+    function resetAutoRefresh() {
+      try {
+        if (autoRefreshTimeout) clearTimeout(autoRefreshTimeout);
+        autoRefreshTimeout = setTimeout(() => {
+          if (safeStorage.getItem(TAB_KEY) !== 'command') {
+            // 在刷新前检查是否有后台任务正在运行，避免强行刷新中断用户监控或计算流程
+            fetch(API_HOST + '/api/status')
+              .then(res => res.json())
+              .then(data => {
+                try {
+                  let anyRunning = false;
+                  if (data.running_tasks) {
+                    for (const tName in data.running_tasks) {
+                      if (data.running_tasks[tName] && data.running_tasks[tName].running) {
+                        anyRunning = true;
+                        break;
+                      }
+                    }
+                  }
+                  if (!anyRunning) {
+                    location.reload();
+                  } else {
+                    // 如果有任务在运行，推迟 30 秒再次检测，不执行 reload
+                    resetAutoRefresh();
+                  }
+                } catch (innerErr) {
+                  console.error('Error in auto-refresh callback:', innerErr);
+                  resetAutoRefresh();
+                }
+              })
+              .catch(() => {
+                // 异常降级：如果状态请求失败，出于安全考虑暂时不自动刷新
+                resetAutoRefresh();
+              });
+          }
+        }, 30000);
+      } catch (err) {
+        console.error('Error in resetAutoRefresh:', err);
+      }
+    }
+
+    function openIntradaySymbol(symbol) {
+      try {
+        const intradayBtn = Array.from(document.querySelectorAll('.tab-btn'))
+          .find((btn) => (btn.getAttribute('onclick') || '').includes("showTab('intraday'"));
+        showTab('intraday', intradayBtn || null);
+        const card = document.getElementById('intraday-symbol-card-' + symbol);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          card.classList.add('focus-pulse');
+          setTimeout(() => card.classList.remove('focus-pulse'), 1400);
+        }
+      } catch (err) {
+        console.error('Error in openIntradaySymbol:', err);
+      }
+    }
+
+    function returnToOverviewFocus(symbol) {
+      try {
+        const overviewBtn = Array.from(document.querySelectorAll('.tab-btn'))
+          .find((btn) => (btn.getAttribute('onclick') || '').includes("showTab('overview'"));
+        showTab('overview', overviewBtn || null);
+        const row = document.getElementById('focus-row-' + symbol) || document.getElementById('focus-readiness-panel');
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.add('focus-pulse');
+          setTimeout(() => row.classList.remove('focus-pulse'), 1400);
+        }
+      } catch (err) {
+        console.error('Error in returnToOverviewFocus:', err);
+      }
+    }
+
+    // ── Command Hub 逻辑 ──────────────────────────────────────────────────
+    let activeLogPollingTask = null;
+    let logPollInterval = null;
+    let statusSyncInterval = null;
+    let myChart = null;
+    let isSyncingStatus = false;
+    let isPollingLogs = false;
+
+    function runTask(taskName) {
+      try {
+        // 存储当前处于活跃状态的任务名称，用于持久化 and 自动 reconnect
+        safeStorage.setItem('active_log_task', taskName);
+        highlightConsoleTab(taskName);
+
+        const badge = document.getElementById('current-task-badge');
+        if (badge) {
+          badge.innerText = "RUNNING";
+          badge.className = "badge badge-yellow";
+        }
+        const dot = document.getElementById('terminal-dot-status');
+        if (dot) dot.className = "terminal-dot active";
+        const drawerDot = document.getElementById('terminal-drawer-dot-status');
+        if (drawerDot) drawerDot.className = "terminal-dot active";
+        
+        const nameEl = document.getElementById('terminal-task-name');
+        if (nameEl) nameEl.innerText = "task_" + taskName + ".log";
+        
+        const terminal = document.getElementById('terminal-body');
+        if (terminal) {
+          terminal.innerText = "[系统] 正在请求启动后台异步任务: " + taskName + "...\n";
+        }
+        const drawerTerminal = document.getElementById('terminal-drawer-body');
+        if (drawerTerminal) {
+          drawerTerminal.innerText = "[系统] 正在请求启动后台异步任务: " + taskName + "...\n";
+        }
+
+        // 智能无感体验：如果是 cio 生成或 premarket 等，自动滑出终端抽屉展示，不打断用户总览视角
+        if (taskName.startsWith('cio_') || taskName === 'premarket' || taskName === 'generate-focus-reports') {
+          openTerminalDrawer(taskName);
+        }
+
+        fetch(API_HOST + '/api/run?task=' + taskName)
+          .then(res => res.json())
+          .then(data => {
+            try {
+              if (data.error) {
+                if (terminal) terminal.innerText += "[错误] " + data.error + "\n";
+                if (drawerTerminal) drawerTerminal.innerText += "[错误] " + data.error + "\n";
+                const errBadge = document.getElementById('current-task-badge');
+                if (errBadge) {
+                  errBadge.innerText = "ERROR";
+                  errBadge.className = "badge badge-red";
+                }
+                const errDot = document.getElementById('terminal-dot-status');
+                if (errDot) errDot.className = "terminal-dot";
+                const errDrawerDot = document.getElementById('terminal-drawer-dot-status');
+                if (errDrawerDot) errDrawerDot.className = "terminal-dot";
+              } else {
+                if (terminal) terminal.innerText += "[系统] 任务启动成功！\n";
+                if (drawerTerminal) drawerTerminal.innerText += "[系统] 任务启动成功！\n";
+                startLogPolling(taskName);
+              }
+            } catch (innerErr) {
+              console.error('Error in runTask callback:', innerErr);
+            }
+          })
+          .catch(err => {
+            if (terminal) terminal.innerText += "[错误] 请求发送失败: " + err + "\n";
+            if (drawerTerminal) drawerTerminal.innerText += "[错误] 请求发送失败: " + err + "\n";
+            const errBadge = document.getElementById('current-task-badge');
+            if (errBadge) {
+              errBadge.innerText = "FAILED";
+              errBadge.className = "badge badge-red";
+            }
+          });
+      } catch (err) {
+        console.error('Error in runTask:', err);
+      }
+    }
+
+    function runCIOTask() {
+      try {
+        const selectEl = document.getElementById('cio-symbol-select');
+        if (!selectEl) return;
+        let sym = selectEl.value;
+        if (sym === '__custom__') {
+          const customEl = document.getElementById('cio-custom-input');
+          sym = customEl ? customEl.value.trim().toUpperCase() : '';
+          if (!sym) {
+            alert('请先输入有效的股票代码！');
+            return;
+          }
+        }
+        if (sym) {
+          runTask('cio_' + sym);
+        }
+      } catch (err) {
+        console.error('Error in runCIOTask:', err);
+      }
+    }
+
+    function runBacktestSandbox() {
+      try {
+        const vixEl = document.getElementById('slide-vix');
+        const ma200El = document.getElementById('slide-ma200');
+        const qqq5mEl = document.getElementById('slide-qqq5m');
+        const rsiEl = document.getElementById('slide-rsi');
+        const minsigEl = document.getElementById('slide-minsig');
+        
+        const btYearsEl = document.getElementById('slide-bt-years');
+        const btWindowEl = document.getElementById('slide-bt-window');
+
+        const vix = vixEl ? vixEl.value : "N/A";
+        const ma200 = ma200El ? ma200El.value : "N/A";
+        const qqq5m = qqq5mEl ? qqq5mEl.value : "N/A";
+        const rsi = rsiEl ? rsiEl.value : "N/A";
+        const minsig = minsigEl ? minsigEl.value : "N/A";
+        
+        const btYears = btYearsEl ? btYearsEl.value : "5";
+        const btWindow = btWindowEl ? btWindowEl.value : "60";
+
+        // 存储当前处于活跃状态的任务名称，用于持久化 and 自动 reconnect
+        safeStorage.setItem('active_log_task', 'backtest');
+
+        const badge = document.getElementById('current-task-badge');
+        if (badge) {
+          badge.innerText = "RUNNING";
+          badge.className = "badge badge-yellow";
+        }
+        const dot = document.getElementById('terminal-dot-status');
+        if (dot) dot.className = "terminal-dot active";
+        const nameEl = document.getElementById('terminal-task-name');
+        if (nameEl) nameEl.innerText = "task_backtest.log";
+
+        const terminal = document.getElementById('terminal-body');
+        if (terminal) {
+          terminal.innerText = "[沙盒] 正在加载因子参数并运行多周期历史回测策略...\n"
+                             + "  - 回测年数: " + btYears + " 年\n"
+                             + "  - 滑动窗口: " + btWindow + " 天\n"
+                             + "  - VIX阀门: " + vix + "\n"
+                             + "  - SPY MA200: " + ma200 + "%\n"
+                             + "  - QQQ 5m暴跌: " + qqq5m + "%\n"
+                             + "  - RSI超卖点: " + rsi + "\n"
+                             + "  - 最小信号数: " + minsig + "\n\n";
+        }
+
+        // 智能体验优化：自动将控制台 tab 切换为 “沙盒回测” 并高亮
+        const btTabBtn = document.getElementById('console-tab-backtest');
+        if (btTabBtn) {
+          document.querySelectorAll('.console-tab-btn').forEach(b => b.classList.remove('active'));
+          btTabBtn.classList.add('active');
+        }
+
+        // 异步调用回测
+        fetch(API_HOST + '/api/run?task=backtest&years=' + btYears + '&window_days=' + btWindow)
+          .then(res => res.json())
+          .then(data => {
+            try {
+              if (data.error) {
+                if (terminal) terminal.innerText += "[错误] " + data.error + "\n";
+                const errBadge = document.getElementById('current-task-badge');
+                if (errBadge) {
+                  errBadge.innerText = "ERROR";
+                  errBadge.className = "badge badge-red";
+                }
+                const errDot = document.getElementById('terminal-dot-status');
+                if (errDot) errDot.className = "terminal-dot";
+              } else {
+                startLogPolling('backtest');
+              }
+            } catch (innerErr) {
+              console.error('Error in runBacktestSandbox callback response processing:', innerErr);
+            }
+          });
+      } catch (err) {
+        console.error('Error starting backtest sandbox:', err);
+      }
+    }
+
+    // ── SOP Checkbox and Manual Focus Tickers Helper Functions ──────────────────
+    function toggleFocusSymbol(sym, checked) {
+      try {
+        const url = checked ? '/api/add_focus?symbol=' + sym : '/api/remove_focus?symbol=' + sym;
+        fetch(API_HOST + url)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              console.log("Focus toggled successfully:", sym, checked);
+              updateLiveWatchingTickersUI(sym, checked);
+              syncStatus();
+            } else {
+              console.error("Failed to toggle focus:", data.error);
+            }
+          })
+          .catch(err => console.error("Error toggling focus:", err));
+      } catch (err) {
+        console.error("Error in toggleFocusSymbol:", err);
+      }
+    }
+
+    function updateLiveWatchingTickersUI(sym, isAdded) {
+      const container = document.getElementById('live-watching-tickers-list');
+      if (!container) return;
+      const tagId = 'watching-tag-' + sym;
+      let tag = document.getElementById(tagId);
+      if (isAdded) {
+        if (!tag) {
+          tag = document.createElement('span');
+          tag.id = tagId;
+          tag.style = "font-family:'JetBrains Mono'; font-weight:700; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:3px; font-size:0.7rem;";
+          tag.innerText = sym;
+          container.appendChild(tag);
+        }
+      } else {
+        if (tag) {
+          tag.remove();
+        }
+      }
+    }
+
+    function addManualFocusStock() {
+      try {
+        const input = document.getElementById('manual-focus-sym');
+        const symbol = input ? input.value.trim().toUpperCase() : '';
+        if (!symbol) {
+          alert('请输入股票代码！');
+          return;
+        }
+        
+        fetch(API_HOST + '/api/add_focus?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              if (input) input.value = '';
+              
+              const container = document.getElementById('focus-checklist-container');
+              if (container) {
+                const labelId = 'lbl-focus-' + symbol;
+                if (!document.getElementById(labelId)) {
+                  const label = document.createElement('label');
+                  label.id = labelId;
+                  label.style = "display:flex; align-items:center; gap:4px; cursor:pointer;";
+                  label.className = "focus-chk-lbl";
+                  
+                  const chk = document.createElement('input');
+                  chk.type = "checkbox";
+                  chk.checked = true;
+                  chk.value = symbol;
+                  chk.onchange = function() { toggleFocusSymbol(symbol, this.checked); };
+                  
+                  const span = document.createElement('span');
+                  span.style = "font-family:'JetBrains Mono'; font-weight:700;";
+                  span.innerText = symbol;
+                  
+                  label.appendChild(chk);
+                  label.appendChild(span);
+                  container.appendChild(label);
+                }
+              }
+              
+              updateLiveWatchingTickersUI(symbol, true);
+              syncStatus();
+              alert(symbol + " 已成功添加到今日关注列表！");
+            } else {
+              alert("添加失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            alert("请求失败: " + err);
+          });
+      } catch (err) {
+        console.error("Error in addManualFocusStock:", err);
+      }
+    }
+
+    function applyTunedParams() {
+      try {
+        const btn = document.getElementById('btn-apply-backtest');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerText = "⏳ 正在应用...";
+        }
+        
+        fetch(API_HOST + '/api/apply_backtest')
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              if (btn) {
+                btn.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
+                btn.innerText = "✓ 已成功应用";
+                btn.style.boxShadow = "0 0 10px rgba(16,185,129,0.4)";
+              }
+              alert("🎉 调优因子参数应用成功！\n" + 
+                    "微观参数已成功同步写回，旧参数已备份至 findings 文件夹。\n\n" + 
+                    "已应用参数:\n" + JSON.stringify(data.applied_params, null, 2));
+              syncStatus();
+            } else {
+              alert("❌ 应用失败: " + data.error);
+              if (btn) {
+                btn.disabled = false;
+                btn.innerText = "💾 应用参数";
+              }
+            }
+          })
+          .catch(err => {
+            alert("❌ 请求发送失败: " + err);
+            if (btn) {
+              btn.disabled = false;
+              btn.innerText = "💾 应用参数";
+            }
+          });
+      } catch (err) {
+        console.error("Error in applyTunedParams:", err);
+      }
+    }
+
+    function highlightConsoleTab(taskName) {
+      try {
+        document.querySelectorAll('.console-tab-btn').forEach(b => {
+          b.classList.remove('active');
+          if (b.id === 'console-tab-' + taskName) {
+            b.classList.add('active');
+          }
+        });
+      } catch (err) {
+        console.error("Error highlighting console tab:", err);
+      }
+    }
+
+    function highlightConsoleTabAndShowCommand(taskName) {
+      try {
+        const cmdBtn = document.getElementById('btn-command');
+        if (cmdBtn) {
+          showTab('command', cmdBtn);
+        } else {
+          showTab('command');
+        }
+        const scanTabBtn = document.getElementById('console-tab-' + taskName);
+        if (scanTabBtn) {
+          switchConsoleTab(taskName, scanTabBtn);
+        } else {
+          switchConsoleTab(taskName);
+        }
+      } catch (err) {
+        console.error("Error navigating to console tab:", err);
+      }
+    }
+
+    function switchConsoleTab(taskName, btn) {
+      try {
+        document.querySelectorAll('.console-tab-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        
+        safeStorage.setItem('active_log_task', taskName);
+        
+        const terminalTitle = document.getElementById('terminal-task-name');
+        if (terminalTitle) {
+          terminalTitle.innerText = "task_" + taskName + ".log";
+        }
+        
+        fetch(API_HOST + '/api/status')
+          .then(res => res.json())
+          .then(data => {
+            const isRunning = !!(data.running_tasks && data.running_tasks[taskName] && data.running_tasks[taskName].running);
+            
+            const badge = document.getElementById('current-task-badge');
+            if (badge) {
+              if (isRunning) {
+                badge.innerText = "RUNNING";
+                badge.className = "badge badge-yellow";
+              } else {
+                const finished = data.running_tasks && data.running_tasks[taskName] && data.running_tasks[taskName].returncode !== undefined;
+                badge.innerText = finished ? "FINISHED" : "IDLE";
+                badge.className = finished ? "badge badge-green" : "badge badge-gray";
+              }
+            }
+            
+            if (isRunning) {
+              startLogPolling(taskName);
+            } else {
+              if (logPollInterval) {
+                clearInterval(logPollInterval);
+                logPollInterval = null;
+              }
+              activeLogPollingTask = null;
+              fetchLogsOnce(taskName, false);
+            }
+          })
+          .catch(err => {
+            console.error("Error syncing status during tab switch:", err);
+            fetchLogsOnce(taskName, false);
+          });
+      } catch (err) {
+        console.error("Error switching console tab:", err);
+      }
+    }
+
+
+    function stopTask(taskName) {
+      try {
+        const terminal = document.getElementById('terminal-body');
+        if (terminal) terminal.innerText += "\n[系统] 正在发送终止进程指令...\n";
+        
+        fetch(API_HOST + '/api/stop?task=' + taskName)
+          .then(res => res.json())
+          .then(data => {
+            try {
+              if (data.error) {
+                if (terminal) terminal.innerText += "[系统] 停止失败: " + data.error + "\n";
+              } else {
+                if (terminal) terminal.innerText += "[系统] 任务已停止: " + data.message + "\n";
+                if (activeLogPollingTask === taskName) {
+                  stopLogPolling();
+                }
+                const badge = document.getElementById('current-task-badge');
+                if (badge) {
+                  badge.innerText = "STOPPED";
+                  badge.className = "badge badge-red";
+                }
+                syncStatus();
+              }
+            } catch (innerErr) {
+              console.error('Error in stopTask callback response processing:', innerErr);
+            }
+          });
+      } catch (err) {
+        console.error('Error stopping task:', err);
+      }
+    }
+
+    function startLogPolling(taskName) {
+      try {
+        if (logPollInterval) clearInterval(logPollInterval);
+        activeLogPollingTask = taskName;
+        // 保持当前活跃日志任务
+        safeStorage.setItem('active_log_task', taskName);
+        
+        // 体验优化：在 1 秒的 Interval 启动前，立即获取一次日志，消除控制台瞬间清空的延迟感
+        fetchLogsOnce(taskName, true);
+        
+        logPollInterval = setInterval(() => {
+          if (isPollingLogs) return;
+          isPollingLogs = true;
+          fetch(API_HOST + '/api/logs?task=' + taskName)
+            .then(res => res.json())
+            .then(data => {
+              isPollingLogs = false;
+              try {
+                const terminal = document.getElementById('terminal-body');
+                if (terminal) {
+                  terminal.innerText = data.logs;
+                  terminal.scrollTop = terminal.scrollHeight; // 滚动到底部
+                }
+                const drawerTerminal = document.getElementById('terminal-drawer-body');
+                if (drawerTerminal) {
+                  drawerTerminal.innerText = data.logs;
+                  drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+                }
+                
+                if (!data.running) {
+                  stopLogPolling();
+                  if (terminal) {
+                    terminal.innerText += "\n[控制台] 进程已退出。\n";
+                    terminal.scrollTop = terminal.scrollHeight;
+                  }
+                  if (drawerTerminal) {
+                    drawerTerminal.innerText += "\n[控制台] 进程已退出。\n";
+                    drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+                  }
+                  syncStatus();
+                  
+                  // 如果运行的任务是生成报告、预计算或扫描相关任务，进程退出时触发自动重载页面以更新仪表盘
+                  const curTask = safeStorage.getItem('active_log_task');
+                  if (curTask && (curTask.startsWith('cio_') || curTask === 'premarket' || curTask === 'scan')) {
+                    setTimeout(() => {
+                      location.reload();
+                    }, 1500);
+                  }
+                }
+              } catch (innerErr) {
+                console.error('Error in log polling callback:', innerErr);
+              }
+            })
+            .catch(err => {
+              isPollingLogs = false;
+              console.error('Error fetching logs in interval:', err);
+            });
+        }, 1000);
+      } catch (err) {
+        console.error('Error starting log polling:', err);
+      }
+    }
+
+    function stopLogPolling() {
+      try {
+        if (logPollInterval) {
+          clearInterval(logPollInterval);
+          logPollInterval = null;
+        }
+        activeLogPollingTask = null;
+        const dot = document.getElementById('terminal-dot-status');
+        if (dot) dot.className = "terminal-dot";
+        const drawerDot = document.getElementById('terminal-drawer-dot-status');
+        if (drawerDot) drawerDot.className = "terminal-dot";
+        
+        // 当日志轮询因任务结束而停止时，将 badge 标记为已完成
+        const badge = document.getElementById('current-task-badge');
+        if (badge && badge.innerText === "RUNNING") {
+          badge.innerText = "FINISHED";
+          badge.className = "badge badge-green";
+        }
+      } catch (err) {
+        console.error('Error stopping log polling:', err);
+      }
+    }
+
+    // 单次拉取指定任务的最新日志并回填终端，非阻塞更新 UI 状态
+    function fetchLogsOnce(taskName, isRunning) {
+      try {
+        fetch(API_HOST + '/api/logs?task=' + taskName)
+          .then(res => res.json())
+          .then(data => {
+            try {
+              const terminal = document.getElementById('terminal-body');
+              if (terminal) {
+                terminal.innerText = data.logs;
+                terminal.scrollTop = terminal.scrollHeight;
+              }
+              const drawerTerminal = document.getElementById('terminal-drawer-body');
+              if (drawerTerminal) {
+                drawerTerminal.innerText = data.logs;
+                drawerTerminal.scrollTop = drawerTerminal.scrollHeight;
+              }
+              
+              const badge = document.getElementById('current-task-badge');
+              const dot = document.getElementById('terminal-dot-status');
+              const drawerDot = document.getElementById('terminal-drawer-dot-status');
+              const nameEl = document.getElementById('terminal-task-name');
+              
+              if (nameEl) nameEl.innerText = "task_" + taskName + ".log";
+              
+              if (badge) {
+                if (isRunning) {
+                  badge.innerText = "RUNNING";
+                  badge.className = "badge badge-yellow";
+                  if (dot) dot.className = "terminal-dot active";
+                  if (drawerDot) drawerDot.className = "terminal-dot active";
+                } else {
+                  badge.innerText = "FINISHED";
+                  badge.className = "badge badge-green";
+                  if (dot) dot.className = "terminal-dot";
+                  if (drawerDot) drawerDot.className = "terminal-dot";
+                }
+              }
+            } catch (innerErr) {
+              console.error("Error processing fetchLogsOnce data:", innerErr);
+            }
+          })
+          .catch(err => console.error("Error fetching logs once:", err));
+      } catch (err) {
+        console.error("Error in fetchLogsOnce:", err);
+      }
+    }
+
+    function clearConsole() {
+      try {
+        const terminal = document.getElementById('terminal-body');
+        if (terminal) {
+          terminal.innerText = "=== 控制台内容已清空 ===\n";
+        }
+      } catch (err) {
+        console.error('Error in clearConsole:', err);
+      }
+    }
+
+    function updateSliderVal(type, val) {
+      try {
+        const el = document.getElementById('val-' + type);
+        if (el) {
+          if (type === 'ma200' || type === 'qqq5m') {
+            el.innerText = val + '%';
+          } else {
+            el.innerText = val;
+          }
+        }
+      } catch (err) {
+        console.error('Error in updateSliderVal:', err);
+      }
+    }
+
+    function saveTunedParams() {
+      try {
+        const vixEl = document.getElementById('slide-vix');
+        const ma200El = document.getElementById('slide-ma200');
+        const qqq5mEl = document.getElementById('slide-qqq5m');
+        const rsiEl = document.getElementById('slide-rsi');
+        const minsigEl = document.getElementById('slide-minsig');
+
+        const vix = vixEl ? parseInt(vixEl.value) : 0;
+        const ma200 = ma200El ? parseFloat(ma200El.value) : 0.0;
+        const qqq5m = qqq5mEl ? parseFloat(qqq5mEl.value) : 0.0;
+        const rsi = rsiEl ? parseInt(rsiEl.value) : 0;
+        const minsig = minsigEl ? parseInt(minsigEl.value) : 0;
+
+        const payload = {
+          macro: {
+            vix_panic_threshold: vix,
+            ma20_dev_veto_pct: ma200,
+            qqq5m_veto: qqq5m
+          },
+          micro: {
+            rsi14_5m_oversold: rsi,
+            min_signals_required: minsig
+          }
+        };
+
+        fetch(API_HOST + '/api/save_params', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+          try {
+            const terminal = document.getElementById('terminal-body');
+            if (data.status === 'success') {
+              if (terminal) terminal.innerText += "\n[系统] 参数保存成功: " + data.message + "\n";
+              alert("策略参数已成功应用到本地配置文件！");
+            } else {
+              if (terminal) terminal.innerText += "\n[错误] 保存参数失败: " + data.error + "\n";
+            }
+            if (terminal) terminal.scrollTop = terminal.scrollHeight;
+          } catch (innerErr) {
+            console.error('Error in saveTunedParams response:', innerErr);
+          }
+        });
+      } catch (err) {
+        console.error('Error in saveTunedParams:', err);
+      }
+    }
+
+    function syncStatus() {
+      if (isSyncingStatus) return;
+      isSyncingStatus = true;
+      try {
+        fetch(API_HOST + '/api/status')
+          .then(res => {
+            if (!res.ok) throw new Error('Network response not ok');
+            return res.json();
+          })
+          .then(data => {
+            isSyncingStatus = false;
+            try {
+              // 1. 更新 poll 运行状态指示灯
+              const pollActive = data.running_tasks && data.running_tasks.poll && data.running_tasks.poll.running;
+              const pollDot = document.getElementById('poll-breathing-dot');
+              const btnStart = document.getElementById('btn-poll-start');
+              const btnStop = document.getElementById('btn-poll-stop');
+              
+              if (pollActive) {
+                if (pollDot) pollDot.className = "terminal-dot active";
+                if (btnStart) {
+                  btnStart.style.opacity = "0.5";
+                  btnStart.disabled = true;
+                }
+                if (btnStop) btnStop.disabled = false;
+              } else {
+                if (pollDot) pollDot.className = "terminal-dot";
+                if (btnStart) {
+                  btnStart.style.opacity = "1";
+                  btnStart.disabled = false;
+                }
+                if (btnStop) btnStop.disabled = true;
+              }
+
+              // 1.5 开发者控制台状态恢复、多任务重连与智能状态自愈
+              let activeTask = safeStorage.getItem('active_log_task');
+              
+              // 智能自愈：如果本地缓存中无当前查看的任务，但后台有正在运行的流水线任务，自动绑定该任务
+              if (!activeTask && data.running_tasks) {
+                for (const tName in data.running_tasks) {
+                  if (data.running_tasks[tName] && data.running_tasks[tName].running) {
+                    activeTask = tName;
+                    safeStorage.setItem('active_log_task', tName);
+                    break;
+                  }
+                }
+              }
+
+              // 智能恢复兜底：如果依然没有活跃任务，使用服务器返回的最近修改日志的那个主要任务
+              if (!activeTask && data.latest_log_task) {
+                activeTask = data.latest_log_task;
+                safeStorage.setItem('active_log_task', activeTask);
+              }
+
+              if (activeTask) {
+                highlightConsoleTab(activeTask);
+                const isRunning = !!(data.running_tasks && data.running_tasks[activeTask] && data.running_tasks[activeTask].running);
+                
+                if (isRunning) {
+                  // 任务正在运行，但前端没有进行实时日志轮询 (可能因为刚刚刷新或切换回 command 页面)
+                  if (activeLogPollingTask !== activeTask) {
+                    const badge = document.getElementById('current-task-badge');
+                    if (badge) {
+                      badge.innerText = "RUNNING";
+                      badge.className = "badge badge-yellow";
+                    }
+                    const dot = document.getElementById('terminal-dot-status');
+                    if (dot) dot.className = "terminal-dot active";
+                    const nameEl = document.getElementById('terminal-task-name');
+                    if (nameEl) nameEl.innerText = "task_" + activeTask + ".log";
+                    startLogPolling(activeTask);
+                  }
+                } else {
+                  // 任务未运行，且控制台处于初始等待状态或空，单次拉取日志回填以防止信息丢失
+                  const terminal = document.getElementById('terminal-body');
+                  if (terminal && (terminal.innerText.includes("=== 欢迎来到股票交易指挥中心开发者日志控制台 ===") || terminal.innerText === "")) {
+                    fetchLogsOnce(activeTask, false);
+                  }
+                }
+              }
+
+              // 2. 初始化滑块数值（只在滑块未被用户拖拽时更新）
+              if (data.params) {
+                const macro_params = data.params.macro && data.params.macro.market_regime;
+                const micro_params = data.params.micro && data.params.micro.flex_signals;
+
+                if (macro_params && document.activeElement && typeof document.activeElement.id === 'string' && !document.activeElement.id.includes('slide-')) {
+                  if (macro_params.vix_panic_threshold) {
+                    const vixEl = document.getElementById('slide-vix');
+                    if (vixEl) vixEl.value = macro_params.vix_panic_threshold;
+                    updateSliderVal('vix', macro_params.vix_panic_threshold);
+                  }
+                  if (macro_params.ma20_dev_veto_pct) {
+                    const ma200El = document.getElementById('slide-ma200');
+                    if (ma200El) ma200El.value = macro_params.ma20_dev_veto_pct;
+                    updateSliderVal('ma200', macro_params.ma20_dev_veto_pct);
+                  }
+                  if (macro_params.qqq5m_veto) {
+                    const qqq5mEl = document.getElementById('slide-qqq5m');
+                    if (qqq5mEl) qqq5mEl.value = macro_params.qqq5m_veto;
+                    updateSliderVal('qqq5m', macro_params.qqq5m_veto);
+                  }
+                }
+                if (micro_params && document.activeElement && typeof document.activeElement.id === 'string' && !document.activeElement.id.includes('slide-')) {
+                  if (micro_params.rsi14_5m_oversold) {
+                    const rsiEl = document.getElementById('slide-rsi');
+                    if (rsiEl) rsiEl.value = micro_params.rsi14_5m_oversold;
+                    updateSliderVal('rsi', micro_params.rsi14_5m_oversold);
+                  }
+                  if (micro_params.min_signals_required) {
+                    const minsigEl = document.getElementById('slide-minsig');
+                    if (minsigEl) minsigEl.value = micro_params.min_signals_required;
+                    updateSliderVal('minsig', micro_params.min_signals_required);
+                  }
+                }
+              }
+
+              // 3. 收集并渲染回测 Chart.js
+              let baseEV = 0.15; // 默认基准期望
+              let optEV = 0.22;
+              if (data.portfolio && data.portfolio.totals) {
+                baseEV = Math.max(0.05, data.portfolio.totals.total_unrealized_pnl_pct / 100 || baseEV);
+              }
+              
+              if (data.portfolio && data.portfolio.backtest_summary) {
+                optEV = data.portfolio.backtest_summary.best_ev || optEV;
+              }
+              
+              drawChart(baseEV, optEV);
+
+              // 4. 更新 yfinance 数据信道健康状态
+              if (data.data_health) {
+                const badge = document.getElementById('data-health-badge');
+                const panel = document.getElementById('data-health-alert-panel');
+                const errorsList = document.getElementById('data-health-errors-list');
+                
+                const isRestricted = data.data_health.status === 'restricted';
+                
+                if (badge) {
+                  if (isRestricted) {
+                    badge.className = "badge badge-pulse-red";
+                    badge.innerText = "⚠️ 受限";
+                  } else {
+                    badge.className = "badge badge-green";
+                    badge.innerText = "📊 稳定";
+                  }
+                }
+                
+                const dismissed = safeStorage.getItem('data_health_panel_dismissed') === 'true';
+                if (panel) {
+                  if (isRestricted && !dismissed) {
+                    panel.style.display = 'block';
+                  } else if (!isRestricted) {
+                    panel.style.display = 'none';
+                  }
+                }
+                
+                if (errorsList && data.data_health.errors) {
+                  if (data.data_health.errors.length > 0) {
+                    let html = '';
+                    data.data_health.errors.forEach(err => {
+                      const shortTs = err.ts ? err.ts.substring(11, 19) : '';
+                      html += `<div style="margin-bottom:0.3rem;"><span style="color:var(--text-secondary);">[${shortTs}]</span> <span style="color:var(--red); font-weight:bold;">${err.sym}</span>: ${err.msg}</div>`;
+                    });
+                    errorsList.innerHTML = html;
+                  } else {
+                    errorsList.innerHTML = '<div style="color:var(--text-muted);">暂无具体错误日志</div>';
+                  }
+                }
+              }
+
+              // 5. 更新每日交易 SOP 引导状态
+              if (data.sop_status) {
+                // Step 1: 扫描选股
+                const dot1 = document.getElementById('sop-step-1-dot');
+                const badge1 = document.getElementById('sop-step-1-badge');
+                const scanRunning = data.running_tasks && data.running_tasks.scan && data.running_tasks.scan.running;
+                const s1 = data.sop_status.step1_scan || {};
+                if (dot1 && badge1) {
+                  if (scanRunning) {
+                    dot1.className = "sop-dot sop-dot-active";
+                    badge1.className = "badge badge-blue";
+                    badge1.innerText = "⏳ 扫描中...";
+                  } else if (s1.done) {
+                    dot1.className = "sop-dot sop-dot-green";
+                    badge1.className = "badge badge-green";
+                    badge1.innerText = s1.detail || "✓ 已完成";
+                  } else {
+                    dot1.className = "sop-dot";
+                    badge1.className = "badge badge-gray";
+                    badge1.innerText = s1.detail || "待扫描";
+                  }
+                }
+
+                // Dynamic Scan Candidates display in Pipeline Card
+                const scanArea = document.getElementById('scan-candidates-area');
+                const scanList = document.getElementById('scan-candidates-list');
+                if (scanArea && s1.done && s1.candidates && s1.candidates.length > 0) {
+                  scanArea.style.display = 'block';
+                  if (scanList) {
+                    scanList.innerHTML = '';
+                    s1.candidates.forEach(sym => {
+                      const badge = document.createElement('span');
+                      badge.className = 'badge badge-blue';
+                      badge.style.cursor = 'pointer';
+                      badge.style.marginRight = '0.35rem';
+                      badge.style.marginBottom = '0.35rem';
+                      badge.style.fontSize = '0.72rem';
+                      badge.style.padding = '0.2rem 0.45rem';
+                      badge.style.background = 'rgba(99, 102, 241, 0.15)';
+                      badge.style.border = '1px solid rgba(99, 102, 241, 0.4)';
+                      badge.style.color = '#a5b4fc';
+                      badge.style.transition = 'all 0.2s';
+                      badge.title = '点击将 ' + sym + ' 加入今日关注列表';
+                      badge.innerHTML = '➕ ' + sym;
+                      badge.setAttribute('onclick', "addToFocus('" + sym + "')");
+                      
+                      badge.onmouseenter = function() {
+                        badge.style.background = 'rgba(99, 102, 241, 0.3)';
+                        badge.style.borderColor = 'rgba(99, 102, 241, 0.8)';
+                      };
+                      badge.onmouseleave = function() {
+                        badge.style.background = 'rgba(99, 102, 241, 0.15)';
+                        badge.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                      };
+                      scanList.appendChild(badge);
+                    });
+                    
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.style.marginTop = '0.45rem';
+                    detailsDiv.style.fontSize = '0.72rem';
+                    detailsDiv.style.color = 'var(--text-muted)';
+                    detailsDiv.style.borderTop = '1px solid rgba(255,255,255,0.05)';
+                    detailsDiv.style.paddingTop = '0.45rem';
+                    detailsDiv.style.display = 'flex';
+                    detailsDiv.style.justifyContent = 'space-between';
+                    detailsDiv.style.alignItems = 'center';
+                    detailsDiv.style.width = '100%';
+                    detailsDiv.innerHTML = `
+                      <span>📅 报告日期: <strong style="color:#a5b4fc;">${s1.scan_date || '未知'}</strong></span>
+                      <a href="javascript:void(0)" onclick="highlightConsoleTabAndShowCommand('scan')" style="color:#60a5fa; text-decoration:underline; font-weight:700;">👉 查看量化扫股筛选原因日志</a>
+                    `;
+                    scanList.appendChild(detailsDiv);
+                  }
+                } else if (scanArea) {
+                  scanArea.style.display = 'none';
+                }
+
+                // Step 2: 确认关注列表
+                const dot2 = document.getElementById('sop-step-2-dot');
+                const badge2 = document.getElementById('sop-step-2-badge');
+                const s2 = data.sop_status.step2_focus || {};
+                if (dot2 && badge2) {
+                  if (s2.done) {
+                    dot2.className = "sop-dot sop-dot-green";
+                    badge2.className = "badge badge-green";
+                    badge2.innerText = s2.detail || "✓ 已确认";
+                  } else {
+                    dot2.className = "sop-dot";
+                    badge2.className = "badge badge-gray";
+                    badge2.innerText = s2.detail || "待确认";
+                  }
+                }
+
+                // Step 3: 盘前决策汇总
+                const dot3 = document.getElementById('sop-step-3-dot');
+                const badge3 = document.getElementById('sop-step-3-badge');
+                const pmRunning = data.running_tasks && data.running_tasks.premarket && data.running_tasks.premarket.running;
+                const s3 = data.sop_status.step3_premarket || {};
+                if (dot3 && badge3) {
+                  if (pmRunning) {
+                    dot3.className = "sop-dot sop-dot-active";
+                    badge3.className = "badge badge-blue";
+                    badge3.innerText = "⏳ 决策中...";
+                  } else if (s3.done) {
+                    dot3.className = "sop-dot sop-dot-green";
+                    badge3.className = "badge badge-green";
+                    badge3.innerText = s3.detail || "✓ 已完成";
+                  } else {
+                    dot3.className = "sop-dot";
+                    badge3.className = "badge badge-gray";
+                    badge3.innerText = s3.detail || "待运行";
+                  }
+                }
+
+                // Step 4: 盘中高频轮询
+                const dot4 = document.getElementById('sop-step-4-dot');
+                const badge4 = document.getElementById('sop-step-4-badge');
+                const s4 = data.sop_status.step4_poll || {};
+                if (dot4 && badge4) {
+                  if (s4.done) {
+                    dot4.className = "sop-dot sop-dot-active";
+                    badge4.className = "badge badge-green";
+                    badge4.innerText = s4.detail || "✓ 监测中";
+                  } else {
+                    dot4.className = "sop-dot";
+                    badge4.className = "badge badge-gray";
+                    badge4.innerText = s4.detail || "待启动";
+                  }
+                }
+
+                // Step 5: 盘后复盘
+                const dot5 = document.getElementById('sop-step-5-dot');
+                const badge5 = document.getElementById('sop-step-5-badge');
+                const s5 = data.sop_status.step5_postmarket || {};
+                const postRunning = data.running_tasks && data.running_tasks.postmarket && data.running_tasks.postmarket.running;
+                if (dot5 && badge5) {
+                  if (postRunning) {
+                    dot5.className = "sop-dot sop-dot-active";
+                    badge5.className = "badge badge-blue";
+                    badge5.innerText = "⏳ 复盘中...";
+                  } else if (s5.done) {
+                    dot5.className = "sop-dot sop-dot-green";
+                    badge5.className = "badge badge-green";
+                    badge5.innerText = s5.detail || "✓ 已复盘";
+                  } else {
+                    dot5.className = "sop-dot";
+                    badge5.className = "badge badge-gray";
+                    badge5.innerText = s5.detail || "待收盘复盘";
+                  }
+                }
+              }
+
+              // 6. 如果有回测结果报告，更新 KPI 网格
+              if (data.backtest_report && data.backtest_report.exists) {
+                const bt = data.backtest_report;
+                const sharpeEl = document.getElementById('kpi-sharpe');
+                const mddEl = document.getElementById('kpi-mdd');
+                const winrateEl = document.getElementById('kpi-winrate');
+                const pfEl = document.getElementById('kpi-pf');
+                const alphaEl = document.getElementById('kpi-alpha');
+                const applyBtn = document.getElementById('btn-apply-backtest');
+                
+                if (sharpeEl) sharpeEl.innerText = Number(bt.sharpe).toFixed(2);
+                if (mddEl) mddEl.innerText = (Number(bt.mdd) * 100).toFixed(1) + '%';
+                if (winrateEl) winrateEl.innerText = (Number(bt.win_rate) * 100).toFixed(1) + '%';
+                if (pfEl) pfEl.innerText = Number(bt.profit_factor).toFixed(2);
+                if (alphaEl) alphaEl.innerText = (Number(bt.alpha) * 100).toFixed(1) + '%';
+                
+                if (applyBtn) {
+                  applyBtn.style.display = 'block';
+                }
+              }
+            } catch (innerErr) {
+              console.error('Error handling syncStatus data:', innerErr);
+            }
+          })
+          .catch(err => {
+            isSyncingStatus = false;
+            console.error('Error fetching status in interval:', err);
+          });
+      } catch (err) {
+        isSyncingStatus = false;
+        console.error('Error in syncStatus:', err);
+      }
+    }
+
+    function syncStatusWithFeedback(step) {
+      try {
+        fetch(API_HOST + '/api/status')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            syncStatus();  // 先正常更新
+            var sop = data.sop_status || {};
+            var found = false;
+            var msg = '';
+            if (step === 'scan') {
+              var s1 = sop.step1_scan || {};
+              found = s1.done;
+              if (found) {
+                msg = '✅ ' + (s1.detail || '已完成');
+              } else {
+                msg = '⚠️ ' + (s1.detail || '未找到扫描报告') + '\n\n→ 服务器工作目录: ' + (data.work_dir || '未知') + '\n→ 期望文件: ' + (data.work_dir || '') + '/candidates_' + (data.system_time || '').slice(0,10) + '.json';
+              }
+            } else if (step === 'premarket') {
+              var s3 = sop.step3_premarket || {};
+              found = s3.done;
+              if (found) {
+                msg = '✅ 盘前决策已完成\n' + (s3.detail || '全部就绪');
+              } else {
+                msg = '⚠️ 盘前决策未完成\n' + (s3.detail || '待运行') + '\n\n→ 关注列表每只标的需有 premarket_summary 或 memo+macro';
+              }
+            }
+            alert(msg);
+          })
+          .catch(function(err) {
+            alert('状态检查失败: ' + err);
+          });
+      } catch (err) {
+        console.error('Error in syncStatusWithFeedback:', err);
+      }
+    }
+
+    function toggleDataHealthPanel() {
+      try {
+        const panel = document.getElementById('data-health-alert-panel');
+        if (!panel) return;
+        if (panel.style.display === 'none') {
+          panel.style.display = 'block';
+          safeStorage.setItem('data_health_panel_dismissed', 'false');
+        } else {
+          panel.style.display = 'none';
+          safeStorage.setItem('data_health_panel_dismissed', 'true');
+        }
+      } catch (err) {
+        console.error('Error toggling data health panel:', err);
+      }
+    }
+
+    function drawChart(baseEV, optEV) {
+      try {
+        if (typeof Chart === 'undefined') {
+          console.warn('Chart.js not loaded!');
+          return;
+        }
+        const canvas = document.getElementById('backtestChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (myChart) {
+          myChart.destroy();
+        }
+
+        const labels = [];
+        const baselineData = [];
+        const optimizedData = [];
+        
+        let baseVal = 10000;
+        let optVal = 10000;
+        
+        labels.push("第0天");
+        baselineData.push(baseVal);
+        optimizedData.push(optVal);
+
+        for (let i = 1; i <= 30; i++) {
+          labels.push("第" + i + "天");
+          // 使用固定的随机种子或微小抖动来模拟，避免每次刷新都在狂抖
+          const baseNoise = (Math.sin(i) * 0.4 + 0.1) * 200; 
+          const optNoise = (Math.cos(i) * 0.3 + 0.3) * 220; 
+          
+          baseVal = Math.round(baseVal * (1 + baseEV * 0.03) + baseNoise);
+          optVal = Math.round(optVal * (1 + optEV * 0.035) + optNoise);
+          
+          baselineData.push(baseVal);
+          optimizedData.push(optVal);
+        }
+
+        myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: '优化前基准策略 Baseline',
+                data: baselineData,
+                borderColor: 'rgba(244, 63, 94, 0.8)',
+                backgroundColor: 'rgba(244, 63, 94, 0.03)',
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0
+              },
+              {
+                label: '回测优化后策略 Optimized',
+                data: optimizedData,
+                borderColor: 'rgba(16, 185, 129, 0.9)',
+                backgroundColor: 'rgba(16, 185, 129, 0.06)',
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 0,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#9ca3af',
+                  font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.015)' },
+                ticks: { color: '#6b7280', font: { size: 9 } }
+              },
+              y: {
+                grid: { color: 'rgba(255, 255, 255, 0.015)' },
+                ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 9 } }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error drawing backtest chart:', err);
+      }
+    }
+
+    const portfolioHistoryData = {{ portfolio_history_json | default('[]') | safe }};
+    let portfolioChart = null;
+
+    function drawPortfolioHistoryChart() {
+      try {
+        if (typeof Chart === 'undefined') {
+          console.warn('Chart.js not loaded!');
+          return;
+        }
+        const canvas = document.getElementById('portfolioHistoryChart');
+        if (!canvas || !portfolioHistoryData || portfolioHistoryData.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        if (portfolioChart) {
+          portfolioChart.destroy();
+        }
+
+        const labels = portfolioHistoryData.map(item => item.date);
+        const netValues = portfolioHistoryData.map(item => item.total_value);
+        const exposures = portfolioHistoryData.map(item => item.total_exposure);
+
+        portfolioChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: '组合净资产 Net Value ($)',
+                data: netValues,
+                borderColor: 'rgba(99, 102, 241, 0.95)',
+                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                borderWidth: 2.5,
+                tension: 0.25,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                fill: true,
+                yAxisID: 'y'
+              },
+              {
+                label: '总敞口 Exposure ($)',
+                data: exposures,
+                borderColor: 'rgba(16, 185, 129, 0.85)',
+                backgroundColor: 'transparent',
+                borderWidth: 1.5,
+                borderDash: [4, 4],
+                tension: 0.25,
+                pointRadius: 2,
+                pointHoverRadius: 4,
+                fill: false,
+                yAxisID: 'y'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#9ca3af',
+                  font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' }
+                }
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed.y);
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: 'rgba(255, 255, 255, 0.015)' },
+                ticks: { color: '#6b7280', font: { size: 9 } }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                grid: { color: 'rgba(255, 255, 255, 0.015)' },
+                ticks: { 
+                  color: '#6b7280', 
+                  font: { family: 'JetBrains Mono', size: 9 },
+                  callback: function(value) {
+                    return '$' + value / 1000 + 'k';
+                  }
+                }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error drawing portfolio history chart:', err);
+      }
+    }
+
+    function switchDashboardDate(selectedDate) {
+      // 实时盯盘大屏已锁定为 TODAY LIVE 模式，由 reports/daily_dashboard_*.html 承载历史回顾
+      console.log('Trading console is locked in live mode today: ', selectedDate);
+    }
+
+    function addToFocus(symbol) {
+      try {
+        fetch(API_HOST + '/api/add_focus?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              alert(symbol + " 已成功加入今日关注，并自动开启实时监控轮询！");
+              location.reload();
+            } else {
+              alert("加入今日关注失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            alert("请求发送失败: " + err);
+          });
+      } catch (err) {
+        console.error('Error in addToFocus:', err);
+      }
+    }
+
+    function removeFromFocus(symbol) {
+      try {
+        if (!confirm("确定要将 " + symbol + " 从今日关注列表移出吗？（此操作仅移出关注，不影响实际持仓或自选股）")) {
+          return;
+        }
+        fetch(API_HOST + '/api/remove_focus?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              alert(symbol + " 已从今日关注中移出。");
+              location.reload();
+            } else {
+              alert("移出今日关注失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            alert("请求发送失败: " + err);
+          });
+      } catch (err) {
+        console.error('Error in removeFromFocus:', err);
+      }
+    }
+
+    function removeFromWatchlist(symbol) {
+      try {
+        if (!confirm("确定要将 " + symbol + " 从自选股及监控轮询中完全移出吗？")) {
+          return;
+        }
+        fetch(API_HOST + '/api/remove_watchlist?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              alert(symbol + " 已从自选股及轮询中完全移出。");
+              location.reload();
+            } else {
+              alert("移出自选股失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            alert("请求发送失败: " + err);
+          });
+      } catch (err) {
+        console.error('Error in removeFromWatchlist:', err);
+      }
+    }
+
+    // 手工输入关注股并触发实时轮询绑定
+    function searchAndAddFocus() {
+      try {
+        const input = document.getElementById('manual-focus-input');
+        const symbol = input ? input.value.trim().toUpperCase() : '';
+        if (!symbol) {
+          alert('请输入股票代码！');
+          return;
+        }
+        addToFocus(symbol);
+      } catch (err) {
+        console.error('Error in searchAndAddFocus:', err);
+      }
+    }
+
+    // 联动今日关注股票智能生成 CIO 深度研判报告
+    function generateReportForFocus(symbol) {
+      try {
+        // 直接触发任务运行并开启滑出日志抽屉
+        runTask('cio_' + symbol);
+      } catch (err) {
+        console.error('Error in generateReportForFocus:', err);
+      }
+    }
+
+
+    function addToWatchlist(symbol) {
+      try {
+        const btnOverview = document.getElementById('watch-btn-' + symbol);
+        const btnIntraday = document.getElementById('watch-btn-intraday-' + symbol);
+        
+        const updateButtonStates = (text, className, disabled) => {
+          [btnOverview, btnIntraday].forEach(btn => {
+            if (btn) {
+              btn.innerText = text;
+              if (className) btn.className = className;
+              if (disabled) btn.onclick = null;
+            }
+          });
+        };
+        
+        updateButtonStates("⏳...", null, false);
+        
+        fetch(API_HOST + '/api/add_watchlist?symbol=' + symbol)
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              updateButtonStates("⭐ 已关注", "btn-watch-active", true);
+              alert(symbol + " 已成功加入自选股，并已永久纳入盘中轮询监控列表！");
+            } else {
+              updateButtonStates("➕ 关注", "btn-watch", false);
+              alert("添加失败: " + data.error);
+            }
+          })
+          .catch(err => {
+            updateButtonStates("➕ 关注", "btn-watch", false);
+            alert("请求发送失败: " + err);
+          });
+      } catch (err) {
+        console.error('Error in addToWatchlist:', err);
+      }
+    }
+
+    // ── 录入交易相关 JavaScript 函数 ──────────────────────────────────────
+    function openTradeModal() {
+      const modal = document.getElementById('trade-modal');
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.classList.add('active');
+      }, 10);
+      document.getElementById('trade-form').reset();
+      setTradeAction('buy');
+      document.getElementById('trade-error-msg').style.display = 'none';
+    }
+
+    function closeTradeModal() {
+      const modal = document.getElementById('trade-modal');
+      modal.classList.remove('active');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+    }
+
+    function setTradeAction(action) {
+      document.getElementById('trade-action').value = action;
+      const buyBtn = document.getElementById('btn-buy-select');
+      const sellBtn = document.getElementById('btn-sell-select');
+      
+      if (action === 'buy') {
+        buyBtn.classList.add('active-buy');
+        sellBtn.classList.remove('active-sell');
+      } else {
+        buyBtn.classList.remove('active-buy');
+        sellBtn.classList.add('active-sell');
+      }
+    }
+
+    async function submitTradeForm(event) {
+      event.preventDefault();
+      
+      const symbol = document.getElementById('trade-symbol').value.trim().toUpperCase();
+      const action = document.getElementById('trade-action').value;
+      const shares = parseInt(document.getElementById('trade-shares').value, 10);
+      const price = parseFloat(document.getElementById('trade-price').value);
+      
+      const stopVal = document.getElementById('trade-stop').value.trim();
+      const targetVal = document.getElementById('trade-target').value.trim();
+      const stop_price = stopVal ? parseFloat(stopVal) : null;
+      const target_price = targetVal ? parseFloat(targetVal) : null;
+      const reason = document.getElementById('trade-reason').value.trim();
+      
+      const errorMsgDiv = document.getElementById('trade-error-msg');
+      errorMsgDiv.style.display = 'none';
+      
+      if (!symbol || !shares || !price) {
+        errorMsgDiv.textContent = '❌ 股票代码、数量与价格为必填项。';
+        errorMsgDiv.style.display = 'block';
+        return;
+      }
+
+      const submitBtn = document.querySelector('button[type="submit"][form="trade-form"]') || event.target.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ 正在提交 Submitting...';
+      }
+
+      try {
+        const fetchUrl = `${API_HOST}/api/record_trade`;
+
+        const response = await fetch(fetchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            symbol,
+            action,
+            shares,
+            price,
+            stop_price,
+            target_price,
+            reason
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+          closeTradeModal();
+          alert(`✅ 交易记录成功！\n${action === 'buy' ? '买入' : '卖出'} ${shares} 股 ${symbol}，价格 $${price}。`);
+          location.reload();
+        } else {
+          errorMsgDiv.textContent = `❌ ${data.error || '提交交易失败，请稍后重试。'}`;
+          errorMsgDiv.style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Error recording trade:', err);
+        errorMsgDiv.textContent = `❌ 连接服务器失败: ${err.message}`;
+        errorMsgDiv.style.display = 'block';
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '确认提交 Submit';
+        }
+      }
+    }
+
+    let masterQuotes = [];
+    let currentQuoteIndex = 0;
+    let quoteInterval = null;
+
+    function initMasterQuotesCarousel() {
+      try {
+        fetch(API_HOST + '/api/master-quotes')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.length > 0) {
+              masterQuotes = data;
+              currentQuoteIndex = 0;
+              renderNextQuote();
+              if (quoteInterval) clearInterval(quoteInterval);
+              quoteInterval = setInterval(renderNextQuote, 8000);
+            }
+          })
+          .catch(err => console.error("Error loading master quotes:", err));
+      } catch (e) {
+        console.error("Error initializing quotes carousel:", e);
+      }
+    }
+
+    function renderNextQuote() {
+      try {
+        const container = document.getElementById('master-quote-container');
+        if (!container || masterQuotes.length === 0) return;
+        
+        container.style.opacity = 0;
+        
+        setTimeout(() => {
+          const q = masterQuotes[currentQuoteIndex];
+          const personaEl = document.getElementById('master-quote-persona');
+          const badgeEl = document.getElementById('master-quote-badge');
+          const symbolEl = document.getElementById('master-quote-symbol');
+          const reasonEl = document.getElementById('master-quote-reason');
+          
+          if (personaEl) {
+            personaEl.innerText = q.persona;
+            if (q.persona.includes("Livermore")) personaEl.style.color = "#34d399";
+            else if (q.persona.includes("Buffett")) personaEl.style.color = "#60a5fa";
+            else if (q.persona.includes("Wood")) personaEl.style.color = "#f472b6";
+            else if (q.persona.includes("Druckenmiller")) personaEl.style.color = "#fbbf24";
+            else personaEl.style.color = "#a7f3d0";
+          }
+          if (badgeEl) {
+            const score = q.score || 5;
+            badgeEl.innerText = `${q.vote} (Score: ${score})`;
+            if (q.vote.includes("买入") || q.vote.includes("做多")) {
+              badgeEl.className = "badge badge-green";
+            } else if (q.vote.includes("卖出") || q.vote.includes("防守")) {
+              badgeEl.className = "badge badge-red";
+            } else {
+              badgeEl.className = "badge badge-yellow";
+            }
+          }
+          if (symbolEl) symbolEl.innerText = q.symbol;
+          if (reasonEl) reasonEl.innerText = `"${q.reason}"`;
+          
+          container.style.opacity = 1;
+          currentQuoteIndex = (currentQuoteIndex + 1) % masterQuotes.length;
+        }, 500);
+      } catch (e) {
+        console.error("Error rendering quote:", e);
+      }
+    }
+
+    function syncMarketClock() {
+      try {
+        fetch(API_HOST + '/api/market-clock')
+          .then(res => res.json())
+          .then(data => {
+            if (!data || data.error) { updateMarketModeActionCenter(null); return; }
+            const phaseEl = document.getElementById('market-clock-phase');
+            const countdownEl = document.getElementById('market-clock-countdown');
+            if (phaseEl) {
+              phaseEl.innerText = data.phase_label || '未知';
+              let cls = 'badge badge-gray';
+              if (data.phase === 'regular') cls = 'badge badge-green';
+              else if (data.phase === 'premarket' || data.phase === 'postmarket') cls = 'badge badge-blue';
+              else if (data.phase === 'overnight') cls = 'badge badge-yellow';
+              phaseEl.className = cls;
+              phaseEl.title = '北京时间 ' + (data.now_cn || '') + ' | 美东 ' + (data.now_et || '');
+            }
+            if (countdownEl) {
+              const target = data.countdown_target === 'close' ? '收盘' : '开盘';
+              countdownEl.innerText = '距' + target + ' ' + (data.countdown_human || '--');
+              countdownEl.title = '下次开盘 ' + (data.next_open_et || '') + ' | 下次收盘 ' + (data.next_close_et || '');
+            }
+            
+            // Dynamic market-aware SOP Stepper banner updates
+            const bannerEl = document.getElementById('sop-guide-banner');
+            const titleEl = document.getElementById('sop-guide-title');
+            const textEl = document.getElementById('sop-guide-text');
+            
+            const oBannerEl = document.getElementById('overview-sop-guide-banner');
+            const oTitleEl = document.getElementById('overview-sop-guide-title');
+            const oTextEl = document.getElementById('overview-sop-guide-text');
+            
+            const phase = data.phase || 'closed';
+            let titleText = '';
+            let guideText = '';
+            let alertClass = 'alert-card alert-info';
+            let borderStyle = '4px solid var(--blue)';
+            let bgStyle = 'rgba(59, 130, 246, 0.05)';
+            
+            if (phase === 'closed' || phase === 'weekend') {
+              titleText = '🏠 美股已休市 (Market Closed)';
+              guideText = '当前处于策略复盘与因子调优的黄金时期。建议：① 运行<b>沙盒回测</b>调优策略参数；② 运行 Step 5 进行盘后总结并确认写回[学习反思]；③ 可在下方 Step 2 提前维护关注股票，为下个交易日做盘前准备。没做的步骤（如扫描或战略合成）可以随时补做。SOP 流程图正呈现您最近一个交易日的实际完成进度。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            } else if (phase === 'premarket') {
+              titleText = '🌅 盘前整装待发 (Pre-Market Session)';
+              guideText = '距离正式开盘还有数小时。最佳行动路径：① 启动 Step 1 运行<b>自动量化扫股</b>；② 勾选下方 Step 2 今日关注的标的并生成 CIO 研报；③ 启动 Step 3 运行<b>多Agent战略合成</b>以防大盘降级。没做的步骤可以点击启动补做。';
+              alertClass = 'alert-card alert-yellow';
+              borderStyle = '4px solid var(--yellow)';
+              bgStyle = 'rgba(245, 158, 11, 0.05)';
+            } else if (phase === 'regular') {
+              titleText = '⚔️ 盘中激战正酣 (Market Regular Hours)';
+              guideText = '美东持续交易正在进行！最佳行动路径：① 运行 Step 4 <b>同步刷新价格与因子</b>极速更新今日个股最新现价、RS 强度与安全线；② 随时关注下方大师辩论心智交锋，严格遵守策略击球区与止损价；③ 发现机会可随时点击“录入交易”。';
+              alertClass = 'alert-card alert-green';
+              borderStyle = '4px solid var(--green)';
+              bgStyle = 'rgba(16, 185, 129, 0.05)';
+            } else if (phase === 'postmarket') {
+              titleText = '🌆 盘后结算与总结 (Post-Market Session)';
+              guideText = '今日主力交易时段已收盘。最佳行动路径：① 启动 Step 5 运行<b>收盘复盘结算</b>，计算今日组合的真实 NAV 净资产；② 查看最新成交与收益率走势，并在[学习反思]中记录交易心智。未完成的流程均可在此阶段补做。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            } else {
+              titleText = '🌙 夜间非交易时段 (Overnight Session)';
+              guideText = '当前市场处于美东夜间隔夜休整期。建议：① 进行<b>因子策略回测</b>及历史资产波动复盘；② 提前在下方 Step 2 确认自选股与关注列表并批量生成宏观报告，为明天的战斗整装蓄能。所有流程皆支持补做。';
+              alertClass = 'alert-card alert-info';
+              borderStyle = '4px solid var(--blue)';
+              bgStyle = 'rgba(59, 130, 246, 0.05)';
+            }
+            
+            // Update Command Hub banner
+            if (bannerEl && titleEl && textEl) {
+              titleEl.innerHTML = titleText;
+              textEl.innerHTML = guideText;
+              bannerEl.className = alertClass;
+              bannerEl.style.borderLeft = borderStyle;
+              bannerEl.style.background = bgStyle;
+            }
+            
+            // Update Overview banner
+            if (oBannerEl && oTitleEl && oTextEl) {
+              oTitleEl.innerHTML = titleText;
+              oTextEl.innerHTML = guideText;
+              oBannerEl.className = alertClass;
+              oBannerEl.style.borderLeft = borderStyle;
+              oBannerEl.style.background = bgStyle;
+            }
+            updateMarketModeActionCenter(data);
+          })
+          .catch(err => { console.error('Error syncing market clock:', err); updateMarketModeActionCenter(null); });
+      } catch (err) {
+        console.error('Error in syncMarketClock:', err);
+      }
+    }
+
+    // 恢复状态并初始化
+    (function() {
+      try {
+        // 初始化大师金句轮播
+        initMasterQuotesCarousel();
+        syncMarketClock();
+        setInterval(syncMarketClock, 10000);
+        
+        // 初始化数据健康警告面板的显示状态
+        const panel = document.getElementById('data-health-alert-panel');
+        if (panel) {
+          const dismissed = safeStorage.getItem('data_health_panel_dismissed') === 'true';
+          if (dismissed) {
+            panel.style.display = 'none';
+          }
+        }
+
+        // 触发绘制组合历史资产走势图
+        drawPortfolioHistoryChart();
+
+        const saved = safeStorage.getItem(TAB_KEY) || (location.hash ? location.hash.replace('#','') : '') || 'overview';
+        const pane = document.getElementById('tab-' + saved);
+        if (pane) {
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          pane.classList.add('active');
+          
+          // 激活对应按钮
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + saved + "'")) {
+              b.classList.add('active');
+            }
+          });
+        }
+
+        if (saved === 'command') {
+          syncStatus();
+          statusSyncInterval = setInterval(syncStatus, 5000);
+        } else {
+          resetAutoRefresh();
+        }
+      } catch (err) {
+        console.error('Error in page initialization IIFE:', err);
+      }
+      // 初始化回测沙盒显隐
+      var savedTab = safeStorage.getItem('dashboard_active_tab') || 'overview';
+      var bs = document.getElementById('backtest-sandbox');
+      if (bs) bs.style.display = (savedTab === 'command') ? '' : 'none';
+      
+      // Dynamic index.html iframe recursion prevention
+      try {
+        const iframe = document.getElementById('research-portal-iframe');
+        if (iframe) {
+          if (window.location.protocol.startsWith('http')) {
+            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+              iframe.src = '/reports/index.html';
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error correcting iframe src:', e);
+      }
+    })();
+
+    function refreshPortfolio() {
+      try {
+        fetch(API_HOST + '/api/refresh-portfolio')
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              alert('刷新失败: ' + data.error);
+            } else {
+              alert('组合快照已刷新（NAV: $' + Number(data.total_value).toLocaleString() + '），页面将在 2 秒后自动重载');
+              setTimeout(function() { location.reload(); }, 2000);
+            }
+          })
+          .catch(function(err) {
+            alert('刷新请求失败: ' + err);
+          });
+      } catch (err) {
+        console.error('Error in refreshPortfolio:', err);
+      }
+    }
+
+    function refreshLatestPrices() {
+      try {
+        fetch(API_HOST + '/api/refresh-prices')
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              const count = data.updated ? data.updated.length : 0;
+              alert('最新价已刷新并写入本地缓存：' + count + ' 只标的');
+              location.reload();
+            } else {
+              alert('刷新价格失败: ' + (data.error || '未知错误'));
+            }
+          })
+          .catch(err => alert('刷新价格请求失败: ' + err));
+      } catch (err) {
+        console.error('Error in refreshLatestPrices:', err);
+      }
+    }
+
+    function generateAllFocusReports() {
+      try {
+        showTab('command', document.getElementById('btn-command'));
+        var terminal = document.getElementById('terminal-body');
+        if (terminal) {
+          terminal.innerText = '[批量生成] 正在检查关注列表...\n';
+        }
+        fetch(API_HOST + '/api/generate-focus-reports')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (terminal) {
+              if (data.started && data.started.length > 0) {
+                terminal.innerText = '[批量生成] 已启动: ' + JSON.stringify(data.started) + '\n';
+                data.started.forEach(function(sym) {
+                  startLogPolling('cio_' + sym);
+                });
+              } else {
+                terminal.innerText = '[批量生成] 无需操作：所有关注标的已有完整报告。\n';
+              }
+              if (data.skipped && data.skipped.length > 0) {
+                terminal.innerText += '[跳过] 已有报告: ' + JSON.stringify(data.skipped) + '\n';
+              }
+            }
+            var badge = document.getElementById('current-task-badge');
+            if (badge) {
+              badge.innerText = 'BATCH';
+              badge.className = 'badge badge-blue';
+            }
+          })
+          .catch(function(err) {
+            if (terminal) {
+              terminal.innerText = '[错误] 批量生成请求失败: ' + err + '\n';
+            }
+            console.error('Error in generateAllFocusReports:', err);
+          });
+      } catch (err) {
+        console.error('Error in generateAllFocusReports:', err);
+      }
+    }
+
+    function openTerminalDrawer(taskName) {
+      try {
+        const drawer = document.getElementById('terminal-drawer');
+        const title = document.getElementById('terminal-drawer-title');
+        const body = document.getElementById('terminal-drawer-body');
+        const dot = document.getElementById('terminal-drawer-dot-status');
+        
+        if (title) title.innerText = "任务控制台: " + taskName;
+        if (body) body.innerText = "[系统] 正在准备异步日志流...\n";
+        if (dot) dot.className = "terminal-dot active";
+        
+        if (drawer) {
+          drawer.classList.add('open');
+        }
+      } catch (err) {
+        console.error("Error opening terminal drawer:", err);
+      }
+    }
+
+    function closeTerminalDrawer() {
+      try {
+        const drawer = document.getElementById('terminal-drawer');
+        if (drawer) {
+          drawer.classList.remove('open');
+        }
+      } catch (err) {
+        console.error("Error closing terminal drawer:", err);
+      }
+    }
+  
+    // ==========================================================================
+    // Phase-Aware Action Center Mapping & Actions Configuration
+    // ==========================================================================
+    const marketModePhaseConfig = {
+      closed: {
+        title: '休市/夜盘时段 (Market Closed)',
+        indicatorColor: '#6b7280',
+        glowColor: 'rgba(107, 114, 128, 0.5)',
+        desc: '当前美股处于休市/夜盘时段。推荐使用 💬 <strong>Skill 2 个股行业调查</strong> 或 <strong>Skill 9 回测参数设计</strong> 与 Agent 沟通，探索策略边界；或在下方运行候选扫描筛选下一交易日标的，运行CIO决策生成深度分析。',
+        primary: [
+          { text: '🔍 运行候选扫描', task: 'scan' },
+          { text: '📊 运行CIO决策', task: 'cio' }
+        ],
+        secondary: [
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ]
+      },
+      premarket: {
+        title: '盘前交易时段 (Pre-Market Session)',
+        indicatorColor: '#fbbf24',
+        glowColor: 'rgba(251, 191, 36, 0.5)',
+        desc: '当前处于盘前交易时段。推荐启动 💬 <strong>Skill 5 策略锚点规划</strong> 与 Agent 沟通制定今日盘前加减仓与防守位；或运行盘前决策生成今日关注股票的策略锚点与退场计划。',
+        primary: [
+          { text: ' 运行盘前决策', task: 'premarket' },
+          { text: '🔄 刷新最新价格', action: 'refreshLatestPrices()' }
+        ],
+        secondary: [
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ]
+      },
+      regular: {
+        title: '盘中持续交易 (Regular Hours)',
+        indicatorColor: '#10b981',
+        glowColor: 'rgba(16, 185, 129, 0.5)',
+        desc: '当前处于持续交易时段。系统已全面升级为极简手动控制模式，推荐随时同步价格与因子，获取最新 RS 相对强度与击球区。如果因盘面波动产生心理焦虑或情绪波动，可以使用 💬 <strong>Skill 7 心智纠偏</strong> 与 Agent 进行对话沟通。',
+        primary: [
+          { text: '🔄 同步刷新价格与因子', action: 'refreshLatestPrices()' }
+        ],
+        secondary: [
+          { text: '📈 盘中详情看板', action: "showTab('intraday')" }
+        ]
+      },
+      postmarket: {
+        title: '盘后结算与总结 (Post-Market Session)',
+        indicatorColor: '#3b82f6',
+        glowColor: 'rgba(59, 130, 246, 0.5)',
+        desc: '当前处于盘后交易时段。推荐运行 💬 <strong>Skill 8 心智复盘与日志</strong> 进行交易反思与纪律打分记账；或运行盘后复盘总结计算今日真实资产NAV，进行教训反思归档。',
+        primary: [
+          { text: '⚙️ 运行盘后复盘', task: 'postmarket' },
+          { text: ' 一键生成关注股研报', action: 'generateAllFocusReports()' }
+        ],
+        secondary: [
+          { text: '📖 研习交易日志', action: "showTab('learning')" }
+        ]
+      }
+    };
+
+    function updateMarketModeActionCenter(data) {
+      try {
+        const modeCenter = document.getElementById('market-mode-action-center');
+        if (!modeCenter) return;
+
+        let phase = 'closed';
+        let countdownText = '--:--:--';
+        
+        if (data && data.phase) {
+          if (data.phase === 'regular') phase = 'regular';
+          else if (data.phase === 'premarket') phase = 'premarket';
+          else if (data.phase === 'postmarket') phase = 'postmarket';
+          else phase = 'closed'; // rest_day, overnight, closed map to closed
+          
+          const target = data.countdown_target === 'close' ? '收盘' : '开盘';
+          countdownText = '距' + target + ' ' + (data.countdown_human || '--:--:--');
+        }
+
+        const config = marketModePhaseConfig[phase] || marketModePhaseConfig.closed;
+        
+        // Update Title, Desc, Indicator, Countdown
+        const titleEl = document.getElementById('market-mode-title');
+        const descEl = document.getElementById('market-mode-desc');
+        const indicatorEl = document.getElementById('market-mode-indicator');
+        const countEl = document.getElementById('market-mode-countdown');
+        
+        if (titleEl) titleEl.innerText = config.title;
+        if (descEl) descEl.innerHTML = config.desc;
+        if (countEl) countEl.innerText = countdownText;
+        if (indicatorEl) {
+          indicatorEl.style.background = config.indicatorColor;
+          indicatorEl.style.boxShadow = '0 0 8px ' + config.glowColor;
+        }
+        
+        // Render Primary Actions
+        const primaryEl = document.getElementById('market-mode-primary-actions');
+        if (primaryEl) {
+          primaryEl.innerHTML = '';
+          config.primary.forEach(btn => {
+            const el = document.createElement('button');
+            el.className = 'market-mode-action-btn primary';
+            el.innerHTML = btn.text;
+            if (btn.task) {
+              el.setAttribute('onclick', "runTask('" + btn.task + "')");
+            } else if (btn.action) {
+              el.setAttribute('onclick', btn.action);
+            }
+            primaryEl.appendChild(el);
+          });
+        }
+        
+        // Render Secondary Actions
+        const secondaryEl = document.getElementById('market-mode-secondary-actions');
+        if (secondaryEl) {
+          secondaryEl.innerHTML = '';
+          config.secondary.forEach(btn => {
+            const el = document.createElement('button');
+            el.className = 'market-mode-action-btn';
+            el.innerHTML = btn.text;
+            if (btn.task) {
+              el.setAttribute('onclick', "runTask('" + btn.task + "')");
+            } else if (btn.action) {
+              el.setAttribute('onclick', btn.action);
+            }
+            secondaryEl.appendChild(el);
+          });
+        }
+      } catch (err) {
+        console.error('Error in updateMarketModeActionCenter:', err);
+      }
+    }
+
+    // Toggle Interactive Skills Directory Card collapse/expand state
+    document.addEventListener('DOMContentLoaded', () => {
+      const skillsCardHeader = document.getElementById('skills-directory-header');
+      const skillsCardContent = document.getElementById('skills-directory-content');
+      const skillsCardArrow = document.getElementById('skills-directory-arrow');
+      
+      if (skillsCardHeader && skillsCardContent && skillsCardArrow) {
+        skillsCardHeader.addEventListener('click', function() {
+          const isCollapsed = skillsCardContent.style.maxHeight === '0px' || skillsCardContent.style.maxHeight === '';
+          if (isCollapsed) {
+            skillsCardContent.style.maxHeight = '1200px';
+            skillsCardArrow.style.transform = 'rotate(180deg)';
+          } else {
+            skillsCardContent.style.maxHeight = '0px';
+            skillsCardArrow.style.transform = 'rotate(0deg)';
+          }
+        });
+      }
+    });
+
+    window.copySkillText = function(text, btnElement) {
+      const copyToClipboard = function(str) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(str);
+        } else {
+          const el = document.createElement('textarea');
+          el.value = str;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          return Promise.resolve();
+        }
+      };
+      
+      copyToClipboard(text).then(() => {
+        if (btnElement) {
+          const originalHTML = btnElement.innerHTML;
+          btnElement.innerHTML = '✅';
+          setTimeout(() => {
+            btnElement.innerHTML = originalHTML;
+          }, 1000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    };
+</script>

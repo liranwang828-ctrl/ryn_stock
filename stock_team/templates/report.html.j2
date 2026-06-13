@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ symbol }} 行情分析报告</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --bg: #020617;
+      --bg-gradient: radial-gradient(circle at top, #0f172a 0%, #020617 100%);
+      --card-bg: rgba(15, 23, 42, 0.45);
+      --card-border: rgba(255, 255, 255, 0.05);
+      --card-hover-border: rgba(99, 102, 241, 0.35);
+      --glow-color: rgba(99, 102, 241, 0.15);
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      
+      --primary: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      
+      --bullish: #10b981;
+      --bullish-bg: rgba(16, 185, 129, 0.1);
+      --bullish-border: rgba(16, 185, 129, 0.25);
+      --bullish-glow: rgba(16, 185, 129, 0.15);
+      
+      --bearish: #f43f5e;
+      --bearish-bg: rgba(244, 63, 94, 0.1);
+      --bearish-border: rgba(244, 63, 94, 0.25);
+      --bearish-glow: rgba(244, 63, 94, 0.15);
+      
+      --neutral: #eab308;
+      --neutral-bg: rgba(234, 179, 8, 0.1);
+      --neutral-border: rgba(234, 179, 8, 0.25);
+      --neutral-glow: rgba(234, 179, 8, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      background-image: var(--bg-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.4);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header styling */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .header-left h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-left h1 .sym-glow {
+      text-shadow: 0 0 20px var(--glow-color);
+    }
+
+    .header-left .subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    .header-right .timestamp {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .badge-bullish {
+      background: var(--bullish-bg);
+      color: var(--bullish);
+      border-color: var(--bullish-border);
+      box-shadow: 0 0 12px var(--bullish-glow);
+    }
+
+    .badge-bearish {
+      background: var(--bearish-bg);
+      color: var(--bearish);
+      border-color: var(--bearish-border);
+      box-shadow: 0 0 12px var(--bearish-glow);
+    }
+
+    .badge-neutral {
+      background: var(--neutral-bg);
+      color: var(--neutral);
+      border-color: var(--neutral-border);
+      box-shadow: 0 0 12px var(--neutral-glow);
+    }
+
+    .badge-outline {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+    }
+
+    /* Glass Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      margin-bottom: 2rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card:hover {
+      border-color: var(--card-hover-border);
+      box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.8rem;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Grid systems */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Executive Scoreboard */
+    .scoreboard {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .score-circle {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%);
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+    }
+
+    .score-circle.bullish {
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+    }
+
+    .score-circle.bearish {
+      border-color: rgba(244, 63, 94, 0.4);
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.2);
+    }
+
+    .score-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .score-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+
+    .score-desc {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .score-title-text {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .score-subtext {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Metric Boxes */
+    .metric-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .metric-box:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .metric-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .metric-lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    /* Lists */
+    ul {
+      list-style-type: none;
+    }
+
+    li.kp-item {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.01);
+      border-left: 3px solid var(--primary);
+      margin-bottom: 0.6rem;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    li.kp-item:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Gates & Status Lights */
+    .gate-light {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+
+    .gate-light.pass {
+      background-color: var(--bullish);
+      box-shadow: 0 0 8px var(--bullish);
+    }
+
+    .gate-light.fail {
+      background-color: var(--bearish);
+      box-shadow: 0 0 8px var(--bearish);
+    }
+
+    /* Dispute panel */
+    .dispute-panel {
+      background: rgba(244, 63, 94, 0.04);
+      border: 1px solid rgba(244, 63, 94, 0.15);
+      border-left: 4px solid var(--bearish);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .dispute-title {
+      font-weight: 700;
+      color: var(--bearish);
+      font-size: 0.95rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dispute-item {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-left: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Timeline & Debates */
+    .debate-container {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .debate-bubble {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem;
+      max-width: 85%;
+      position: relative;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.25);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .debate-bubble:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .debate-bubble.challenge {
+      align-self: flex-start;
+      border-left: 4px solid var(--bearish);
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.05) 0%, rgba(244, 63, 94, 0.01) 100%);
+    }
+    
+    .debate-bubble.challenge:hover {
+      box-shadow: 0 12px 30px 0 rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.6);
+    }
+
+    .debate-bubble.revision {
+      align-self: flex-end;
+      border-right: 4px solid var(--bullish);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.01) 100%);
+      text-align: right;
+    }
+    
+    .debate-bubble.revision:hover {
+      box-shadow: 0 12px 30px 0 rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.6);
+    }
+
+    .debate-bubble.verify_response {
+      align-self: center;
+      border-left: 4px solid var(--neutral);
+      max-width: 90%;
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, rgba(234, 179, 8, 0.01) 100%);
+    }
+    
+    .debate-bubble.verify_response:hover {
+      box-shadow: 0 12px 30px 0 rgba(234, 179, 8, 0.1);
+      border-color: rgba(234, 179, 8, 0.6);
+    }
+
+    .bubble-meta {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .revision .bubble-meta {
+      justify-content: flex-end;
+    }
+
+    .bubble-sender {
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.03em;
+    }
+
+    .bubble-content {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .revision .bubble-content {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <h1>
+        <span class="sym-glow">{{ symbol }}</span>
+        {% if signal == 'bullish' %}
+          <span class="badge badge-bullish">BULLISH 看多</span>
+        {% elif signal == 'bearish' %}
+          <span class="badge badge-bearish">BEARISH 看空</span>
+        {% else %}
+          <span class="badge badge-neutral">NEUTRAL 中性</span>
+        {% endif %}
+      </h1>
+      <div class="subtitle">
+        {% if sector_info and sector_info.sector %}
+          <span class="badge badge-outline">🏭 {{ sector_info.sector }}</span>
+        {% endif %}
+        {% if sector_info and sector_info.etf %}
+          <span class="badge badge-outline">📈 参考 ETF: {{ sector_info.etf }}</span>
+        {% endif %}
+        <span>数据质量: 已验证 <b style="color:var(--bullish)">{{ verified_data_count }}</b> | 未验证 <b style="color:var(--neutral)">{{ unverified_data_count }}</b></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="timestamp">REPORT GENERATED</div>
+      <div class="timestamp" style="color: #ffffff; font-weight: 500; font-size: 0.95rem; margin-top: 0.25rem;">
+        {{ timestamp[:16].replace('T', ' ') if timestamp else '' }} UTC
+      </div>
+    </div>
+  </header>
+
+  <!-- ── 👑 CIO 大模型决策综述卡片 ── -->
+  {% if cio_llm_synthesis %}
+  <section class="card cio-synthesis-card" style="border: 1px solid rgba(234, 179, 8, 0.25); background: linear-gradient(135deg, rgba(234, 179, 8, 0.06) 0%, rgba(15, 23, 42, 0.7) 100%); box-shadow: 0 8px 32px 0 rgba(234, 179, 8, 0.05); border-left: 5px solid var(--neutral); transition: all 0.3s ease;">
+    <div class="card-header" style="border-bottom: 1px solid rgba(234, 179, 8, 0.15);">
+      <div class="card-title" style="color: var(--neutral); font-size: 1.2rem; font-family: 'Outfit', sans-serif; font-weight: 700;">
+        👑 CIO 大模型决策综述与跨板块共振
+      </div>
+      <span class="badge badge-neutral" style="font-size: 0.72rem; padding: 2px 8px; border-color: rgba(234, 179, 8, 0.35);">DeepSeek Reasoning</span>
+    </div>
+    <div style="font-size: 1.0rem; line-height: 1.75; color: var(--text-primary); font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; text-align: justify; letter-spacing: 0.01em;">
+      {{ cio_llm_synthesis | replace('\n', '<br>') }}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── EXECUTIVE SUMMARY ── -->
+  <section class="card">
+    <div class="scoreboard">
+      <div class="score-circle {% if signal == 'bullish' %}bullish{% elif signal == 'bearish' %}bearish{% endif %}">
+        <div class="score-value">{{ confidence }}%</div>
+        <div class="score-label">置信度</div>
+      </div>
+      <div class="score-desc">
+        <div class="score-title-text">
+          CIO 综合决策观点
+        </div>
+        <div class="score-subtext">
+          {% if signal == 'bullish' %}
+            根据多智能体系统与大师心智模型的深度辩论，本次评定对 <b>{{ symbol }}</b> 维持 <b>看多</b> 级别。
+          {% elif signal == 'bearish' %}
+            根据多智能体系统与大师心智模型的深度辩论，本次评定对 <b>{{ symbol }}</b> 维持 <b>看空</b> 级别。建议规避或锁定多头。
+          {% else %}
+            根据多智能体系统与大师心智模型的深度辩论，本次评定对 <b>{{ symbol }}</b> 维持 <b>中性</b> 级别。建议持币观察。
+          {% endif %}
+          综合考量了技术形态、基本面估值、宏观流动性以及行业板块的相对强度。当前系统覆盖率为 <b>{{ active_count }}/6</b> 维度，置信度应用了 <b>{{ '%.0f' % (coverage_decay * 100) }}%</b> 的衰减因子。
+        </div>
+      </div>
+    </div>
+
+    <!-- Metric boxes row -->
+    <div class="grid-4" style="margin-top: 2rem;">
+      <div class="metric-box">
+        <div class="metric-val" style="color: var(--primary);">{{ active_count }}/6</div>
+        <div class="metric-lbl">活跃维度</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val">
+          {% if stop_loss %}
+            ${{ '%.2f' % stop_loss }}
+          {% else %}
+            无固定价
+          {% endif %}
+        </div>
+        <div class="metric-lbl">系统止损点</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val">
+          {% if blend_weights and blend_weights.master %}
+            {{ '%.0f' % (blend_weights.master * 100) }}:{{ '%.0f' % (blend_weights.agent * 100) }}
+          </div>
+          <div class="metric-lbl">大师:执行权重</div>
+          {% else %}
+            —
+          </div>
+          <div class="metric-lbl">混合权重</div>
+          {% endif %}
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color: {% if coverage_decay >= 0.9 %}var(--bullish){% else %}var(--neutral){% endif %};">
+          {{ '%.0f%%' % (coverage_decay * 100) if coverage_decay else '100%' }}
+        </div>
+        <div class="metric-lbl">系统覆盖度</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MACRO FACTORS & ENTRY GATES ── -->
+  {% if macro_factors %}
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">🌍 宏观大盘水温与入场闸门</div>
+      <div class="badge badge-outline">Regime Analysis</div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th>大盘核心指标</th>
+              <th>当前值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>VIX 波动率指数</td>
+              <td><b style="font-family:'JetBrains Mono', monospace; font-size:1.05rem;">{{ macro_factors.vix }}</b> <span class="badge badge-outline" style="padding: 1px 6px; font-size: 0.72rem;">{{ macro_factors.vix_trend }}</span></td>
+            </tr>
+            <tr>
+              <td>SPY 今日变化</td>
+              <td class="{% if macro_factors.spy_chg >= 0 %}badge-bullish{% else %}badge-bearish{% endif %}" style="display:inline-block; margin-top: 0.35rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-family:'JetBrains Mono', monospace;">
+                {{ '%+.2f' % macro_factors.spy_chg }}%
+              </td>
+            </tr>
+            <tr>
+              <td>QQQ 5分钟变化</td>
+              <td class="{% if macro_factors.qqq_5m >= 0 %}badge-bullish{% else %}badge-bearish{% endif %}" style="display:inline-block; margin-top: 0.35rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-family:'JetBrains Mono', monospace;">
+                {{ '%+.2f' % macro_factors.qqq_5m }}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th>入场规则闸门</th>
+              <th>状态校验</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if entry_gates %}
+              {% for gate, val in entry_gates.items() %}
+              <tr>
+                <td>{{ gate }}</td>
+                <td>
+                  <span class="gate-light {% if val %}pass{% else %}fail{% endif %}"></span>
+                  <b style="color: {% if val %}var(--bullish){% else %}var(--bearish){% endif %};">
+                    {% if val %}通过 PASS{% else %}阻断 BLOCK{% endif %}
+                  </b>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="2" style="color:var(--text-muted);">暂无实时入场闸门状态</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── AGENT DIMENSION ANALYSES ── -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">🔬 六维度智能体雷达评分</div>
+      <div class="badge badge-outline">Multi-Agent Radar</div>
+    </div>
+    <div class="grid-3" style="gap: 1.2rem;">
+      {% if agent_signals %}
+        {% for agent, s in agent_signals.items() %}
+        <div class="metric-box" style="text-align: left; padding: 1.2rem; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <b style="color: #ffffff; font-size: 0.95rem;">{{ agent.replace('Agent','') }}</b>
+            {% if s.signal == 'bullish' %}
+              <span class="badge badge-bullish" style="font-size:0.7rem; padding: 1px 6px;">看多</span>
+            {% elif s.signal == 'bearish' %}
+              <span class="badge badge-bearish" style="font-size:0.7rem; padding: 1px 6px;">看空</span>
+            {% else %}
+              <span class="badge badge-neutral" style="font-size:0.7rem; padding: 1px 6px;">中性</span>
+            {% endif %}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Confidence</div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-family:'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #ffffff;">{{ s.confidence }}%</span>
+            <div style="flex:1; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+              <div style="width: {{ s.confidence }}%; height: 100%; background: var(--primary);"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ── SECTOR ANALYSIS & PEERS ── -->
+  {% if sector_info %}
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">🏭 板块透视与相对强弱 (RS)</div>
+      {% if sector_info.signal %}
+        {% if sector_info.signal == 'bullish' %}
+          <span class="badge badge-bullish">板块看多</span>
+        {% elif sector_info.signal == 'bearish' %}
+          <span class="badge badge-bearish">板块看空</span>
+        {% else %}
+          <span class="badge badge-neutral">板块中性</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="grid-2">
+      <div>
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th colspan="2">业务与定位</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--text-muted); width: 30%;">参考 ETF</td>
+              <td><b style="color:#ffffff;">{{ sector_info.etf or '—' }}</b></td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">细分板块</td>
+              <td>{{ sector_info.sector or '—' }}</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">覆盖同行</td>
+              <td>
+                {% if sector_info.peers %}
+                  {% for p in sector_info.peers %}
+                    <span class="badge badge-outline" style="margin-bottom: 0.2rem;">{{ p }}</span>
+                  {% endfor %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.6rem; letter-spacing: 0.05em;">板块研究论点</h4>
+        <ul style="display:flex; flex-direction:column; gap:0.4rem;">
+          {% if sector_info.key_points %}
+            {% for kp in sector_info.key_points %}
+              <li style="font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 0.4rem;">
+                <span>•</span> <span>{{ kp }}</span>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li style="font-size: 0.85rem; color: var(--text-muted);">暂无板块明细观点</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── VETOED AGENTS ── -->
+  {% if veto_agents %}
+  <section class="card" style="border-color: rgba(244, 63, 94, 0.15); background: rgba(244, 63, 94, 0.01);">
+    <div class="card-header">
+      <div class="card-title" style="color: var(--bearish);">✗ 触发否决 (Vetoed dimension)</div>
+      <span class="badge badge-bearish">Risk Warning</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>被否决的智能体</th>
+          <th>否决原因与兜底依据</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for agent, reason in veto_agents.items() %}
+        <tr>
+          <td style="color:#ffffff; font-weight:700; width:25%;">{{ agent }}</td>
+          <td style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5;">
+            {% if reason is mapping %}
+              <b>否决大师:</b> {{ reason.master }} <br>
+              <b>否决理由:</b> {{ reason.reason }} <br>
+              <span class="badge badge-outline" style="font-size:0.7rem; margin-top:0.3rem;">规则原信号: {{ reason.rule_signal }} ({{ reason.rule_conf }}%)</span>
+            {% else %}
+              {{ reason }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <!-- ── DEBATE DIALOGUES (TIMELINE) ── -->
+  {% if board %}
+  {% set debate_msgs = [] %}
+  {% for m in board %}
+    {% if m.msg_type in ('challenge', 'revision', 'verify_response') %}
+      {% set _ = debate_msgs.append(m) %}
+    {% endif %}
+  {% endfor %}
+  
+  {% if debate_msgs %}
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">⚡ 智能体心智沙盘辩论实录</div>
+      <div class="badge badge-outline">Dialogue Arena</div>
+    </div>
+    <div class="debate-container">
+      {% for msg in debate_msgs[:8] %}
+        <div class="debate-bubble {% if msg.msg_type == 'challenge' %}challenge{% elif msg.msg_type == 'revision' %}revision{% else %}verify_response{% endif %}">
+          <div class="bubble-meta">
+            <span class="bubble-sender">{{ msg.from.replace('Agent','') }}</span>
+            <span>•</span>
+            <span>
+              {% if msg.msg_type == 'challenge' %}
+                💬 提出质疑对 {{ msg.target.replace('Agent','') }}
+              {% elif msg.msg_type == 'revision' %}
+                🔄 做出修正/回应
+              {% else %}
+                🔍 核实判定
+              {% endif %}
+            </span>
+            <span>•</span>
+            <span style="font-family:'JetBrains Mono', monospace;">{{ msg.timestamp[11:19] if msg.timestamp else '' }}</span>
+          </div>
+          <div class="bubble-content">
+            {% if msg.msg_type == 'revision' and msg.responding_to %}
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; font-style: italic;">
+                回应了 {{ msg.responding_to.replace('Agent','') }} 的质疑: "{{ msg.response_content[:60] }}..."
+              </div>
+            {% endif %}
+            {{ msg.content }}
+            {% if msg.signal %}
+              <div style="margin-top: 0.4rem; font-size: 0.75rem;">
+                最终立场更正为: <b style="color: {% if msg.signal == 'bullish' %}var(--bullish){% elif msg.signal == 'bearish' %}var(--bearish){% else %}var(--neutral){% endif %};">{{ msg.signal.upper() }} ({{ msg.confidence }}%)</b>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% endif %}
+
+  <!-- ── KEY POINTS ── -->
+  <section class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📌 多维度观点精要 (Supporting Arguments)</div>
+      </div>
+      <ul>
+        {% if key_points %}
+          {% for kp in key_points %}
+            <li class="kp-item">
+              <span style="color: var(--primary); font-weight: bold; min-width: 15px;">›</span>
+              <span>{{ kp }}</span>
+            </li>
+          {% endfor %}
+        {% else %}
+          <li style="color:var(--text-muted); font-size:0.85rem;">暂无精要观点数据</li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <!-- ── RISK & DISPUTES ── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🛡️ 尾部风险与未决争议</div>
+      </div>
+
+      {% if positions_cfg %}
+        <div style="padding: 1.1rem; background: rgba(244, 63, 94, 0.03); border: 1px solid rgba(244, 63, 94, 0.15); border-radius: 12px; margin-bottom: 1.2rem; border-left: 4px solid var(--bearish);">
+          <div style="font-weight:700; font-size:0.95rem; margin-bottom: 0.4rem; color: #ffffff; display: flex; align-items: center; gap:0.4rem; font-family: 'Outfit', sans-serif;">
+            🎯 中长线投资论点 (Strategic Thesis)
+          </div>
+          <p style="font-size:0.88rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 0.8rem;">
+            {{ positions_cfg.thesis or '暂未填写中长线投资论点。' }}
+          </p>
+          {% if positions_cfg.falsification_conditions %}
+            <div style="font-weight:700; font-size:0.75rem; margin-bottom: 0.35rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Outfit', sans-serif;">
+              🚨 核心证伪边界 (Invalidation Conditions)
+            </div>
+            <ul style="padding-left: 0.2rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              {% for cond in positions_cfg.falsification_conditions %}
+                <li style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; display: flex; align-items: flex-start; gap: 0.4rem;">
+                  <span style="color: var(--bearish); font-weight: bold; min-width: 8px;">•</span>
+                  <span>{{ cond }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+      
+      {% if stop_loss %}
+        <div style="padding: 1rem; background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 8px; margin-bottom: 1rem;">
+          <div style="font-weight:700; font-size:0.95rem; margin-bottom: 0.25rem; color: #ffffff; display: flex; align-items: center; gap:0.4rem;">
+            🛑 系统交易止损防线
+          </div>
+          <p style="font-size:0.85rem; color: var(--text-secondary);">
+            系统设定的物理止损价格为 <b style="color: var(--bearish); font-size: 1rem; font-family: 'Outfit';">${{ '%.2f' % stop_loss }}</b>。收盘或缺口直接跌穿时触发全仓清退，防止论点失效造成的重大回撤。
+          </p>
+        </div>
+      {% endif %}
+
+      {% if disputes %}
+        <div class="dispute-panel">
+          <div class="dispute-title">⚠ 未解决分歧（高度关注）</div>
+          {% for d in disputes %}
+            <div class="dispute-item">• {{ d }}</div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="padding: 1rem; background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+          🟢 <b>辩论收敛:</b> 当前决策辩论中未发现未解决的死锁性冲突或特异性风险。多维度共识达成率较高。
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <footer style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 2rem 0; border-top: 1px solid var(--card-border); margin-top: 2rem;">
+    ANTIGRAVITY TRADING INTEL SYSTEM · ADVANCED MULTI-AGENT ARCHITECTURE · GOOGLE DEEPMIND CODESPACE
+  </footer>
+
+</div>
+</body>
+</html>

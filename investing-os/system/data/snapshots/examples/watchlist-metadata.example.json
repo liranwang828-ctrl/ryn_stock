@@ -1,0 +1,51 @@
+{
+  "snapshot_id": "watchlist-metadata-20260605-example",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "created_at": "2026-06-05T00:00:00+08:00",
+  "valid_from": "2026-06-05",
+  "review_due": "2026-07-05",
+  "status": "draft",
+  "source": {
+    "repository": "investing-os",
+    "principles": ["PRIN-006"],
+    "generated_by": "manual",
+    "notes": "Example only. Not approved for runtime consumption."
+  },
+  "symbols": [
+    {
+      "symbol": "MSFT",
+      "role": "core_long_term",
+      "thesis_status": "active",
+      "conviction": "high",
+      "time_horizon": "long_term",
+      "allowed_actions": ["hold", "review_thesis", "review_risk"],
+      "forbidden_actions": ["sell_due_to_single_day_market_noise", "turn_core_holding_into_intraday_trade"],
+      "triggers": ["material_thesis_change", "valuation_review_due", "risk_limit_breach"],
+      "falsification": "Company-level thesis deterioration or long-term AI/cloud value-capture thesis failure.",
+      "risk_notes": "Core holding should not be managed through intraday emotion.",
+      "source_notes": "User-stated long-term core holding.",
+      "review_due": "2026-07-05"
+    },
+    {
+      "symbol": "SNXX",
+      "role": "no_trade",
+      "thesis_status": "missing",
+      "conviction": "unknown",
+      "time_horizon": "intraday",
+      "allowed_actions": ["review_prior_trade", "create_case_candidate"],
+      "forbidden_actions": ["trade_without_thesis", "average_down_without_add_rule"],
+      "triggers": ["completed_trade_review_required"],
+      "falsification": "No current thesis exists; future trades require a new plan, trigger, risk, and invalidation.",
+      "risk_notes": "2026-06-04 review showed attention capture and planless averaging down.",
+      "source_notes": "2026-06-04 daily review.",
+      "review_due": "2026-06-12"
+    }
+  ],
+  "degraded_mode": {
+    "if_symbol_metadata_missing": "treat_as_no_trade",
+    "forbid_new_discretionary_orders": true,
+    "allowed_actions": ["emit_metadata_missing_alert", "request_manual_symbol_review"]
+  }
+}
+

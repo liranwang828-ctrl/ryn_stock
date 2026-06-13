@@ -1,0 +1,45 @@
+{
+  "snapshot_id": "signal-interpretation-20260605-example",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "created_at": "2026-06-05T00:00:00+08:00",
+  "valid_from": "2026-06-05",
+  "review_due": "2026-07-05",
+  "status": "draft",
+  "source": {
+    "repository": "investing-os",
+    "principles": ["PRIN-004", "PRIN-005", "PRIN-006"],
+    "generated_by": "manual",
+    "notes": "Example only. Not approved for runtime consumption."
+  },
+  "signals": [
+    {
+      "id": "vwap_breakout_is_context",
+      "signal_type": "vwap",
+      "interpretation": "VWAP breakout is a context signal, not a complete thesis or trade command.",
+      "required_context": ["volume_confirmation", "market_context", "symbol_role", "predefined_risk", "invalidation"],
+      "allowed_outputs": ["alert", "review_task", "manual_check_required"],
+      "forbidden_outputs": ["direct_buy_order", "average_down_permission", "thesis_creation_by_signal"],
+      "minimum_confidence": "medium",
+      "evidence": "PRIN-005 and 2026-06-04 daily review.",
+      "falsification": "Revise if repeated reviewed trades show VWAP-only signals are reliable without attention or risk damage."
+    },
+    {
+      "id": "sector_sympathy_requires_scope",
+      "signal_type": "sector",
+      "interpretation": "A peer move requires catalyst-scope review before it can be treated as sector sympathy.",
+      "required_context": ["catalyst_scope", "peer_confirmation", "volume_confirmation", "market_regime"],
+      "allowed_outputs": ["alert", "review_task", "plan_update_candidate"],
+      "forbidden_outputs": ["buy_peer_only_because_it_moved", "treat_single_company_news_as_sector_thesis"],
+      "minimum_confidence": "medium",
+      "evidence": "PRIN-004.",
+      "falsification": "Revise by industry after enough sector-specific reviews identify reliable diffusion patterns."
+    }
+  ],
+  "degraded_mode": {
+    "if_context_missing": "emit_context_missing_alert",
+    "forbid_new_discretionary_orders": true,
+    "allowed_actions": ["emit_context_missing_alert", "create_review_task", "request_manual_check"]
+  }
+}
+

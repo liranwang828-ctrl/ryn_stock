@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔬 大师沙盒圆桌脑暴纪要: {{ session_name.upper() }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      
+      --gold: #fbbf24;
+      --emerald: #34d399;
+      --cyan: #22d3ee;
+      --purple: #a855f7;
+      --rose: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 2.5rem 1.5rem;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold), var(--emerald), var(--cyan), var(--purple));
+    }
+
+    .header-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .session-badge {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 2rem;
+      line-height: 1.3;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .topic-card {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 3px solid var(--primary);
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── KPI Grid ──────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .kpi-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-value {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.8rem;
+      color: #fff;
+    }
+
+    .kpi-subtext {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.4rem;
+    }
+
+    /* ── Main Layout ────────────────────────────────────── */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 2rem;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      pointer-events: none;
+    }
+
+    /* ── Round Header ─────────────────────────────────── */
+    .round-divider {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+      z-index: 10;
+    }
+
+    .round-badge {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 6px 16px;
+      border-radius: 99px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    .round-line {
+      flex-grow: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin-left: 1rem;
+    }
+
+    /* ── Bubble Card ───────────────────────────────────── */
+    .bubble-wrapper {
+      display: flex;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 5;
+    }
+
+    .avatar-wrapper {
+      flex-shrink: 0;
+      width: 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 3.2rem;
+      height: 3.2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      background: #1e293b;
+    }
+
+    /* Persona Colors */
+    .buffett-avatar { border-color: var(--gold); box-shadow: 0 0 12px rgba(251, 191, 36, 0.2); }
+    .livermore-avatar { border-color: var(--emerald); box-shadow: 0 0 12px rgba(52, 211, 153, 0.2); }
+    .strategist-avatar { border-color: var(--cyan); box-shadow: 0 0 12px rgba(34, 211, 238, 0.2); }
+    .user-avatar { border-color: var(--purple); box-shadow: 0 0 12px rgba(168, 85, 247, 0.2); }
+    .moderator-avatar { border-color: var(--primary); box-shadow: 0 0 12px rgba(99, 102, 241, 0.2); }
+
+    .bubble-card {
+      flex-grow: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      transition: border-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .bubble-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .bubble-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.6rem;
+    }
+
+    .persona-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .buffett-name { color: var(--gold); }
+    .livermore-name { color: var(--emerald); }
+    .strategist-name { color: var(--cyan); }
+    .user-name { color: var(--purple); }
+    .moderator-name { color: #a5b4fc; }
+
+    .persona-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+      font-weight: 500;
+    }
+
+    .timestamp {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .bubble-content {
+      font-size: 0.92rem;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+    }
+
+    .bubble-content p {
+      margin-bottom: 0.8rem;
+    }
+    .bubble-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Formatting markdown elements inside LLM content */
+    .bubble-content ul, .bubble-content ol {
+      margin-left: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+    .bubble-content li {
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Actionable Targets Display ────────────────────── */
+    .targets-container {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.08);
+    }
+
+    .targets-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 1.2rem;
+    }
+
+    .targets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .target-stock-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 1.2rem;
+    }
+
+    .stock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .stock-sym {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 1.2rem;
+      color: #fff;
+    }
+
+    .alloc-badge {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .level-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.03);
+    }
+    .level-row:last-child {
+      border-bottom: none;
+    }
+
+    .level-label {
+      color: var(--text-secondary);
+    }
+
+    .level-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .level-val.stop {
+      color: var(--rose);
+    }
+    .level-val.target {
+      color: var(--emerald);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 4rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- ── Header ────────────────────────────────────────── -->
+    <header>
+      <div class="header-meta">
+        <span class="session-badge">ROUNDTABLE SANDBOX REPORT</span>
+        <span>GENERATED AT: {{ generated_at }}</span>
+      </div>
+      <h1>🔬 大师沙盒脑暴圆桌纪要</h1>
+      <div class="topic-card">
+        <strong>脑暴研判课题：</strong>{{ prompt }}
+      </div>
+    </header>
+
+    <!-- ── Actionable Targets Display ────────────────────── -->
+    {% if extracted_strategy and extracted_strategy.KeyLevels %}
+      <div class="targets-container">
+        <div class="targets-title">
+          <span>🎯 圆桌战术操作点位共识 (Actionable Targets Consensus)</span>
+        </div>
+        <div class="targets-grid">
+          {% for sym, levels in extracted_strategy.KeyLevels.items() %}
+            <div class="target-stock-card">
+              <div class="stock-header">
+                <span class="stock-sym">{{ sym }}</span>
+                {% if extracted_strategy.Allocations and extracted_strategy.Allocations[sym] is not none %}
+                  <span class="alloc-badge">配置仓位: {{ extracted_strategy.Allocations[sym] }}%</span>
+                {% endif %}
+              </div>
+              <div class="level-row">
+                <span class="level-label">低吸建仓下轨 (Entry Low)</span>
+                <span class="level-val">${{ levels.entry_low if levels.entry_low is not none else 'N/A' }}</span>
+              </div>
+              <div class="level-row">
+                <span class="level-label">建仓追击上轨 (Entry High)</span>
+                <span class="level-val">${{ levels.entry_high if levels.entry_high is not none else 'N/A' }}</span>
+              </div>
+              <div class="level-row">
+                <span class="level-label">战术硬性止损 (Hard Stop Loss)</span>
+                <span class="level-val stop">${{ levels.stop_loss if levels.stop_loss is not none else 'N/A' }}</span>
+              </div>
+              <div class="level-row">
+                <span class="level-label">第一波段止盈 (Target Price)</span>
+                <span class="level-val target">${{ levels.target_price if levels.target_price is not none else 'N/A' }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="margin-bottom: 2.5rem;"></div>
+    {% endif %}
+
+    <!-- ── Timeline of Debate Rounds ────────────────────── -->
+    <div class="timeline">
+      
+      {% for h in history %}
+        {% if h.type == "user_feedback" %}
+          <div class="bubble-wrapper">
+            <div class="avatar-wrapper">
+              <div class="avatar user-avatar">💻</div>
+            </div>
+            <div class="bubble-card" style="border-color: rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.03);">
+              <div class="bubble-header">
+                <div>
+                  <span class="persona-name user-name">用户 Human Critique</span>
+                  <span class="persona-title">实战反馈与质疑</span>
+                </div>
+                <span class="timestamp">{{ h.timestamp[:19].replace('T', ' ') }}</span>
+              </div>
+              <div class="bubble-content" style="color:#d8b4fe; font-weight: 500;">
+                {{ h.content }}
+              </div>
+            </div>
+          </div>
+        {% elif h.type == "masters_debate" %}
+          
+          <!-- Round Indicator -->
+          <div class="round-divider">
+            <span class="round-badge">DEBATE ROUND {{ h.round }}</span>
+            <span class="round-line"></span>
+          </div>
+
+          <!-- Buffett -->
+          <div class="bubble-wrapper">
+            <div class="avatar-wrapper">
+              <div class="avatar buffett-avatar">👴</div>
+            </div>
+            <div class="bubble-card">
+              <div class="bubble-header">
+                <div>
+                  <span class="persona-name buffett-name">Warren Buffett</span>
+                  <span class="persona-title">Value Moat Master</span>
+                </div>
+                <span class="timestamp">{{ h.timestamp[:19].replace('T', ' ') }}</span>
+              </div>
+              <div class="bubble-content">
+                {{ h.buffett }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Livermore -->
+          <div class="bubble-wrapper">
+            <div class="avatar-wrapper">
+              <div class="avatar livermore-avatar">🎩</div>
+            </div>
+            <div class="bubble-card">
+              <div class="bubble-header">
+                <div>
+                  <span class="persona-name livermore-name">Jesse Livermore</span>
+                  <span class="persona-title">Trend Speculation King</span>
+                </div>
+                <span class="timestamp">{{ h.timestamp[:19].replace('T', ' ') }}</span>
+              </div>
+              <div class="bubble-content">
+                {{ h.livermore }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Strategist -->
+          <div class="bubble-wrapper">
+            <div class="avatar-wrapper">
+              <div class="avatar strategist-avatar">📡</div>
+            </div>
+            <div class="bubble-card">
+              <div class="bubble-header">
+                <div>
+                  <span class="persona-name strategist-name">Sector Strategist</span>
+                  <span class="persona-title">Lead Tech & Semiconductor Analyst</span>
+                </div>
+                <span class="timestamp">{{ h.timestamp[:19].replace('T', ' ') }}</span>
+              </div>
+              <div class="bubble-content">
+                {{ h.strategist }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Synthesized (Moderator) -->
+          <div class="bubble-wrapper">
+            <div class="avatar-wrapper">
+              <div class="avatar moderator-avatar">⚖️</div>
+            </div>
+            <div class="bubble-card" style="border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.04); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.08);">
+              <div class="bubble-header">
+                <div>
+                  <span class="persona-name moderator-name">Moderator (Synthesizer)</span>
+                  <span class="persona-title">Sandbox Consensus Summary</span>
+                </div>
+                <span class="timestamp">{{ h.timestamp[:19].replace('T', ' ') }}</span>
+              </div>
+              <div class="bubble-content">
+                {{ h.synthesized }}
+              </div>
+            </div>
+          </div>
+
+        {% endif %}
+      {% endfor %}
+
+    </div>
+
+    <footer>
+      QUANT_ROUNDTABLE_SANDBOX_ENGINE // ANTIGRAVITY COGNITIVE CHASSIS // WORKSPACE: {{ session_name }}
+    </footer>
+  </div>
+</body>
+</html>

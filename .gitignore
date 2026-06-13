@@ -1,0 +1,57 @@
+# Workspace-local tooling
+.tmp/
+.codex/
+.agents/
+
+# Credentials and local environments
+**/.env
+**/.env.*
+!**/.env.template
+**/.venv/
+**/venv/
+
+# Python and test caches
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.coverage
+**/htmlcov/
+
+# stock_team runtime state and generated research data
+stock_team/findings/
+stock_team/archive/
+stock_team/logs/
+stock_team/scratch/
+stock_team/paper_trading/
+stock_team/learning/*
+!stock_team/learning/__init__.py
+!stock_team/learning/features.py
+!stock_team/learning/README.md
+!stock_team/learning/trading_patterns.md
+stock_team/premarket_analysis_*.json
+stock_team/data_raw_*.json
+stock_team/data_verified.json
+stock_team/discussion_board.jsonl
+stock_team/strategy_result.json
+stock_team/reports/latest_evidence_dashboard.json
+stock_team/config/positions.json
+stock_team/config/daily_focus.json
+stock_team/config/today_focus.json
+stock_team/config/target_orders_rebalance.json
+**/*.db
+**/*.sqlite
+**/*.pkl
+**/*.parquet
+
+# investing-os generated live state
+investing-os/dashboards/latest_evidence_dashboard.html
+investing-os/system/data/packets/ib_event_log.json
+investing-os/system/data/packets/intraday_snapshot.json
+investing-os/system/data/snapshots/broker/
+
+# Editor and OS noise
+**/.vscode/
+**/.idea/
+**/.DS_Store
+**/Thumbs.db

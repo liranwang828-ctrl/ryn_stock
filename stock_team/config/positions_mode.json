@@ -1,0 +1,151 @@
+{
+  "_comment": "\u6301\u4ed3\u4ea4\u6613\u6a21\u5f0f\u8ddf\u8e2a\u3002mode: swing/intraday\u3002poll.py \u6bcf\u8f6e\u81ea\u52a8\u68c0\u67e5\u662f\u5426\u9700\u8981\u5207\u6362\u3002",
+  "MRVU": {
+    "mode": "swing",
+    "reason": "\u50ac\u5316\u5242\u2605\u2605\u2605\u2192\u6ce2\u6bb5\u6301\u6709"
+  },
+  "NBIL": {
+    "mode": "swing",
+    "reason": "NBIS\u5f3a\u50ac\u5316\u5242(684%\u6536\u5165)"
+  },
+  "MRVL": {
+    "mode": "swing",
+    "reason": "\u5348\u540e\u4ecd\u5728\u65e5\u9ad8(67 RSI3)\u7f29\u91cf\u8d70\u5f3a"
+  },
+  "NVDA": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "MSFT": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "IAU": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "BABA": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "PONY": {
+    "mode": "swing",
+    "reason": "\u8ddf\u8e2a\u4ed3\u4e0d\u64cd\u4f5c"
+  },
+  "SNDK": {
+    "mode": "intraday",
+    "reason": "\u65e5\u9ad8\u5728\u5f00\u76d80\u5206\u949f\u5185\u5f62\u6210"
+  },
+  "LEU": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "OKLO": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "TTD": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "SNAP": {
+    "mode": "swing",
+    "reason": "\u50ac\u5316\u5242\u2605\u2605\u2605\u2192\u6ce2\u6bb5\u6301\u6709"
+  },
+  "POWL": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "ANET": {
+    "mode": "swing",
+    "reason": "\u5348\u540e\u4ecd\u5728\u65e5\u9ad8(51 RSI3)\u7f29\u91cf\u8d70\u5f3a"
+  },
+  "MXL": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "NBIS": {
+    "mode": "intraday",
+    "reason": "\u65e5\u9ad8\u5728\u5f00\u76d824\u5206\u949f\u5185\u5f62\u6210"
+  },
+  "GLOB": {
+    "mode": "intraday",
+    "reason": "\u573a\u666fD\u51b2\u9ad8\u56de\u843d\u2192\u65e5\u5185\u51fa\u573a"
+  },
+  "LITX": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "FUTU": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "COHR": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "GOOGL": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "VST": {
+    "mode": "swing",
+    "reason": "\u50ac\u5316\u5242\u2605\u2605\u2605\u2192\u6ce2\u6bb5\u6301\u6709"
+  },
+  "SYM": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "NOW": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "TSM": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "SGOV": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "ZS": {
+    "mode": "intraday",
+    "reason": "\u573a\u666fD\u51b2\u9ad8\u56de\u843d\u2192\u65e5\u5185\u51fa\u573a"
+  },
+  "ORCL": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "CRDU": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "INTW": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "ASPI": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "MU": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "RKLB": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "AVGO": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "PLTR": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  },
+  "NET": {
+    "mode": "swing",
+    "reason": "\u9ed8\u8ba4\u6ce2\u6bb5"
+  }
+}

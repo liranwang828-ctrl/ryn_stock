@@ -1,0 +1,46 @@
+{
+  "artifact_type": "tactic_event_summary_request",
+  "version": "1.0",
+  "created_by": "investing-os",
+  "date": "YYYY-MM-DD",
+  "purpose": "Request periodic statistical summary for tactic events.",
+  "scope": {
+    "tactic": "",
+    "symbols": [],
+    "period": {
+      "type": "last_n_events | last_n_days | custom_range",
+      "value": null,
+      "start": "",
+      "end": ""
+    },
+    "include_traded_events": true,
+    "include_missed_events": true,
+    "include_false_positive_events": true
+  },
+  "group_by": [
+    "market_regime",
+    "vix_direction",
+    "sector_confirmation",
+    "opening_30m_vs_later",
+    "condition_quality",
+    "symbol",
+    "time_of_day"
+  ],
+  "metrics_required": [
+    "event_count",
+    "traded_count",
+    "missed_count",
+    "false_positive_count",
+    "mfe_mae_distribution",
+    "post_trigger_5m_15m_30m_outcomes",
+    "condition_quality_vs_outcome",
+    "execution_delay_distribution",
+    "environment_disable_candidates"
+  ],
+  "forbidden_outputs": [
+    "strategy_adoption_decision",
+    "buy_sell_hold_recommendation",
+    "psychological_interpretation",
+    "principle_update"
+  ]
+}

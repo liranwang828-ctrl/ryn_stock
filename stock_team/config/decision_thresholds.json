@@ -1,0 +1,19 @@
+{
+  "_comment": "premarket_decision.py 读取，backtest_engine.py 可更新。默认阈值基于设计 spec，回测验证后调整。",
+  "_updated": "2026-05-19",
+  "hard_vetoes": {
+    "rr_min": 2.0,
+    "qqq_premarket_min": -0.015,
+    "macro_score_min": 4,
+    "watchlist_score_min": 50
+  },
+  "soft_vetoes": {
+    "ma20_dev_max": 0.05,
+    "rs5_min": 0.0,
+    "max_headwinds": 2
+  },
+  "macro_type_overrides": {
+    "防御型": {"macro_score_min": 3},
+    "大宗商品型": {"macro_score_min": 3}
+  }
+}

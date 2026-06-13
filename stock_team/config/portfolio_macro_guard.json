@@ -1,0 +1,8 @@
+{
+  "vix_spike_threshold": 5.0,
+  "spy_drop_threshold": -2.5,
+  "portfolio_reduce_pct": 20,
+  "sector_etf_ma50_break": true,
+  "sector_reduce_pct": 30,
+  "last_backtest_date": null
+}

@@ -1,0 +1,174 @@
+{
+  "artifact_type": "intraday_guidance_to_stock_team",
+  "version": "1.0",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from": {
+    "stage0_market_context_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+    "stage1_plan_evidence_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\plan-evidence-packet.md",
+    "pre_market_decision_sheet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\simulations\\inputs\\stage1-pre-market-decision-sheet.2026-06-08.INTC-MU-COHR.replay-red.json"
+  },
+  "permission_state": {
+    "state": "Red",
+    "reason": [
+      "major_drawdown_recovery_boundary",
+      "MUU_linked_leveraged_exposure_context",
+      "new_short_term_risk_blocked"
+    ],
+    "state_owner": "investing-os"
+  },
+  "global_controls": {
+    "allowed_actions": ["observe", "collect_evidence", "risk_review_only"],
+    "forbidden_actions": [
+      "new intraday action",
+      "new leveraged product trade",
+      "loss-repair re-entry",
+      "treat dashboard pass/fail as permission"
+    ],
+    "attention_budget_minutes": 30,
+    "new_risk_requires_user_confirmation": true
+  },
+  "symbols": [
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "intraday_mode": "observe_only",
+      "tactic_context": "none",
+      "brain_permission": {
+        "status": "not_allowed",
+        "scope": "evidence_only",
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "market_stabilization",
+          "description": "QQQ and SOXX stop expanding downside risk before any staged swing entry is considered.",
+          "source": "investing-os",
+          "required_data": ["QQQ", "SOXX", "runtime_bars"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "semiconductor_peer_weakness",
+          "description": "INTC risk review if it underperforms SOXX during semiconductor weakness.",
+          "source": "investing-os",
+          "required_data": ["INTC", "SOXX", "QQQ"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "vwap_context",
+          "meaning": "observe_support",
+          "formula_or_value": "VWAP",
+          "source": "stock_team_factor",
+          "action_binding": "none"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "turnaround narrative upgrade"],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "MU",
+      "role": "watchlist",
+      "intraday_mode": "observe_only",
+      "tactic_context": "none",
+      "brain_permission": {
+        "status": "not_allowed",
+        "scope": "evidence_only",
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "market_stabilization",
+          "description": "QQQ and SOXX stop expanding downside risk before any staged swing entry is considered.",
+          "source": "investing-os",
+          "required_data": ["QQQ", "SOXX", "runtime_bars"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "no_linked_leveraged_exposure_exception",
+          "description": "MU setup must remain separate from linked MUU leveraged exposure context.",
+          "source": "investing-os",
+          "required_data": ["broker_snapshot", "MUU"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "vwap_context",
+          "meaning": "observe_support",
+          "formula_or_value": "VWAP",
+          "source": "stock_team_factor",
+          "action_binding": "none"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "memory-cycle excitement as entry signal"],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "intraday_mode": "observe_only",
+      "tactic_context": "none",
+      "brain_permission": {
+        "status": "not_allowed",
+        "scope": "evidence_only",
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "market_stabilization",
+          "description": "QQQ and SOXX stop expanding downside risk before any staged swing entry is considered.",
+          "source": "investing-os",
+          "required_data": ["QQQ", "SOXX", "runtime_bars"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "optical_rs_context",
+          "description": "COHR optical / AI infrastructure relative strength context for future swing plan only.",
+          "source": "investing-os",
+          "required_data": ["COHR", "LITE", "SOXX", "QQQ"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "vwap_context",
+          "meaning": "observe_support",
+          "formula_or_value": "VWAP",
+          "source": "stock_team_factor",
+          "action_binding": "none"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "chase near highs"],
+      "runtime_snapshot_required": true
+    }
+  ],
+  "stock_team_dashboard_request": {
+    "output_kind": "evidence_dashboard",
+    "show": [
+      "packet_readiness",
+      "data_source_health",
+      "symbol_condition_status",
+      "runtime_snapshot_freshness",
+      "missing_data",
+      "latest_packet_links"
+    ],
+    "forbidden_ui_labels": [
+      "buy",
+      "sell",
+      "hold",
+      "can trade",
+      "should enter",
+      "should exit",
+      "permission approved"
+    ],
+    "latest_manifest_path": "D:\\gemini\\lianghua\\stock_team\\reports\\latest_evidence_dashboard.json"
+  }
+}

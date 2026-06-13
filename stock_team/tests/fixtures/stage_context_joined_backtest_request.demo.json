@@ -1,0 +1,75 @@
+{
+  "artifact_type": "stage_context_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os",
+  "study_id": "stage_gate_joined_demo",
+  "date_range": {
+    "start": "2026-01-01",
+    "end": "2026-01-31"
+  },
+  "context_fields": [
+    "qqq_regime",
+    "vix_regime",
+    "market_volume_regime",
+    "catalyst_bucket",
+    "cognition_state",
+    "permission_state"
+  ],
+  "data": {
+    "mode": "joined_fixture_events",
+    "stage_contexts": [
+      {
+        "date": "2026-01-05",
+        "context": {
+          "qqq_regime": "qqq_uptrend",
+          "vix_regime": "vix_low_falling",
+          "market_volume_regime": "normal_volume",
+          "catalyst_bucket": "positive_company_catalyst",
+          "cognition_state": "normal",
+          "permission_state": "Yellow"
+        }
+      },
+      {
+        "date": "2026-01-08",
+        "context": {
+          "qqq_regime": "qqq_downtrend",
+          "vix_regime": "vix_high_rising",
+          "market_volume_regime": "high_volume_risk_off",
+          "catalyst_bucket": "no_clear_catalyst",
+          "cognition_state": "loss_repair_watch",
+          "permission_state": "Red"
+        }
+      }
+    ],
+    "events": [
+      {
+        "date": "2026-01-05",
+        "symbol": "MU",
+        "tactic_id": "vwap_reclaim",
+        "return_pct": 2.0,
+        "mae_pct": -0.4,
+        "mfe_pct": 2.7
+      },
+      {
+        "entry_time": "2026-01-08T10:05:00-05:00",
+        "symbol": "COHR",
+        "tactic_id": "vwap_reclaim",
+        "return_pct": -1.5,
+        "mae_pct": -2.1,
+        "mfe_pct": 0.4
+      },
+      {
+        "date": "2026-01-09",
+        "symbol": "NVDA",
+        "tactic_id": "breakout",
+        "return_pct": 0.5,
+        "mae_pct": -0.2,
+        "mfe_pct": 1.0
+      }
+    ]
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

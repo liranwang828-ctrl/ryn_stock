@@ -1,0 +1,45 @@
+{
+  "artifact_type": "event_reconstruction_request",
+  "version": "1.0",
+  "created_by": "investing-os",
+  "date": "YYYY-MM-DD",
+  "purpose": "Request factual reconstruction for one trade, missed opportunity, false positive, or rule event.",
+  "event": {
+    "event_id": "",
+    "event_type": "actual_trade | missed_opportunity | false_positive | rule_exception | condition_trigger",
+    "symbol": "",
+    "related_symbols": [],
+    "tactic": "",
+    "trigger_time": "",
+    "entry_window_seconds": null,
+    "actual_fill_ids": [],
+    "source_plan_artifacts": []
+  },
+  "context_required": {
+    "benchmarks": ["QQQ", "SPY", "IWM", "VIXY"],
+    "sector_proxies": [],
+    "peer_symbols": [],
+    "bar_interval": "1min",
+    "post_trigger_windows": ["5m", "15m", "30m"],
+    "include_vwap": true,
+    "include_volume": true,
+    "include_relative_strength": true,
+    "include_condition_quality": true
+  },
+  "required_outputs": [
+    "event_timeline",
+    "conditions_at_trigger",
+    "condition_quality",
+    "post_trigger_mfe_mae",
+    "vwap_volume_rs_context",
+    "data_freshness",
+    "missed_window_analysis",
+    "false_positive_path_if_applicable"
+  ],
+  "forbidden_outputs": [
+    "psychological_interpretation",
+    "final_lesson",
+    "buy_sell_hold_recommendation",
+    "principle_update"
+  ]
+}

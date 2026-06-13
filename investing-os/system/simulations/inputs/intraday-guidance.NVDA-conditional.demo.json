@@ -1,0 +1,288 @@
+{
+  "artifact_type": "intraday_guidance_to_stock_team",
+  "version": "1.0",
+  "date": "2026-06-06",
+  "created_by": "investing-os",
+  "derived_from": {
+    "stage0_market_context_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+    "stage1_plan_evidence_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\simulations\\outputs\\stage1-plan-evidence-packet.MU-NVDA.demo.md",
+    "pre_market_decision_sheet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\simulations\\inputs\\stage1-pre-market-decision-sheet.MU-NVDA.demo.json"
+  },
+  "permission_state": {
+    "state": "Yellow",
+    "reason": [
+      "Demo assumption: user and brain explicitly allow one conditional NVDA short-term setup.",
+      "Demo assumption: user and brain explicitly allow one conditional MU mid-term swing setup.",
+      "Market remains unstable, so permission is conditional and narrow.",
+      "MU permission is separated from MUU loss repair and requires broader market stabilization."
+    ],
+    "state_owner": "investing-os"
+  },
+  "global_controls": {
+    "allowed_actions": [
+      "observe planned symbols",
+      "request runtime snapshot",
+      "execute only explicitly preplanned conditional action after evidence confirmation",
+      "reduce risk only when preplanned or user-confirmed"
+    ],
+    "forbidden_actions": [
+      "new unplanned short-term risk",
+      "leveraged risk expansion",
+      "loss-repair averaging",
+      "treat dashboard condition pass as automatic order"
+    ],
+    "attention_budget_minutes": 30,
+    "new_risk_requires_user_confirmation": true
+  },
+  "symbols": [
+    {
+      "symbol": "NVDA",
+      "role": "short_term_candidate",
+      "intraday_mode": "conditional_action_allowed",
+      "tactic_context": "rs_pullback_rebound",
+      "brain_permission": {
+        "status": "conditional",
+        "scope": "one_preplanned_entry",
+        "max_loss": 300,
+        "position_cap": 0.05,
+        "attention_budget_minutes": 20
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "qqq_not_high_volume_risk_off",
+          "description": "QQQ is not continuing high-volume risk-off behavior.",
+          "source": "investing-os",
+          "required_data": ["QQQ intraday bars", "QQQ volume ratio"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "nvda_rs_positive",
+          "description": "NVDA relative strength versus QQQ and SMH remains positive.",
+          "source": "investing-os",
+          "required_data": ["NVDA intraday return", "QQQ intraday return", "SMH intraday return"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "reclaim_approved_anchor",
+          "description": "NVDA reclaims approved anchor such as VWAP or brain-approved formula level.",
+          "source": "investing-os",
+          "required_data": ["NVDA price", "NVDA VWAP", "computed approved anchor"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "volume_confirms",
+          "description": "Rebound attempt has volume confirmation.",
+          "source": "investing-os",
+          "required_data": ["NVDA intraday volume", "NVDA average intraday volume"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "vwap",
+          "meaning": "trigger_review",
+          "formula_or_value": "VWAP",
+          "source": "stock_team_factor",
+          "action_binding": "requires_user_confirmation"
+        },
+        {
+          "level_id": "atr_invalidation",
+          "meaning": "invalidation_review",
+          "formula_or_value": "entry_anchor - 1.0 * ATR(14)",
+          "source": "stock_team_factor",
+          "action_binding": "preplanned_only"
+        }
+      ],
+      "forbidden_actions": [
+        "chase after missed trigger",
+        "average down after failed trigger",
+        "increase size because another position is losing",
+        "convert core thesis into intraday excuse"
+      ],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "MU",
+      "role": "mid_term_swing_candidate",
+      "intraday_mode": "conditional_action_allowed",
+      "tactic_context": "swing_pullback_accumulation",
+      "brain_permission": {
+        "status": "conditional",
+        "scope": "staged_swing_entry",
+        "max_loss": 500,
+        "position_cap": 0.08,
+        "attention_budget_minutes": 15
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "market_stabilization",
+          "description": "QQQ and SOXX stop expanding downside risk before any staged swing entry is considered.",
+          "source": "investing-os",
+          "required_data": ["QQQ intraday bars", "SOXX intraday bars", "QQQ volume ratio", "SOXX volume ratio"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "memory_rs_leadership",
+          "description": "MU maintains relative strength versus SOXX and QQQ after market stabilization.",
+          "source": "investing-os",
+          "required_data": ["MU return", "SOXX return", "QQQ return"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "no_muu_loss_repair_context",
+          "description": "MU setup must remain separate from MUU trapped-position repair motive.",
+          "source": "investing-os",
+          "required_data": ["IBKR position snapshot", "MUU exposure if present"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "swing_anchor_respected",
+          "description": "MU holds or reclaims approved swing anchor such as MA20, MA50, or prior consolidation support.",
+          "source": "investing-os",
+          "required_data": ["MU price", "MU MA20", "MU MA50", "prior consolidation support"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "ma20_swing_anchor",
+          "meaning": "trigger_review",
+          "formula_or_value": "MA20",
+          "source": "stock_team_factor",
+          "action_binding": "requires_user_confirmation"
+        },
+        {
+          "level_id": "ma50_deeper_support",
+          "meaning": "observe_support",
+          "formula_or_value": "MA50",
+          "source": "stock_team_factor",
+          "action_binding": "requires_user_confirmation"
+        },
+        {
+          "level_id": "swing_invalidation",
+          "meaning": "invalidation_review",
+          "formula_or_value": "approved_anchor - 1.0 * ATR(14)",
+          "source": "stock_team_factor",
+          "action_binding": "preplanned_only"
+        }
+      ],
+      "forbidden_actions": [
+        "full-size one-shot entry",
+        "MUU loss-repair trade",
+        "leveraged expansion",
+        "add if QQQ/SOXX are still risk-off",
+        "average down after anchor failure"
+      ],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "intraday_mode": "observe_only",
+      "tactic_context": "rs_pullback_rebound",
+      "brain_permission": {
+        "status": "not_allowed",
+        "scope": "evidence_only",
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "optical_rs_context",
+          "description": "COHR optical / AI infrastructure relative strength context for future swing plan only.",
+          "source": "investing-os",
+          "required_data": ["COHR return", "LITE return", "SOXX return", "QQQ return"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "prior_plan_level_context",
+          "description": "Monitor prior COHR swing plan levels without creating new intraday permission.",
+          "source": "investing-os",
+          "required_data": ["COHR price", "COHR MA20", "COHR MA50", "prior high/low"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "cohr_ma50_context",
+          "meaning": "observe_support",
+          "formula_or_value": "MA50",
+          "source": "stock_team_factor",
+          "action_binding": "none"
+        }
+      ],
+      "forbidden_actions": [
+        "emotional_reentry",
+        "unplanned_size_increase",
+        "convert observation into trade"
+      ],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "INTC",
+      "role": "swing",
+      "intraday_mode": "reduce_risk_only",
+      "tactic_context": "de_risk_review",
+      "brain_permission": {
+        "status": "reduce_risk_only",
+        "scope": "preplanned_reduce_risk",
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 8
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "semiconductor_peer_weakness",
+          "description": "INTC risk review if it underperforms SOXX during semiconductor weakness.",
+          "source": "investing-os",
+          "required_data": ["INTC return", "SOXX return", "QQQ return"],
+          "pass_fail_owner": "stock_team"
+        },
+        {
+          "condition_id": "position_snapshot_needed",
+          "description": "If position exists, IBKR snapshot is needed before any reduce-risk review.",
+          "source": "investing-os",
+          "required_data": ["IBKR position snapshot"],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "intc_invalidation_review",
+          "meaning": "reduce_risk_review",
+          "formula_or_value": "prior_day_low or MA20 break",
+          "source": "stock_team_factor",
+          "action_binding": "preplanned_only"
+        }
+      ],
+      "forbidden_actions": [
+        "add risk",
+        "average down",
+        "short-term reentry after reduction"
+      ],
+      "runtime_snapshot_required": true
+    }
+  ],
+  "stock_team_dashboard_request": {
+    "output_kind": "evidence_dashboard",
+    "show": [
+      "packet_readiness",
+      "data_source_health",
+      "symbol_condition_status",
+      "runtime_snapshot_freshness",
+      "missing_data",
+      "latest_packet_links"
+    ],
+    "forbidden_ui_labels": [
+      "buy",
+      "sell",
+      "hold",
+      "can trade",
+      "should enter",
+      "should exit",
+      "permission approved"
+    ],
+    "latest_manifest_path": "D:\\gemini\\lianghua\\stock_team\\reports\\latest_evidence_dashboard.json"
+  }
+}

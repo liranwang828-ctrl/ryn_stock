@@ -1,0 +1,153 @@
+{
+  "artifact_type": "pre_market_universe",
+  "version": "1.0",
+  "date": "2026-06-06",
+  "created_by": "investing-os",
+  "purpose": "Demo Stage 0 universe for market context before the brain chooses a focus pool. This is not trading permission.",
+  "source_inputs": {
+    "positions": [
+      {
+        "source": "manual_review_snapshot",
+        "as_of_et": "2026-06-05T16:00:00-04:00",
+        "symbols": ["MUU"],
+        "notes": "Major drawdown review recorded unresolved MUU linked leveraged exposure risk."
+      }
+    ],
+    "prior_review": {
+      "path": "wiki/journals/2026-06-05-major-drawdown-review.md",
+      "status": "reviewed_for_stage0_input",
+      "key_risks": [
+        "major_drawdown",
+        "principal_affected",
+        "unresolved_MUU_high_risk_position"
+      ]
+    },
+    "cognition_state": {
+      "permission_basis": "major_drawdown_red_recovery_boundary",
+      "active_risks": [
+        "loss_repair_reentry_risk",
+        "leveraged_instrument_path_risk",
+        "attention_capture"
+      ]
+    }
+  },
+  "permission_state_before_open": "Red",
+  "forbidden_actions": [
+    "new_short_term_trade",
+    "new_leveraged_product_trade",
+    "loss_repair_reentry",
+    "adding_to_unresolved_MUU_risk"
+  ],
+  "selection_policy": {
+    "allowed_sources": [
+      "current_positions",
+      "active_watchlist",
+      "researched_or_explicitly_approved_candidates",
+      "market_or_sector_proxies"
+    ],
+    "forbidden_interpretations": [
+      "focus_pool",
+      "trade_permission",
+      "buy_sell_hold_recommendation",
+      "symbol_selection_by_stock_team"
+    ]
+  },
+  "themes": [
+    "semiconductors",
+    "ai_infrastructure",
+    "memory",
+    "cloud",
+    "optical"
+  ],
+  "universe": [
+    {
+      "symbol": "MU",
+      "role": "mid_term_swing_candidate",
+      "theme": "memory",
+      "research_status": "partially_researched",
+      "source": "explicit_user_request",
+      "brain_note": "User wants to monitor memory exposure; not yet a fully approved thesis."
+    },
+    {
+      "symbol": "NVDA",
+      "role": "core",
+      "theme": "ai_infrastructure",
+      "research_status": "core_position_research_pending",
+      "source": "current_positions",
+      "brain_note": "Core AI leader; Stage 0 context only, not intraday permission."
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "theme": "optical",
+      "research_status": "researched_draft",
+      "source": "current_positions",
+      "brain_note": "Existing swing candidate in optical infrastructure."
+    },
+    {
+      "symbol": "INTC",
+      "role": "short_term_candidate",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "source": "active_watchlist",
+      "brain_note": "Short-term or swing candidate; requires evidence before any action."
+    }
+  ],
+  "proxies": [
+    {
+      "symbol": "QQQ",
+      "role": "market_proxy",
+      "theme": "market_context",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Nasdaq 100 / growth risk context."
+    },
+    {
+      "symbol": "SPY",
+      "role": "market_proxy",
+      "theme": "market_context",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "S&P 500 broad market context."
+    },
+    {
+      "symbol": "IWM",
+      "role": "market_proxy",
+      "theme": "risk_appetite",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Small-cap risk appetite context."
+    },
+    {
+      "symbol": "VIXY",
+      "role": "market_proxy",
+      "theme": "volatility",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "VIX proxy for volatility direction."
+    },
+    {
+      "symbol": "SOXX",
+      "role": "sector_proxy",
+      "theme": "semiconductors",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "Semiconductor sector proxy."
+    },
+    {
+      "symbol": "SMH",
+      "role": "sector_proxy",
+      "theme": "ai_infrastructure",
+      "research_status": "proxy",
+      "source": "proxy",
+      "brain_note": "AI infrastructure / semiconductor leadership proxy."
+    }
+  ],
+  "forbidden_sections_absent": [
+    "buy_sell_hold_recommendation",
+    "trading_permission_state",
+    "symbol_selection_recommendation",
+    "final_thesis_adoption",
+    "psychological_interpretation"
+  ]
+}

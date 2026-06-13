@@ -1,0 +1,86 @@
+{
+  "artifact_type": "stage_context_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os",
+  "study_id": "stage_gate_local_cache_demo",
+  "date_range": {
+    "start": "2024-06-01",
+    "end": "2024-06-15"
+  },
+  "context_fields": [
+    "qqq_regime",
+    "vix_regime",
+    "market_volume_regime",
+    "sector_regime",
+    "catalyst_bucket",
+    "permission_state",
+    "cognition_state"
+  ],
+  "data": {
+    "mode": "joined_fixture_events",
+    "stage_context_source": {
+      "mode": "daily_market_local_cache",
+      "cache_dir": "D:/gemini/lianghua/stock_team/learning",
+      "sector_symbol": "MU"
+    },
+    "stage_context_overlays": [
+      {
+        "date": "2024-06-03",
+        "context": {
+          "catalyst_bucket": "positive_company_catalyst",
+          "permission_state": "Yellow",
+          "cognition_state": "normal"
+        },
+        "source": "investing-os_demo_overlay"
+      },
+      {
+        "date": "2024-06-04",
+        "context": {
+          "catalyst_bucket": "no_clear_catalyst",
+          "permission_state": "Yellow",
+          "cognition_state": "normal"
+        },
+        "source": "investing-os_demo_overlay"
+      },
+      {
+        "date": "2024-06-05",
+        "context": {
+          "catalyst_bucket": "sector_sympathy_catalyst",
+          "permission_state": "Yellow",
+          "cognition_state": "normal"
+        },
+        "source": "investing-os_demo_overlay"
+      }
+    ],
+    "events": [
+      {
+        "date": "2024-06-03",
+        "symbol": "MU",
+        "tactic_id": "vwap_reclaim",
+        "return_pct": 1.2,
+        "mae_pct": -0.5,
+        "mfe_pct": 1.8
+      },
+      {
+        "date": "2024-06-04",
+        "symbol": "NVDA",
+        "tactic_id": "breakout",
+        "return_pct": -0.8,
+        "mae_pct": -1.4,
+        "mfe_pct": 0.6
+      },
+      {
+        "date": "2024-06-05",
+        "symbol": "COHR",
+        "tactic_id": "vwap_reclaim",
+        "return_pct": 0.7,
+        "mae_pct": -0.3,
+        "mfe_pct": 1.1
+      }
+    ]
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "fixture_type": "stage0_market_context_replay",
+  "version": "1.0",
+  "date": "2026-06-08",
+  "source_note": "Replay fixture for walking the Stage0 -> discussion -> Stage1 -> dashboard flow. Not a live pre-market snapshot.",
+  "markets": {
+    "QQQ": {
+      "price": 705.06,
+      "prev_close": 740.42,
+      "yesterday_change_pct": -4.8,
+      "return_5d": -4.5,
+      "return_20d": 1.46,
+      "volume_ratio": 2.4,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    },
+    "SPY": {
+      "price": 737.55,
+      "prev_close": 757.09,
+      "yesterday_change_pct": -2.58,
+      "return_5d": -2.5,
+      "return_20d": 0.82,
+      "volume_ratio": 1.9,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    },
+    "IWM": {
+      "price": 281.65,
+      "prev_close": 292.02,
+      "yesterday_change_pct": -3.55,
+      "return_5d": -3.02,
+      "return_20d": -0.22,
+      "volume_ratio": 1.4,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    },
+    "VIXY": {
+      "price": 24.31,
+      "prev_close": 22.67,
+      "yesterday_change_pct": 7.23,
+      "return_5d": 4.38,
+      "return_20d": -9.46,
+      "volume_ratio": 2.0,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    }
+  },
+  "themes": {
+    "semiconductors": {
+      "proxy": "SOXX",
+      "return_5d": -5.15,
+      "return_20d": 9.63,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    },
+    "ai_infrastructure": {
+      "proxy": "SMH",
+      "return_5d": -4.88,
+      "return_20d": 5.48,
+      "source": "replay_fixture_from_prior_stage0_packet"
+    },
+    "memory": {
+      "proxy": "MU",
+      "return_5d": -7.65,
+      "return_20d": 28.05,
+      "source": "replay_fixture_from_stock_team_cache"
+    },
+    "optical": {
+      "proxy": "LITE",
+      "return_5d": 1.02,
+      "return_20d": -3.24,
+      "source": "replay_fixture_from_stock_team_cache"
+    }
+  },
+  "catalysts": [
+    {
+      "type": "macro",
+      "title": "Rate-path and inflation expectation risk remained a Stage0 observation variable.",
+      "source": "cognition_replay_pending_fact_verification"
+    },
+    {
+      "type": "market_structure",
+      "title": "Rebound quality must be evaluated by breadth and leadership persistence, not by one-day strongest names.",
+      "source": "2026-06-08-market-rebound-cognition-review"
+    },
+    {
+      "type": "personal_risk",
+      "title": "Narrow high-beta strength may increase FOMO risk after major drawdown recovery state.",
+      "source": "2026-06-08-market-rebound-cognition-review"
+    }
+  ]
+}

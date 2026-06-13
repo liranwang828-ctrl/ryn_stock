@@ -1,0 +1,54 @@
+{
+  "NOW": {
+    "symbol": "NOW",
+    "role": "swing",
+    "thesis_ref": "Cloud software strong momentum with high volume breakout candidate",
+    "allowed_tactics": ["rs_pullback_rebound"],
+    "forbidden_actions": ["loss_repair_averaging"],
+    "entry_strategy": "CONSOLIDATION_FLOOR",
+    "invalidation_rule": "MA20_MINUS_1X_ATR",
+    "portfolio_risk_budget_pct": 0.005,
+    "position_cap": 0.08,
+    "attention_budget_mins": 30,
+    "evidence_required": ["trade_evidence", "company_packet"]
+  },
+  "VST": {
+    "symbol": "VST",
+    "role": "swing",
+    "thesis_ref": "AI data center power infrastructure secular theme play",
+    "allowed_tactics": ["buy_and_hold", "rs_pullback_rebound"],
+    "forbidden_actions": ["leverage_expansion"],
+    "entry_strategy": "MA20_BOUNCE",
+    "invalidation_rule": "MA50_MINUS_1_5X_ATR",
+    "portfolio_risk_budget_pct": 0.008,
+    "position_cap": 0.12,
+    "attention_budget_mins": 20,
+    "evidence_required": ["company_packet"]
+  },
+  "SYM": {
+    "symbol": "SYM",
+    "role": "short_term",
+    "thesis_ref": "Short term panic gap down mean reversion candidate",
+    "allowed_tactics": ["mean_reversion"],
+    "forbidden_actions": ["overnight_hold"],
+    "entry_strategy": "VWAP_RECLAIM",
+    "invalidation_rule": "MA20_MINUS_1X_ATR",
+    "portfolio_risk_budget_pct": 0.003,
+    "position_cap": 0.05,
+    "attention_budget_mins": 45,
+    "evidence_required": ["trade_evidence"]
+  },
+  "TSM": {
+    "symbol": "TSM",
+    "role": "core",
+    "thesis_ref": "AI chip foundry monopolistic moat long term hold",
+    "allowed_tactics": ["buy_and_hold"],
+    "forbidden_actions": [],
+    "entry_strategy": "CONSOLIDATION_FLOOR",
+    "invalidation_rule": "PRIOR_20D_LOW",
+    "portfolio_risk_budget_pct": 0.010,
+    "position_cap": 0.15,
+    "attention_budget_mins": 10,
+    "evidence_required": ["company_packet"]
+  }
+}

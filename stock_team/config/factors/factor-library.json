@@ -1,0 +1,40 @@
+{
+  "factors": {
+    "gap_pct": {
+      "name": "Premarket Gap Percentage",
+      "formula": "((premarket_price - prev_close) / prev_close) * 100",
+      "data_source": "yfinance / exchange_feed",
+      "type": "market_state"
+    },
+    "atr_14d": {
+      "name": "14-Day Average True Range",
+      "formula": "MA(TrueRange, 14)",
+      "data_source": "yfinance_historic",
+      "type": "risk_limit"
+    },
+    "relative_strength_5d": {
+      "name": "5-Day Relative Strength vs Benchmark",
+      "formula": "symbol_return_5d - benchmark_return_5d",
+      "data_source": "yfinance_historic",
+      "type": "alpha_factor"
+    },
+    "vwap_intraday": {
+      "name": "Intraday Volume Weighted Average Price",
+      "formula": "Sum(Price * Volume) / Sum(Volume)",
+      "data_source": "polygon_1m_aggregates",
+      "type": "execution_anchor"
+    },
+    "vix_level": {
+      "name": "CBOE Volatility Index Level",
+      "formula": "vix_spot_close",
+      "data_source": "yfinance",
+      "type": "macro_regime"
+    },
+    "volume_breakout_ratio": {
+      "name": "Premarket Volume vs 20D MA Volume Ratio",
+      "formula": "premarket_volume / vol_ma20",
+      "data_source": "yfinance / exchange_feed",
+      "type": "market_state"
+    }
+  }
+}

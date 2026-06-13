@@ -1,0 +1,52 @@
+{
+  "persona": "jesse_livermore",
+  "description": "纯价格动量框架的问题序列，逆市和无止损触发一票否决",
+  "confidence_base": 70,
+  "natural_adversaries": ["peter_lynch"],
+  "sequence": [
+    {
+      "id": "q1",
+      "question": "这只股票现在是市场里最强的标的之一吗？",
+      "why": "资金自然流向最强的地方，如果它不是最强，就不值得我的注意力",
+      "data_required": ["rs_vs_market", "rs_streak"],
+      "fail_action": "early_stop",
+      "fail_output": {
+        "signal": "neutral",
+        "core_argument": "不是当前最强标的，资金不会自然流向它",
+        "invalidation": "RS排名进入市场前20%"
+      }
+    },
+    {
+      "id": "q2",
+      "question": "它所在的板块是市场里最强的板块之一吗？",
+      "why": "最强的股票在最强的板块里，板块的力量会加速个股的趋势",
+      "data_required": ["sector_rs", "sector_momentum"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 25
+    },
+    {
+      "id": "q3",
+      "question": "整体市场方向是上升的吗？",
+      "why": "逆市做多是与趋势对抗，不是我的方式；市场永远比个人判断更强大",
+      "data_required": ["spy_trend", "qqq_trend", "market_regime"],
+      "fail_action": "veto",
+      "veto_reason": "逆市做多是与趋势对抗，不是我的方式"
+    },
+    {
+      "id": "q4",
+      "question": "我的止损在哪里，我是否真的会执行？",
+      "why": "止损是生命线，没有止损就是赌博；我两次破产都是因为没有执行止损",
+      "data_required": ["stop_price", "position_size"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 30
+    },
+    {
+      "id": "q5",
+      "question": "这个入场点，我是在追价还是在等待合适的价格？",
+      "why": "追价是情绪驱动，不是判断驱动；好的入场点需要等待，不需要追赶",
+      "data_required": ["distance_from_vwap", "volume_ratio"],
+      "fail_action": "reduce_confidence",
+      "fail_penalty": 15
+    }
+  ]
+}

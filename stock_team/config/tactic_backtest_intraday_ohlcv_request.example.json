@@ -1,0 +1,91 @@
+{
+  "artifact_type": "tactic_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os",
+  "tactic_id": "rs_pullback_rebound_intraday",
+  "symbols": ["MU"],
+  "date_range": {
+    "start": "2026-01-09",
+    "end": "2026-01-09"
+  },
+  "validation": {
+    "windows": [
+      {
+        "name": "test",
+        "start": "2026-01-09",
+        "end": "2026-01-09"
+      }
+    ],
+    "regime_fields": ["market_regime", "sector_regime"],
+    "min_trades_per_window": 1
+  },
+  "data": {
+    "mode": "intraday_ohlcv_fixture",
+    "bar_interval": "5m",
+    "bars": {
+      "MU": [
+        {
+          "timestamp": "2026-01-09T09:30:00-05:00",
+          "open": 100.0,
+          "high": 101.0,
+          "low": 99.5,
+          "close": 100.0,
+          "volume": 1000,
+          "market_regime": "qqq_uptrend_low_vix",
+          "sector_regime": "semis_strong"
+        },
+        {
+          "timestamp": "2026-01-09T09:35:00-05:00",
+          "open": 100.0,
+          "high": 100.2,
+          "low": 98.0,
+          "close": 98.5,
+          "volume": 1200,
+          "market_regime": "qqq_uptrend_low_vix",
+          "sector_regime": "semis_strong"
+        },
+        {
+          "timestamp": "2026-01-09T09:40:00-05:00",
+          "open": 98.5,
+          "high": 99.0,
+          "low": 98.1,
+          "close": 98.6,
+          "volume": 800,
+          "market_regime": "qqq_uptrend_low_vix",
+          "sector_regime": "semis_strong"
+        },
+        {
+          "timestamp": "2026-01-09T10:05:00-05:00",
+          "open": 98.6,
+          "high": 101.5,
+          "low": 98.4,
+          "close": 101.2,
+          "volume": 5000,
+          "market_regime": "qqq_uptrend_low_vix",
+          "sector_regime": "semis_strong"
+        },
+        {
+          "timestamp": "2026-01-09T15:55:00-05:00",
+          "open": 101.2,
+          "high": 103.2,
+          "low": 101.0,
+          "close": 102.8,
+          "volume": 1800,
+          "market_regime": "qqq_uptrend_low_vix",
+          "sector_regime": "semis_strong"
+        }
+      ]
+    },
+    "tactic_params": {
+      "action_window_start": "10:00",
+      "action_window_end": "11:00",
+      "min_volume_ratio": 2.0,
+      "take_profit_pct": 3.0,
+      "stop_loss_pct": 1.5
+    }
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

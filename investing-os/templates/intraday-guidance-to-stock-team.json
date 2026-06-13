@@ -1,0 +1,78 @@
+{
+  "artifact_type": "intraday_guidance_to_stock_team",
+  "version": "1.0",
+  "date": "YYYY-MM-DD",
+  "created_by": "investing-os",
+  "derived_from": {
+    "stage0_market_context_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+    "stage1_plan_evidence_packet": "",
+    "pre_market_decision_sheet": ""
+  },
+  "permission_state": {
+    "state": "Green | Yellow | Red | No-Trade",
+    "reason": [],
+    "state_owner": "investing-os"
+  },
+  "global_controls": {
+    "allowed_actions": [],
+    "forbidden_actions": [],
+    "attention_budget_minutes": null,
+    "new_risk_requires_user_confirmation": true
+  },
+  "symbols": [
+    {
+      "symbol": "NVDA",
+      "role": "core | swing | mid_term_swing_candidate | short_term_candidate | watchlist",
+      "intraday_mode": "observe_only | conditional_action_allowed | reduce_risk_only",
+      "tactic_context": "none | rs_pullback_rebound | swing_pullback_accumulation | breakout_retest | de_risk_review",
+      "brain_permission": {
+        "status": "not_allowed | conditional | reduce_risk_only",
+        "scope": "evidence_only | one_preplanned_entry | staged_swing_entry | preplanned_reduce_risk",
+        "max_loss": null,
+        "position_cap": null,
+        "attention_budget_minutes": null
+      },
+      "evidence_conditions_to_monitor": [
+        {
+          "condition_id": "",
+          "description": "",
+          "source": "investing-os",
+          "required_data": [],
+          "pass_fail_owner": "stock_team"
+        }
+      ],
+      "levels_to_monitor": [
+        {
+          "level_id": "",
+          "meaning": "observe_support | trigger_review | invalidation_review | reduce_risk_review",
+          "formula_or_value": "",
+          "source": "investing-os | stock_team_factor",
+          "action_binding": "none | requires_user_confirmation | preplanned_only"
+        }
+      ],
+      "forbidden_actions": [],
+      "runtime_snapshot_required": true
+    }
+  ],
+  "stock_team_dashboard_request": {
+    "output_kind": "evidence_dashboard",
+    "show": [
+      "packet_readiness",
+      "data_source_health",
+      "symbol_condition_status",
+      "runtime_snapshot_freshness",
+      "missing_data",
+      "latest_packet_links"
+    ],
+    "forbidden_ui_labels": [
+      "buy",
+      "sell",
+      "hold",
+      "can trade",
+      "should enter",
+      "should exit",
+      "permission approved"
+    ],
+    "latest_manifest_path": "D:\\gemini\\lianghua\\stock_team\\reports\\latest_evidence_dashboard.json"
+  }
+}

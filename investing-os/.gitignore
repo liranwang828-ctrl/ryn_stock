@@ -1,0 +1,21 @@
+# Local environment
+.env
+.env.*
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.superpowers/
+
+# Generated caches
+node_modules/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# Local data and exports
+data/raw/
+data/cache/
+exports/

@@ -1,0 +1,61 @@
+{
+  "artifact_type": "tactic_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os-research",
+  "tactic_id": "research_vwap_reclaim_volume_v1",
+  "symbols": ["MU", "NVDA", "COHR"],
+  "date_range": {
+    "start": "2024-06-01",
+    "end": "2026-05-29"
+  },
+  "strategy": {
+    "entry_model": {
+      "type": "channel_reclaim",
+      "indicator": "vwap"
+    },
+    "filters": [
+      {
+        "type": "relative_volume",
+        "min_volume_ratio": 1.5
+      }
+    ],
+    "exit_model": {
+      "type": "fixed_pct"
+    }
+  },
+  "hyperparameters": {
+    "action_window_start": "10:00",
+    "action_window_end": "11:30",
+    "min_volume_ratio": 1.5,
+    "take_profit_pct": 3.0,
+    "stop_loss_pct": 1.5,
+    "leverage": 1
+  },
+  "validation": {
+    "windows": [
+      {
+        "name": "train_2024h2_2025h1",
+        "start": "2024-06-01",
+        "end": "2025-06-30"
+      },
+      {
+        "name": "test_2025h2_2026h1",
+        "start": "2025-07-01",
+        "end": "2026-05-29"
+      }
+    ],
+    "regime_fields": ["market_regime", "sector_regime"],
+    "min_trades_per_window": 5,
+    "monte_carlo": {
+      "enabled": true,
+      "simulations": 1000
+    }
+  },
+  "data": {
+    "mode": "local_cache"
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

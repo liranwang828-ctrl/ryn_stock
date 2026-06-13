@@ -1,0 +1,68 @@
+{
+  "artifact_type": "stage_context_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os",
+  "study_id": "stage_gate_from_tactic_backtest_demo",
+  "date_range": {
+    "start": "2026-01-09",
+    "end": "2026-01-13"
+  },
+  "context_fields": [
+    "qqq_regime",
+    "vix_regime",
+    "market_volume_regime",
+    "sector_regime",
+    "catalyst_bucket",
+    "permission_state",
+    "cognition_state"
+  ],
+  "data": {
+    "mode": "joined_fixture_events",
+    "stage_contexts": [
+      {
+        "date": "2026-01-09",
+        "context": {
+          "qqq_regime": "qqq_uptrend",
+          "vix_regime": "vix_low_falling",
+          "market_volume_regime": "normal_volume",
+          "sector_regime": "sector_strong",
+          "catalyst_bucket": "positive_company_catalyst",
+          "permission_state": "Yellow",
+          "cognition_state": "normal"
+        }
+      },
+      {
+        "date": "2026-01-10",
+        "context": {
+          "qqq_regime": "qqq_uptrend",
+          "vix_regime": "vix_low_falling",
+          "market_volume_regime": "normal_volume",
+          "sector_regime": "sector_strong",
+          "catalyst_bucket": "sector_sympathy_catalyst",
+          "permission_state": "Yellow",
+          "cognition_state": "normal"
+        }
+      },
+      {
+        "date": "2026-01-12",
+        "context": {
+          "qqq_regime": "qqq_downtrend",
+          "vix_regime": "vix_high_rising",
+          "market_volume_regime": "high_volume_risk_off",
+          "sector_regime": "sector_weak",
+          "catalyst_bucket": "no_clear_catalyst",
+          "permission_state": "Red",
+          "cognition_state": "loss_repair_watch"
+        }
+      }
+    ],
+    "events_source": {
+      "mode": "tactic_backtest_json",
+      "path": "D:/gemini/lianghua/stock_team/findings/tactic_backtest_for_stage_context_demo.json"
+    }
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

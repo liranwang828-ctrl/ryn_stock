@@ -1,0 +1,72 @@
+{
+  "artifact_type": "intraday_guidance_to_stock_team",
+  "version": "1.0",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from": {
+    "stage0_market_context_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+    "stage1_plan_evidence_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\plan-evidence-packet.md",
+    "pre_market_decision_sheet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\simulations\\inputs\\stage1-pre-market-decision-sheet.2026-06-08.INTC-MU-COHR.replay-recovery-yellow.json"
+  },
+  "permission_state": {
+    "state": "Yellow",
+    "reason": [
+      "recovery_boundary_after_major_drawdown",
+      "MUU_residual_position_confirmed_controllable_by_user",
+      "risk_control_before_signal_observation"
+    ],
+    "state_owner": "investing-os"
+  },
+  "global_controls": {
+    "allowed_actions": ["observe", "collect_relative_strength_evidence", "risk_review_only"],
+    "forbidden_actions": [
+      "new intraday action",
+      "new leveraged product trade",
+      "loss-repair re-entry",
+      "treat dashboard pass/fail as permission"
+    ],
+    "attention_budget_minutes": 30,
+    "new_risk_requires_user_confirmation": true
+  },
+  "symbols": [
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "intraday_mode": "observe_only",
+      "tactic_context": "relative_strength_research_only",
+      "brain_permission": {"status": "not_allowed", "scope": "evidence_only", "max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "evidence_conditions_to_monitor": [],
+      "levels_to_monitor": [],
+      "forbidden_actions": ["new intraday action", "turnaround narrative upgrade", "chase high beta strength"],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "MU",
+      "role": "watchlist",
+      "intraday_mode": "observe_only",
+      "tactic_context": "relative_strength_research_only",
+      "brain_permission": {"status": "not_allowed", "scope": "evidence_only", "max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "evidence_conditions_to_monitor": [],
+      "levels_to_monitor": [],
+      "forbidden_actions": ["new intraday action", "memory-cycle excitement as entry signal", "MUU repair framing"],
+      "runtime_snapshot_required": true
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "intraday_mode": "observe_only",
+      "tactic_context": "relative_strength_research_only",
+      "brain_permission": {"status": "not_allowed", "scope": "evidence_only", "max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "evidence_conditions_to_monitor": [],
+      "levels_to_monitor": [],
+      "forbidden_actions": ["new intraday action", "chase near highs"],
+      "runtime_snapshot_required": true
+    }
+  ],
+  "stock_team_dashboard_request": {
+    "output_kind": "evidence_dashboard",
+    "show": ["packet_readiness", "data_source_health", "symbol_condition_status", "runtime_snapshot_freshness", "missing_data", "latest_packet_links"],
+    "forbidden_ui_labels": ["buy", "sell", "hold", "can trade", "should enter", "should exit", "permission approved"],
+    "latest_manifest_path": "D:\\gemini\\lianghua\\stock_team\\reports\\latest_evidence_dashboard.json"
+  }
+}

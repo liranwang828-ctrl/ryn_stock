@@ -1,0 +1,151 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from_stage0_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+  "permission_state_before_open": "Red",
+  "market_assumptions": {
+    "expected_regime": "risk_off_replay_with_recovery_permission_boundary",
+    "risk_notes": [
+      "Stage 0 replay started from latest saved IBKR broker report, prior major drawdown review, and cognition state.",
+      "Permission state remains Red for this replay because major drawdown recovery and MUU linked leveraged exposure are still active context.",
+      "INTC, MU, and COHR are observation focus symbols only.",
+      "No new short-term risk, no leveraged product expansion, no loss-repair re-entry."
+    ],
+    "evidence_required": ["QQQ", "SPY", "VIXY", "SOXX", "SMH", "account_snapshot"]
+  },
+  "user_confirmed_focus_pool": ["INTC", "MU", "COHR"],
+  "symbols": [
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "plan_mode": "observe_only",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "linked_leveraged_exposure_checked", "no_new_risk_allowed"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "red_permission_observe_only",
+          "trigger": "permission_state_before_open == Red",
+          "effect": "evidence_only_no_action_readiness",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "treat turnaround narrative as thesis", "treat weak rebound as core-quality evidence"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["weak RS versus QQQ/SOXX", "no catalyst confirmation", "fails to hold relevant moving-average context"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "red_state_observe_only",
+          "if": "permission_state_before_open == Red",
+          "then": "return evidence and rule collisions only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "fresh catalyst check"]
+    },
+    {
+      "symbol": "MU",
+      "role": "watchlist",
+      "theme": "memory",
+      "research_status": "candidate_only",
+      "plan_mode": "observe_only",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "MUU_linked_leveraged_exposure_checked", "no_new_risk_allowed"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "red_permission_observe_only",
+          "trigger": "permission_state_before_open == Red",
+          "effect": "evidence_only_no_action_readiness",
+          "source": "investing-os"
+        },
+        {
+          "exception_id": "MUU_linked_leveraged_exposure",
+          "trigger": "current or recent broker snapshot contains MUU exposure",
+          "effect": "linked_exposure_fact_for_brain_review_only",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "memory-cycle excitement treated as entry signal", "average down without written plan"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["memory theme loses relative strength", "fails QQQ/SOXX relative-strength check", "fresh catalyst check is stale"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "red_state_observe_only",
+          "if": "permission_state_before_open == Red",
+          "then": "return evidence and linked MUU exposure facts only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "fresh catalyst check", "linked MUU exposure fact"]
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "theme": "optical",
+      "research_status": "researched_draft",
+      "thesis_ref": "wiki/companies/COHR.md",
+      "plan_mode": "observe_only",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "linked_leveraged_exposure_checked", "no_new_risk_allowed"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "red_permission_observe_only",
+          "trigger": "permission_state_before_open == Red",
+          "effect": "evidence_only_no_action_readiness",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "chase near highs", "add while lagging optical/semiconductor peers"],
+      "risk_budget": {
+        "max_loss": 0,
+        "position_cap": 0,
+        "attention_budget_minutes": 10
+      },
+      "falsification_conditions": ["lags LITE/AAOI/SOXX materially", "fails to confirm optical theme strength", "breaks thesis-candidate risk boundary"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "red_state_observe_only",
+          "if": "permission_state_before_open == Red",
+          "then": "return evidence and rule collisions only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["daily MA20/MA50", "RS20/RS50 vs QQQ", "SOXX/SMH context", "peer confirmation", "fresh catalyst check"]
+    }
+  ],
+  "global_forbidden_actions": [
+    "invent new short-term tactic intraday",
+    "use leverage to repair losses",
+    "average down without pre-approved rule",
+    "upgrade observe-only symbols without fresh Stage 0 and Stage 1 packets",
+    "treat Stage 1 evidence as trade permission"
+  ]
+}

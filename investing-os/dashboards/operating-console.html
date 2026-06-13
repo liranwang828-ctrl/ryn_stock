@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Investing-OS Operating Console</title>
+  <script src="assets/operating-console-data.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --text: #182230;
+      --muted: #667085;
+      --line: #d7dee8;
+      --red: #b42318;
+      --amber: #b54708;
+      --blue: #175cd3;
+      --green: #067647;
+      --ink: #344054;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 14px; }
+    header, section, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    header { padding: 16px 18px; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 23px; line-height: 1.2; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    .sub { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .top {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .panel { padding: 14px; min-height: 132px; }
+    .permission {
+      border-color: #fecdca;
+      background: #fffafa;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .red { color: var(--red); background: #fef3f2; border-color: #fecdca; }
+    .amber { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
+    .blue { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
+    .green { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(580px, 1.15fr) minmax(360px, .85fr);
+      gap: 12px;
+      align-items: start;
+    }
+    section { padding: 14px; margin-bottom: 12px; }
+    .routes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .route-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfe;
+      min-height: 152px;
+    }
+    .route-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .route-name { font-size: 15px; font-weight: 700; }
+    .route-en { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .line { margin: 8px 0 0; font-size: 13px; color: var(--ink); }
+    .label { color: var(--muted); }
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfe;
+    }
+    .item-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .item p { margin: 7px 0 0; color: var(--ink); font-size: 13px; line-height: 1.45; }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    ul { margin: 8px 0 0; padding-left: 18px; }
+    li { margin: 4px 0; font-size: 13px; color: var(--ink); }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .link-pill {
+      display: inline-flex;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fbfcfe;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    code { font-family: Consolas, monospace; font-size: 12px; }
+    @media (max-width: 1100px) {
+      .top, .grid, .routes, .split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1 id="title"></h1>
+      <div class="sub" id="subtitle"></div>
+      <div class="links" id="links"></div>
+    </header>
+
+    <div class="top">
+      <div class="panel permission">
+        <h2>Current Permission / 当前权限</h2>
+        <span class="badge red" id="permissionBadge"></span>
+        <p class="line" id="permissionSummary"></p>
+        <div class="split">
+          <div>
+            <h3>Allowed / 允许</h3>
+            <ul id="allowedList"></ul>
+          </div>
+          <div>
+            <h3>Blocked / 禁止</h3>
+            <ul id="blockedList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Next Actions / 下一步</h2>
+        <div class="list" id="nextActions"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Evidence Gaps / 证据缺口</h2>
+        <div class="list" id="evidenceGaps"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Daily Routes / 日常入口</h2>
+        <div class="routes" id="routes"></div>
+      </section>
+
+      <div>
+        <section>
+          <h2>Stock Team Packets / 证据包状态</h2>
+          <div class="list" id="packets"></div>
+        </section>
+
+        <section>
+          <h2>Pending Lessons / 待确认经验</h2>
+          <div class="list" id="pendingLessons"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const data = window.OPERATING_CONSOLE_DATA;
+
+    const badgeClass = (status) => {
+      if (status.includes("absorbed") || status.includes("ready")) return "badge green";
+      if (status.includes("waiting") || status.includes("pending")) return "badge amber";
+      if (status.includes("available")) return "badge blue";
+      return "badge";
+    };
+
+    const priorityClass = (priority) => priority === "High" ? "badge red" : "badge amber";
+
+    const html = (value) => String(value).replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch]));
+
+    const list = (id, items) => {
+      document.getElementById(id).innerHTML = items.map((item) => `<li>${html(item)}</li>`).join("");
+    };
+
+    document.getElementById("title").textContent = data.title;
+    document.getElementById("subtitle").textContent = `${data.subtitle} Updated: ${data.updatedAt}`;
+    document.getElementById("permissionBadge").textContent = `${data.permission.labelZh} / ${data.permission.labelEn}`;
+    document.getElementById("permissionSummary").textContent = data.permission.summary;
+    list("allowedList", data.permission.allowed);
+    list("blockedList", data.permission.blocked);
+
+    document.getElementById("links").innerHTML = data.links.map((link) =>
+      `<a class="link-pill" href="${html(link.href)}">${html(link.label)}</a>`
+    ).join("");
+
+    document.getElementById("nextActions").innerHTML = data.nextActions.map((item) => `
+      <div class="item">
+        <div class="item-title">
+          <span>${html(item.title)}</span>
+          <span class="${priorityClass(item.priority)}">${html(item.priority)}</span>
+        </div>
+        <p>${html(item.detail)}</p>
+        <p><span class="label">Route:</span> <code>${html(item.route)}</code></p>
+        <p><span class="label">Evidence:</span> ${html(item.evidenceNeeded.join(" / "))}</p>
+      </div>
+    `).join("");
+
+    document.getElementById("evidenceGaps").innerHTML = data.evidenceGaps.map((gap) => `
+      <div class="item">
+        <div class="item-title">
+          <span>${html(gap.title)}</span>
+          <span class="${priorityClass(gap.severity)}">${html(gap.severity)}</span>
+        </div>
+        <p>${html(gap.detail)}</p>
+        <p><span class="label">Owner:</span> ${html(gap.owner)}</p>
+        <p><span class="label">Target:</span> <code>${html(gap.target)}</code></p>
+      </div>
+    `).join("");
+
+    document.getElementById("routes").innerHTML = data.routes.map((route) => `
+      <article class="route-card">
+        <div class="route-head">
+          <div>
+            <div class="route-name">${html(route.nameZh)}</div>
+            <div class="route-en">${html(route.nameEn)}</div>
+          </div>
+          <span class="${badgeClass(route.status)}">${html(route.status)}</span>
+        </div>
+        <p class="line"><span class="label">你可以说:</span> ${html(route.userSays)}</p>
+        <p class="line"><span class="label">Workflow:</span> <code>${html(route.workflow)}</code></p>
+        <p class="line"><span class="label">Packet:</span> ${html(route.packet)}</p>
+        <p class="line"><span class="label">Output:</span> ${html(route.output)}</p>
+        <p class="line">${html(route.note)}</p>
+      </article>
+    `).join("");
+
+    document.getElementById("packets").innerHTML = data.packets.map((packet) => `
+      <div class="item">
+        <div class="item-title">
+          <span>${html(packet.type)}</span>
+          <span class="${badgeClass(packet.status)}">${html(packet.status)}</span>
+        </div>
+        <p><span class="label">Path:</span> <a href="${html(packet.path)}">${html(packet.path)}</a></p>
+        <p><span class="label">Used in:</span> ${html(packet.usedIn)}</p>
+      </div>
+    `).join("");
+
+    document.getElementById("pendingLessons").innerHTML = data.pendingLessons.map((lesson) => `
+      <div class="item">
+        <div class="item-title">
+          <span>${html(lesson.title)}</span>
+          <span class="${badgeClass(lesson.status)}">${html(lesson.status)}</span>
+        </div>
+        <p><span class="label">ID:</span> <code>${html(lesson.id)}</code></p>
+        <p><span class="label">Source:</span> ${html(lesson.source)}</p>
+        <p><span class="label">Target:</span> <code>${html(lesson.target)}</code></p>
+      </div>
+    `).join("");
+  </script>
+</body>
+</html>

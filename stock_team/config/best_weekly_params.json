@@ -1,0 +1,12 @@
+{
+  "monday_gap_threshold": -0.02,
+  "breathing_profit_threshold": 25.0,
+  "hwm_stop_loss_pct": 0.08,
+  "optimized_metrics": {
+    "total_return_pct": 129.86937881932315,
+    "max_drawdown_pct": -26.94514381339051,
+    "sortino": 0.8521979453229802,
+    "sharpe": 0.4501332591711735,
+    "neighborhood_avg_sortino": 0.850750192536813
+  }
+}

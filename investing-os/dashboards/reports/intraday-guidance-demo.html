@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intraday Guidance Demo</title>
+  <style>
+    :root {
+      --bg: #f5f7fa; --panel: #fff; --text: #182230; --muted: #667085;
+      --line: #d7dee8; --red: #b42318; --amber: #b54708; --blue: #175cd3; --green: #067647;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, "Microsoft YaHei", sans-serif; }
+    .shell { max-width: 1320px; margin: 0 auto; padding: 14px; }
+    header, section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 22px; }
+    h2 { margin: 0 0 10px; font-size: 16px; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    p { margin: 6px 0; line-height: 1.45; }
+    .sub, .muted { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 12px; align-items: start; }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fbfcfe; min-height: 104px; }
+    .badge { display: inline-flex; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 700; }
+    .red { color: var(--red); background: #fef3f2; border-color: #fecdca; }
+    .amber { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
+    .blue { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
+    .green { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #edf0f4; padding: 8px; text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-weight: 700; background: #fbfcfe; }
+    ul { margin: 6px 0 0; padding-left: 18px; }
+    li { margin: 4px 0; }
+    .callout { border-left: 4px solid var(--amber); background: #fffbeb; border-radius: 6px; padding: 10px; }
+    .danger { border-left-color: var(--red); background: #fff6f5; }
+    code { font-family: Consolas, monospace; font-size: 12px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .summary-card { border: 1px solid var(--line); border-radius: 8px; padding: 11px; background: #fbfcfe; }
+    .summary-card h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .summary-card ul { margin-top: 8px; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 980px) { .grid, .cards { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>Intraday Guidance Demo / 盘中引导页 Demo</h1>
+      <p class="sub">示例用途：展示盘前计划如何投射到盘中控制台。此页面不是交易建议，也不连接实时数据。</p>
+      <p><a href="../operating-console.html">Back to Operating Console / 返回操作入口</a></p>
+      <div class="cards">
+        <div class="card">
+          <h3>Permission / 权限</h3>
+          <span class="badge red">Red</span>
+          <p class="muted">短线与杠杆新增风险关闭。</p>
+        </div>
+        <div class="card">
+          <h3>Plan Alignment / 计划一致性</h3>
+          <span class="badge amber">Partial</span>
+          <p class="muted">核心仓仍在计划内；MUU 需要盘前重新决策。</p>
+        </div>
+        <div class="card">
+          <h3>Evidence / 证据</h3>
+          <span class="badge amber">Incomplete</span>
+          <p class="muted">IBKR position、VIX、runtime snapshot 等待接入。</p>
+        </div>
+        <div class="card">
+          <h3>Next Safe Action / 下一步安全动作</h3>
+          <span class="badge blue">Review / Wait</span>
+          <p class="muted">记录事实，等待证据，不扩大风险。</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>Position Guidance / 仓位引导</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Role</th>
+              <th>Mode</th>
+              <th>Key Watch</th>
+              <th>Allowed</th>
+              <th>Forbidden</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>MSFT / NVDA / GOOGL</td>
+              <td>Core</td>
+              <td><span class="badge green">Ignore</span></td>
+              <td>Thesis-level news only</td>
+              <td>Observe; no routine intraday attention</td>
+              <td>Do not let short-term noise affect core thesis</td>
+            </tr>
+            <tr>
+              <td>COHR / ORCL</td>
+              <td>Swing</td>
+              <td><span class="badge amber">Observe</span></td>
+              <td>Pre-defined reclaim / failure levels</td>
+              <td>Only evaluate against pre-market levels</td>
+              <td>No emotional re-entry; no unplanned size increase</td>
+            </tr>
+            <tr>
+              <td>MUU</td>
+              <td>Trapped leveraged position</td>
+              <td><span class="badge red">Reduce-risk review</span></td>
+              <td>MU relative strength, QQQ/VIX regime, position loss budget</td>
+              <td>Risk review; evidence request; pre-planned de-risk only</td>
+              <td>No loss-repair add; no strategy expansion</td>
+            </tr>
+            <tr>
+              <td>Short-term candidates</td>
+              <td>Watchlist</td>
+              <td><span class="badge red">Closed</span></td>
+              <td>Only pre-approved tactics after state improves</td>
+              <td>Research and observation</td>
+              <td>No discretionary short-term trades in Red state</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Active Cognitive Risks / 当前认知风险</h2>
+        <div class="callout danger">
+          <h3>High Risk</h3>
+          <ul>
+            <li>亏损修复倾向：想通过新的风险快速修补上一笔亏损。</li>
+            <li>杠杆放大错觉：认为标的逻辑正确就能承受杠杆波动。</li>
+            <li>单标的绑架：一个持仓占据过多注意力与情绪。</li>
+          </ul>
+        </div>
+        <h3>Required Guards / 必须护栏</h3>
+        <ul>
+          <li>新增风险前必须重新写 thesis、trigger、invalidation、max loss。</li>
+          <li>单标的连续盯盘超过 30 分钟，进入暂停记录。</li>
+          <li>止损或重大回撤后，不用短线交易修复情绪。</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Market And Evidence Status / 市场与证据状态</h2>
+        <table>
+          <thead>
+            <tr><th>Evidence</th><th>Status</th><th>Use</th><th>Missing / Stale</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>QQQ / SPY</td><td><span class="badge amber">Needed</span></td><td>判断 risk-on / risk-off</td><td>等待 stock_team packet</td></tr>
+            <tr><td>VIX</td><td><span class="badge amber">Needed</span></td><td>判断波动率是否恶化</td><td>等待 stock_team packet</td></tr>
+            <tr><td>MU / MUU</td><td><span class="badge amber">Needed</span></td><td>判断相对强度与杠杆持仓风险</td><td>等待 IBKR / market snapshot</td></tr>
+            <tr><td>IBKR Position</td><td><span class="badge red">Not connected</span></td><td>暴露、浮亏、订单状态</td><td>等待 anti CLI / packet</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>State Machine / 状态机解释</h2>
+        <p><span class="badge green">Green</span> 只执行盘前批准动作。</p>
+        <p><span class="badge amber">Yellow</span> 市场、证据或情绪偏离，新增风险需要重新确认。</p>
+        <p><span class="badge red">Red</span> 禁止短线新增风险，只允许降低风险、记录、复盘、等证据。</p>
+        <p><span class="badge red">No-Trade</span> 情绪失控或连续违规，只允许风险降低和系统复盘。</p>
+      </section>
+    </div>
+
+    <section>
+      <h2>Control Summary / 盘中控制摘要</h2>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h3>当前状态 <span class="badge red">Red</span></h3>
+          <p>计划一致性：<strong>部分有效</strong>。核心仓仍在计划内，短线和杠杆新增风险关闭。</p>
+        </div>
+        <div class="summary-card">
+          <h3>下一步安全动作 <span class="badge blue">Wait</span></h3>
+          <p>等待证据，记录事实。若必须处理风险，只能执行盘前已写明的减风险动作。</p>
+        </div>
+        <div class="summary-card">
+          <h3>允许动作</h3>
+          <ul>
+            <li>观察，不扩大风险。</li>
+            <li>记录盘面和情绪事实。</li>
+            <li>请求 QQQ / VIX / MUU / IBKR 证据。</li>
+            <li>只执行预先计划过的减风险动作。</li>
+          </ul>
+        </div>
+        <div class="summary-card">
+          <h3>禁止动作</h3>
+          <ul>
+            <li>新开短线风险。</li>
+            <li>扩大杠杆暴露。</li>
+            <li>为了修复亏损而摊低成本。</li>
+            <li>把等待反弹当成计划。</li>
+          </ul>
+        </div>
+        <div class="summary-card">
+          <h3>缺失证据</h3>
+          <ul>
+            <li>IBKR position snapshot。</li>
+            <li>QQQ / VIX runtime context。</li>
+            <li>MU / MUU relative strength snapshot。</li>
+          </ul>
+        </div>
+        <div class="summary-card">
+          <h3>活跃认知风险</h3>
+          <ul>
+            <li>亏损修复冲动。</li>
+            <li>单标的注意力绑架。</li>
+            <li>低估杠杆产品波动。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,145 @@
+{
+  "sheet_type": "pre_market_decision_sheet",
+  "date": "2026-06-08",
+  "created_by": "investing-os",
+  "derived_from_stage0_packet": "C:\\Users\\rriww\\Documents\\investing-os\\system\\data\\packets\\pre-market-context-packet.md",
+  "permission_state_before_open": "Yellow",
+  "permission_state_note": "Recovery / Yellow boundary. User confirmed MUU is a controllable residual position, but major drawdown recovery and linked leveraged exposure remain relevant risk context.",
+  "market_assumptions": {
+    "expected_regime": "risk_review_plus_observe_only_relative_strength",
+    "risk_notes": [
+      "Risk remains first priority.",
+      "User selected: in the context of risk control, observe whether INTC / MU / COHR show research-worthy relative strength or weakness.",
+      "MUU is confirmed by user as controllable residual exposure, not current cognition hijack.",
+      "No new short-term action, no new leveraged exposure, no loss-repair re-entry."
+    ],
+    "evidence_required": [
+      "QQQ",
+      "SPY",
+      "SOXX",
+      "SMH",
+      "VIXY",
+      "current broker snapshot from saved report",
+      "relative strength signals only"
+    ]
+  },
+  "user_confirmed_focus_pool": ["INTC", "MU", "COHR"],
+  "symbols": [
+    {
+      "symbol": "INTC",
+      "role": "watchlist",
+      "theme": "semiconductors",
+      "research_status": "candidate_only",
+      "plan_mode": "observe_only",
+      "research_question": "Is INTC strength explainable by semiconductor breadth or an independent catalyst, and does it persist versus QQQ / SOXX?",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "no_new_risk_allowed", "relative_strength_evidence_only"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "yellow_recovery_observe_only",
+          "trigger": "permission_state_before_open == Yellow and recovery boundary active",
+          "effect": "evidence_only_no_action_readiness",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "turnaround narrative upgrade", "chase high beta strength"],
+      "risk_budget": {"max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "falsification_conditions": ["weak RS versus QQQ/SOXX", "event strength fades quickly", "semiconductor breadth does not confirm"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_recovery_observe_only",
+          "if": "permission_state_before_open == Yellow and plan_mode == observe_only",
+          "then": "return relative strength evidence only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["RS vs QQQ", "RS vs SOXX", "SOXX/SMH context", "fresh catalyst check"]
+    },
+    {
+      "symbol": "MU",
+      "role": "watchlist",
+      "theme": "memory",
+      "research_status": "candidate_only",
+      "plan_mode": "observe_only",
+      "research_question": "Does MU show memory-theme relative strength without becoming a MUU loss-repair object?",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "MUU_linked_exposure_checked", "relative_strength_evidence_only"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "MUU_linked_leveraged_exposure",
+          "trigger": "current or recent broker snapshot contains MUU exposure",
+          "effect": "linked_exposure_fact_for_brain_review_only",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "memory-cycle excitement treated as entry signal", "average down without written plan"],
+      "risk_budget": {"max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "falsification_conditions": ["memory theme loses relative strength", "MU lags SOXX / QQQ", "fresh catalyst check is stale"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_recovery_observe_only_with_MUU_context",
+          "if": "permission_state_before_open == Yellow and MUU linked exposure exists",
+          "then": "return relative strength and linked exposure facts only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["RS vs QQQ", "RS vs SOXX", "memory proxy context", "linked MUU exposure fact"]
+    },
+    {
+      "symbol": "COHR",
+      "role": "swing",
+      "theme": "optical",
+      "research_status": "researched_draft",
+      "thesis_ref": "wiki/companies/COHR.md",
+      "plan_mode": "observe_only",
+      "research_question": "Does COHR show optical / AI infrastructure strength that is broad enough to remain research-worthy without chasing?",
+      "key_levels": [],
+      "allowed_tactics": [],
+      "formula_overrides": [],
+      "pre_authorized_actions": [],
+      "fast_consistency_check": {
+        "max_check_seconds": 10,
+        "required": ["data_fresh", "same_permission_state", "peer_context_checked", "relative_strength_evidence_only"]
+      },
+      "exception_rules": [
+        {
+          "exception_id": "yellow_recovery_observe_only",
+          "trigger": "permission_state_before_open == Yellow and recovery boundary active",
+          "effect": "evidence_only_no_action_readiness",
+          "source": "investing-os"
+        }
+      ],
+      "forbidden_actions": ["new intraday action", "chase near highs", "add while lagging optical/semiconductor peers"],
+      "risk_budget": {"max_loss": 0, "position_cap": 0, "attention_budget_minutes": 10},
+      "falsification_conditions": ["lags LITE/AAOI/SOXX materially", "fails to confirm optical theme strength", "strength is only high-beta rebound"],
+      "rule_collision_contract": [
+        {
+          "rule_id": "yellow_recovery_observe_only",
+          "if": "permission_state_before_open == Yellow and plan_mode == observe_only",
+          "then": "return relative strength evidence only; do not produce action readiness",
+          "source": "investing-os"
+        }
+      ],
+      "evidence_required": ["RS vs QQQ", "RS vs LITE if available", "SOXX/SMH context", "peer confirmation", "fresh catalyst check"]
+    }
+  ],
+  "global_forbidden_actions": [
+    "invent new short-term tactic intraday",
+    "use leverage to repair losses",
+    "average down without pre-approved rule",
+    "upgrade observe-only symbols without user discussion",
+    "treat Stage 1 evidence as trade permission"
+  ]
+}

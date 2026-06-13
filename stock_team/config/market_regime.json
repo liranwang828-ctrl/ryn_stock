@@ -1,0 +1,10 @@
+{
+  "date": "2026-06-13",
+  "regime": "sideways",
+  "confidence": "中",
+  "signals": [
+    "检测失败:unable to open database file"
+  ],
+  "overnight_signal": null,
+  "updated_at": "2026-06-13T08:51:48.209257+00:00"
+}

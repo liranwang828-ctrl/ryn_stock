@@ -1,0 +1,47 @@
+{
+  "artifact_type": "tactic_backtest_request",
+  "version": "1.0",
+  "requested_by": "investing-os",
+  "tactic_id": "rs_pullback_rebound_intraday",
+  "symbols": ["MU", "NVDA"],
+  "date_range": {
+    "start": "2026-01-01",
+    "end": "2026-03-31"
+  },
+  "validation": {
+    "windows": [
+      {
+        "name": "train",
+        "start": "2026-01-01",
+        "end": "2026-02-15"
+      },
+      {
+        "name": "test",
+        "start": "2026-02-16",
+        "end": "2026-03-31"
+      }
+    ],
+    "regime_fields": ["market_regime", "sector_regime"],
+    "min_trades_per_window": 20
+  },
+  "data": {
+    "mode": "fixture_events",
+    "events": [
+      {
+        "symbol": "MU",
+        "entry_time": "2026-01-09T10:15:00-05:00",
+        "exit_time": "2026-01-09T15:45:00-05:00",
+        "return_pct": 2.5,
+        "mae_pct": -0.8,
+        "mfe_pct": 3.1,
+        "market_regime": "qqq_uptrend_low_vix",
+        "sector_regime": "semis_strong",
+        "outcome": "win"
+      }
+    ]
+  },
+  "output_contract": {
+    "allow_recommendations": false,
+    "allow_config_mutation": false
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "entry_strategies": {
+    "rs_pullback_rebound": {
+      "desc": "Pullback to 20-day Exponential Moving Average with positive 5D RS",
+      "formula": "MA(Close, 20)"
+    },
+    "breakout_20d": {
+      "desc": "Donchian 20-day high breakout entry",
+      "formula": "Max(High[t-20:t-1])"
+    },
+    "mean_reversion_oversold": {
+      "desc": "Intraday mean reversion buy trigger on oversold RSI and VWAP deviation",
+      "formula": "CurrentPrice"
+    },
+    "hold_inactive": {
+      "desc": "Hold position with inactive entry, monitoring stop-loss only",
+      "formula": "None"
+    }
+  },
+  "invalidation_rules": {
+    "rs_pullback_rebound": {
+      "desc": "Stop loss set at 20-day MA minus 1.5 times ATR",
+      "formula": "MA(Close, 20) - 1.5 * ATR(14)"
+    },
+    "breakout_20d": {
+      "desc": "Stop loss set at the lowest low of the past 10 trading days",
+      "formula": "Min(Low[t-10:t-1])"
+    },
+    "mean_reversion_oversold": {
+      "desc": "Stop loss set at entry price minus 2.0 times ATR",
+      "formula": "EntryPrice - 2.0 * ATR(14)"
+    },
+    "hold_inactive": {
+      "desc": "Fallback to existing broker-feed portfolio positions stop loss",
+      "formula": "BrokerStop"
+    }
+  }
+}

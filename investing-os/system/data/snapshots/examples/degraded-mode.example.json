@@ -1,0 +1,40 @@
+{
+  "snapshot_id": "degraded-mode-20260605-example",
+  "version": "0.1.0",
+  "schema_version": "0.1.0",
+  "created_at": "2026-06-05T00:00:00+08:00",
+  "valid_from": "2026-06-05",
+  "review_due": "2026-07-05",
+  "status": "draft",
+  "source": {
+    "repository": "investing-os",
+    "principles": ["PRIN-006"],
+    "generated_by": "manual",
+    "notes": "Example only. Not approved for runtime consumption."
+  },
+  "modes": [
+    {
+      "id": "daily_plan_missing",
+      "trigger": "Required trading-day plan is missing before market session.",
+      "behavior": "read_only_alerts",
+      "forbid_new_discretionary_orders": true,
+      "allowed_actions": ["monitor_existing_positions", "emit_risk_alerts", "request_manual_plan", "create_review_tasks"],
+      "forbidden_actions": ["suggest_new_discretionary_trade", "increase_position_without_plan", "convert_signal_to_trade"],
+      "escalation": "Ask for manual pre-market plan or remain read-only.",
+      "evidence": "Trading day workflow and Phase 4A degraded-mode rule.",
+      "falsification": "Revise only if a reviewed workflow proves another fail-closed behavior is safer."
+    },
+    {
+      "id": "source_data_stale",
+      "trigger": "Required market, position, or symbol metadata is stale or unavailable.",
+      "behavior": "manual_review_required",
+      "forbid_new_discretionary_orders": true,
+      "allowed_actions": ["emit_stale_data_alert", "request_data_refresh", "create_review_task"],
+      "forbidden_actions": ["generate_action_oriented_conclusion", "approve_new_entry", "raise_confidence_from_stale_data"],
+      "escalation": "Refresh data or require human review.",
+      "evidence": "AI governance and fail-closed runtime boundary.",
+      "falsification": "Revise if runtime tests show a stricter stop_runtime mode is required."
+    }
+  ]
+}
+

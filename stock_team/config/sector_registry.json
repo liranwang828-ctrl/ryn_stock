@@ -1,0 +1,69 @@
+{
+  "sectors": {
+    "OPTICAL_TRANSCEIVERS": {
+      "display_name": "光模块与光学器件板块 (Optical Transceivers & Components)",
+      "etf": "XLK",
+      "etf_name": "科技ETF",
+      "description": "AI数据中心高速光模块与光收发元器件，是AI算力集群物理层互联的核心支撑。",
+      "constituents": [
+        "LITE",
+        "COHR",
+        "AAOI"
+      ],
+      "industry_drivers": [
+        "GPU集群规模指数级增长推动短距离与中长距离高带宽光互联需求爆发",
+        "以太网取代InfiniBand成为开放网络主流，推进高速以太网光模块出货",
+        "1.6T 时代的到来加速 VCSEL、EML 芯片以及硅光和薄膜铌酸锂 (TFLN) 新技术迭代"
+      ],
+      "key_metrics": {
+        "sector_rating": "bullish",
+        "overall_pe_range": "35x-55x",
+        "favorable_catalysts": [
+          "英伟达GB200/下一代Rubin GPU大规模发货",
+          "超大规模云巨头（Microsoft, Meta, Google）Capex 保持高速增长",
+          "200G VCSEL/EML 高速光芯片良率突破"
+        ],
+        "adverse_risks": [
+          "云巨头去库存或算力基建Capex减速",
+          "中国光模块厂商剧烈的低价竞争与份额蚕食",
+          "新技术（如硅光集成/TFLN）商业化进度不及预期"
+        ]
+      }
+    }
+  },
+  "peer_mappings": {
+    "LITE": {
+      "sector": "OPTICAL_TRANSCEIVERS",
+      "peers": [
+        "COHR",
+        "AAOI"
+      ],
+      "competitive_edges": {
+        "COHR": "LITE 在多模短距离 VCSEL 芯片技术上积累深厚，绑定英伟达与微软生态，短期爆发力与资本效率更优；但规模和产品线宽度及SiC期权略逊于 COHR。",
+        "AAOI": "LITE 走高端自研光芯片垂直整合路线，主要面对 800G/1.6T 高端市场；AAOI 弹性高但毛利率与资本效率偏低，属于中低端高弹性卫星标的。"
+      }
+    },
+    "COHR": {
+      "sector": "OPTICAL_TRANSCEIVERS",
+      "peers": [
+        "LITE",
+        "AAOI"
+      ],
+      "competitive_edges": {
+        "LITE": "COHR 具备磷化铟 (InP) 单模 EML 芯片和硅光、TFLN 全平台优势，覆盖客户更广（谷歌/亚马逊/英伟达）；且有 SiC 车规级第三代半导体材料增长极，中长期抗风险和平台宽度更优，但短期爆发力和负现金流状况劣于 LITE。",
+        "AAOI": "COHR 在中高端 EML 和相干方案上占绝对主导；AAOI 属于低端代工封装主导，COHR 的光芯片自研护城河深厚得多。"
+      }
+    },
+    "AAOI": {
+      "sector": "OPTICAL_TRANSCEIVERS",
+      "peers": [
+        "LITE",
+        "COHR"
+      ],
+      "competitive_edges": {
+        "LITE": "LITE 具备 200G VCSEL 自研与芯片制造级壁垒，商业效率极高；AAOI 以外包代工光芯片为主，属于应用封装商，毛利较低。",
+        "COHR": "COHR 掌握了最核心的 EML 和 InP 外延技术，AAOI 在材料科学底蕴上与 COHR 差距在 5 年以上。"
+      }
+    }
+  }
+}
