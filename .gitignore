@@ -55,3 +55,4 @@ investing-os/system/data/snapshots/broker/
 **/.idea/
 **/.DS_Store
 **/Thumbs.db
+**/*.swp
