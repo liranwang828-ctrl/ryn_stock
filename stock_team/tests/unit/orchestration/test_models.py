@@ -52,11 +52,14 @@ def test_session_schema_declares_required_state_fields():
         "INTRADAY_ACTIVE",
         "MARKET_CLOSED",
         "REVIEW_REQUIRED",
+        "QUICK_REVIEWED",
+        "CLOSED_UNREVIEWED",
         "DAY_ARCHIVED",
         "BLOCKED_DATA",
         "WAITING_USER",
         "DEGRADED_OBSERVE",
         "FAILED_TOOL",
+        "OBSERVATION_ACTIVE",
     ]
     assert schema["properties"]["market_date"] == {
         "anyOf": [
@@ -132,8 +135,12 @@ def test_action_schema_requires_optimistic_state_and_idempotency():
         "record_plan_approval",
         "start_intraday",
         "close_market",
+        "review_day",
+        "quick_review",
+        "freeze",
         "archive_day",
         "retry_last_action",
+        "start_observation",
     ]
     assert schema["properties"]["session_id"] == {"type": "string"}
     assert schema["properties"]["expected_state"] == {"type": "string"}

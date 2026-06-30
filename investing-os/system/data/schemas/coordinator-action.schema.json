@@ -21,8 +21,12 @@
         "record_plan_approval",
         "start_intraday",
         "close_market",
+        "review_day",
+        "quick_review",
+        "freeze",
         "archive_day",
-        "retry_last_action"
+        "retry_last_action",
+        "start_observation"
       ]
     },
     "session_id": { "type": "string" },

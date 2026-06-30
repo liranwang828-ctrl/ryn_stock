@@ -42,11 +42,14 @@
         "INTRADAY_ACTIVE",
         "MARKET_CLOSED",
         "REVIEW_REQUIRED",
+        "QUICK_REVIEWED",
+        "CLOSED_UNREVIEWED",
         "DAY_ARCHIVED",
         "BLOCKED_DATA",
         "WAITING_USER",
         "DEGRADED_OBSERVE",
-        "FAILED_TOOL"
+        "FAILED_TOOL",
+        "OBSERVATION_ACTIVE"
       ]
     },
     "state_version": { "type": "integer", "minimum": 1 },

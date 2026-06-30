@@ -10,7 +10,11 @@ BEGIN_TRANSITIONS = {
     ("PLAN_APPROVED", "start_intraday"): "INTRADAY_ACTIVE",
     ("INTRADAY_ACTIVE", "close_market"): "MARKET_CLOSED",
     ("OBSERVATION_ACTIVE", "close_market"): "MARKET_CLOSED",
-    ("MARKET_CLOSED", "archive_day"): "DAY_ARCHIVED",
+    ("MARKET_CLOSED", "review_day"): "REVIEW_REQUIRED",
+    ("REVIEW_REQUIRED", "archive_day"): "DAY_ARCHIVED",
+    ("MARKET_CLOSED", "quick_review"): "QUICK_REVIEWED",
+    ("MARKET_CLOSED", "freeze"): "CLOSED_UNREVIEWED",
+    ("QUICK_REVIEWED", "archive_day"): "DAY_ARCHIVED",
     ("OBSERVATION_ACTIVE", "archive_day"): "DAY_ARCHIVED",
 }
 
@@ -27,7 +31,9 @@ ALLOWED_ACTIONS = {
     "PLAN_APPROVED": ["start_intraday"],
     "INTRADAY_ACTIVE": ["close_market"],
     "OBSERVATION_ACTIVE": ["intraday-snapshot", "close_market", "archive_day"],
-    "MARKET_CLOSED": ["archive_day"],
+    "MARKET_CLOSED": ["review_day", "quick_review", "freeze"],
+    "REVIEW_REQUIRED": ["archive_day"],
+    "QUICK_REVIEWED": ["archive_day"],
     "FAILED_TOOL": ["retry_last_action"],
 }
 
