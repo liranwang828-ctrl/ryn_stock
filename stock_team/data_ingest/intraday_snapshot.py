@@ -88,31 +88,28 @@ def compute_entry_go_status(
 def get_effective_nodes(summary: dict) -> dict:
     """
     从 premarket_summary 提取当前生效的价格节点。
-    post_open_adj 中非 null 的 *_adj 值优先覆盖原始值。
+    仅使用 premarket exit/entry 值，post_open_adj 不再覆盖锚点（DAILY 7.7/C9）。
+    盘中锚点调整必须通过 plan change + 用户确认，附带版本与审计追踪。
     """
     entry = summary.get("entry") or {}
     exit_ = summary.get("exit") or {}
-    adj   = summary.get("post_open_adj") or {}
 
-    def _pick(adj_key, *fallbacks):
-        v = adj.get(adj_key)
-        if v is not None:
-            return v
-        for fb_key in fallbacks:
-            val = exit_.get(fb_key)
+    def _pick(*keys):
+        for key in keys:
+            val = exit_.get(key)
             if val is not None:
                 return val
-            val = entry.get(fb_key)
+            val = entry.get(key)
             if val is not None:
                 return val
         return None
 
     return {
-        "entry_base":  _pick("entry_base_adj",  "entry_base"),
-        "hard_stop":   _pick("hard_stop_adj",   "hard_stop",    "stop_loss"),
-        "target":      _pick("target_adj",       "target_price"),
-        "flex_add":    _pick("flex_add_adj",     "flex_add_level"),
-        "flex_reduce": _pick("flex_reduce_adj",  "flex_reduce_level"),
+        "entry_base":  _pick("entry_base"),
+        "hard_stop":   _pick("hard_stop",    "stop_loss"),
+        "target":      _pick("target_price"),
+        "flex_add":    _pick("flex_add_level"),
+        "flex_reduce": _pick("flex_reduce_level"),
     }
 
 

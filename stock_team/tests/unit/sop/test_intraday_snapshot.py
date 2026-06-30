@@ -106,7 +106,7 @@ def test_entry_go_pending_not_calibrated():
 
 
 def test_get_effective_nodes_prefers_adj():
-    """post_open_adj 值优先于原始值"""
+    """post_open_adj no longer overrides premarket nodes (DAILY 7.7: removed)."""
     from stock_team.data_ingest.intraday_snapshot import get_effective_nodes
     summary = {
         "entry": {"entry_base": 100.0, "stop_loss": 95.0, "target_price": 110.0},
@@ -121,13 +121,53 @@ def test_get_effective_nodes_prefers_adj():
         },
     }
     nodes = get_effective_nodes(summary)
-    assert nodes["entry_base"] == 101.0
+    assert nodes["entry_base"] == 100.0
     assert nodes["hard_stop"]  == 94.0
-    assert nodes["flex_add"]   == 91.0
+    assert nodes["flex_add"]   == 92.0
+
+
+def test_get_effective_nodes_ignores_post_open_adj():
+    """Even when post_open_adj has all non-null override values, they are ignored."""
+    from stock_team.data_ingest.intraday_snapshot import get_effective_nodes
+    summary = {
+        "entry": {"entry_base": 100.0, "target_price": 110.0},
+        "exit": {"hard_stop": 95.0, "target_price": 112.0,
+                 "flex_add_level": 93.0, "flex_reduce_level": 108.0},
+        "post_open_adj": {
+            "entry_base_adj": 999.0,
+            "hard_stop_adj": 999.0,
+            "target_adj": 999.0,
+            "flex_add_adj": 999.0,
+            "flex_reduce_adj": 999.0,
+        },
+    }
+    nodes = get_effective_nodes(summary)
+    assert nodes["entry_base"]  == 100.0
+    assert nodes["hard_stop"]   == 95.0
+    assert nodes["target"]      == 112.0
+    assert nodes["flex_add"]    == 93.0
+    assert nodes["flex_reduce"] == 108.0
+
+
+def test_get_effective_nodes_uses_premarket_nodes():
+    """Premarket exit/entry nodes are the effective nodes (no adj override)."""
+    from stock_team.data_ingest.intraday_snapshot import get_effective_nodes
+    summary = {
+        "entry": {"entry_base": 98.0, "stop_loss": 93.0, "target_price": 108.0,
+                  "flex_add_level": 90.0, "flex_reduce_level": 105.0},
+        "exit": {"hard_stop": 94.0, "target_price": 109.0,
+                 "flex_add_level": 91.0, "flex_reduce_level": 106.0},
+    }
+    nodes = get_effective_nodes(summary)
+    assert nodes["entry_base"]  == 98.0
+    assert nodes["hard_stop"]   == 94.0
+    assert nodes["target"]      == 109.0
+    assert nodes["flex_add"]    == 91.0
+    assert nodes["flex_reduce"] == 106.0
 
 
 def test_get_effective_nodes_no_adj():
-    """post_open_adj=None → 全用原始值"""
+    """post_open_adj=None → all premarket values."""
     from stock_team.data_ingest.intraday_snapshot import get_effective_nodes
     summary = {
         "entry": {"entry_base": 100.0, "stop_loss": 95.0, "target_price": 110.0},
