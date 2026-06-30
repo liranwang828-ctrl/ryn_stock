@@ -27,6 +27,17 @@ SNAPSHOT_JSON = os.path.join(BRAIN_BASE, "system", "data", "packets", "intraday_
 SNAPSHOT_MD = os.path.join(BRAIN_BASE, "system", "data", "packets", "intraday_snapshot.md")
 EVENT_LOG_PATH = os.path.join(BRAIN_BASE, "system", "data", "packets", "ib_event_log.json")
 
+LEGACY_TOP_LEVEL_KEYS = {
+    "broker_snapshot",
+    "cash_note",
+    "positions_update_note",
+    "market_trade_date",
+}
+
+LEGACY_POSITION_KEYS = {
+    "broker_price_source",
+}
+
 def parse_watchlist_symbols(file_path):
     """
     Parses current-watchlist.md and extracts active uppercase ticker symbols.
@@ -130,6 +141,33 @@ def log_ib_event(event_type, details):
     except Exception as e:
         logger.error(f"Failed to log IB event: {e}")
 
+
+def _cleanup_legacy_position_metadata(data):
+    """
+    Remove legacy manual/screenshot provenance so IBKR becomes the only live source
+    for positions/account state.
+    """
+    cleaned = dict(data or {})
+
+    for key in LEGACY_TOP_LEVEL_KEYS:
+        cleaned.pop(key, None)
+
+    cleaned["account_sync_source"] = "ibkr_live_api"
+    cleaned["positions_source"] = "ibkr_live_api"
+    cleaned["trade_history_source"] = "ibkr_tws_api_reqExecutions"
+
+    positions = cleaned.get("positions", {}) or {}
+    for sym, payload in positions.items():
+        if not isinstance(payload, dict):
+            continue
+        for key in LEGACY_POSITION_KEYS:
+            payload.pop(key, None)
+        if payload.get("note") == "Auto-added by IBKR Monitor":
+            payload["note"] = "Auto-added from IBKR live sync"
+        payload["position_source"] = "ibkr_live_api"
+    cleaned["positions"] = positions
+    return cleaned
+
 def update_positions_file(ib):
     """
     Reads active portfolio from IB and syncs config/positions.json automatically.
@@ -150,9 +188,11 @@ def update_positions_file(ib):
             
         with open(POS_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
+        data = _cleanup_legacy_position_metadata(data)
             
         data["cash"] = cash
         data["cash_updated"] = datetime.now().strftime("%Y-%m-%d")
+        data["net_liquidation"] = net_liq
         
         current_pos_dict = {}
         for p in ib_positions:
@@ -177,14 +217,16 @@ def update_positions_file(ib):
                     "cost": cost,
                     "shares": shares,
                     "date": datetime.now().strftime("%Y-%m-%d"),
-                    "note": "Auto-added by IBKR Monitor",
+                    "note": "Auto-added from IBKR live sync",
                     "tranche": "tactical",
                     "thesis_status": "needs_review",
-                    "falsification_conditions": []
+                    "falsification_conditions": [],
+                    "position_source": "ibkr_live_api",
                 }
             else:
                 data["positions"][sym]["shares"] = shares
                 data["positions"][sym]["cost"] = cost
+                data["positions"][sym]["position_source"] = "ibkr_live_api"
                 
         # Remove closed positions
         for sym in list(data.get("positions", {}).keys()):
