@@ -5,6 +5,7 @@ import subprocess
 import json
 import pytest
 import time
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 # Base is stock_team folder
@@ -119,6 +120,96 @@ def test_intraday_data_source_health_reports_polygon_runtime_gaps(monkeypatch):
     assert health["polygon_active"] is True
     assert health["yfinance_fallback_active"] is True
     assert health["status"] == "warning_yfinance_fallback_used"
+
+
+def test_load_premarket_snapshot_adapter_accepts_dashboard_list_shape(tmp_path):
+    """Stage 0 should accept the dashboard snapshot form without requiring manual JSON reshaping."""
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    snapshot = tmp_path / "snapshot.json"
+    snapshot.write_text(json.dumps({
+        "as_of_et": "2026-06-15T09:20:00-04:00",
+        "window": "pre_market_before_09_30_ET",
+        "markets": [
+            {"symbol": "QQQ", "last": "736.7", "premarket_change_pct": "2.13", "note": "strong"},
+            {"symbol": "SPY", "last": "751.15", "premarket_change_pct": "1.27", "note": "firm"},
+        ],
+        "themes": "ai_infrastructure, cloud",
+        "catalysts": "Focus on opening trend.",
+        "notes": "dashboard shape",
+    }), encoding="utf-8")
+
+    as_of_et = cli._parse_stage0_as_of("2026-06-15T09:20:00-04:00")
+    markets, themes, catalysts, missing = cli._load_premarket_snapshot_adapter(str(snapshot), as_of_et)
+
+    assert missing == []
+    assert markets[0]["symbol"] == "QQQ"
+    assert markets[0]["price"] == 736.7
+    assert markets[0]["yesterday_change_pct"] == 2.13
+    assert themes[0]["theme"] == "ai_infrastructure"
+    assert themes[0]["proxy"] == "SMH"
+    assert catalysts[0]["type"] == "dashboard_note"
+    assert catalysts[0]["title"] == "Focus on opening trend."
+
+
+def test_enrich_premarket_snapshot_with_history_backfills_missing_context():
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    markets = [
+        {
+            "symbol": "QQQ",
+            "label": "Nasdaq 100 proxy",
+            "price": 736.7,
+            "yesterday_change_pct": 2.13,
+            "return_5d": None,
+            "return_20d": None,
+            "volume_ratio": None,
+            "source": "pre_market_snapshot_adapter",
+        }
+    ]
+    themes = [
+        {
+            "theme": "semiconductors",
+            "proxy": "SOXX",
+            "return_5d": None,
+            "return_20d": None,
+            "source": "pre_market_snapshot_adapter",
+        }
+    ]
+    history_context = {
+        "QQQ": ({"return_5d": 4.2, "return_20d": 8.5, "volume_ratio": 1.3, "source": "polygon_cache"}, []),
+        "SOXX": ({"return_5d": 6.1, "return_20d": 11.4, "source": "polygon_cache"}, []),
+    }
+
+    enriched_markets, enriched_themes, missing = cli._enrich_premarket_snapshot_with_history(
+        markets,
+        themes,
+        history_context,
+    )
+
+    assert missing == []
+    assert enriched_markets[0]["yesterday_change_pct"] == 2.13
+    assert enriched_markets[0]["return_5d"] == 4.2
+    assert enriched_markets[0]["return_20d"] == 8.5
+    assert enriched_markets[0]["volume_ratio"] == 1.3
+    assert enriched_markets[0]["source"] == "pre_market_snapshot_adapter+polygon_cache"
+    assert enriched_themes[0]["return_5d"] == 6.1
+    assert enriched_themes[0]["return_20d"] == 11.4
+    assert enriched_themes[0]["source"] == "pre_market_snapshot_adapter+polygon_cache"
+
+
+def test_requested_theme_proxies_maps_power_theme():
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    requested_themes, theme_proxies, missing = cli._requested_theme_proxies("power,memory")
+
+    assert requested_themes == ["power", "memory"]
+    assert theme_proxies["power"] == "XLU"
+    assert theme_proxies["memory"] == "MU"
+    assert missing == []
 
 
 def test_runtime_price_fallback_warning_distinguishes_bar_gaps(monkeypatch):
@@ -240,6 +331,77 @@ def test_polygon_runtime_snapshot_fetches_symbols_concurrently(monkeypatch):
     assert elapsed < 0.35
 
 
+def test_fetch_polygon_premarket_bars_filters_to_stage0_window(monkeypatch):
+    """Stage0 premarket bars must be timestamp-proven before the regular open."""
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    def ts_ms(hour, minute):
+        return int(datetime(2026, 6, 16, hour, minute, tzinfo=timezone.utc).timestamp() * 1000)
+
+    class FakeResponse:
+        ok = True
+
+        def json(self):
+            return {
+                "status": "OK",
+                "results": [
+                    {"t": ts_ms(8, 0), "c": 100.0, "v": 100},    # 04:00 ET
+                    {"t": ts_ms(13, 20), "c": 106.0, "v": 300},  # 09:20 ET
+                    {"t": ts_ms(13, 31), "c": 109.0, "v": 900},  # 09:31 ET, reject
+                ],
+            }
+
+    class FakeSession:
+        def get(self, url, params=None, timeout=None):
+            return FakeResponse()
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+    bars, warning = cli._fetch_polygon_premarket_bars(
+        "QQQ", "2026-06-16", as_of, "test-key", session=FakeSession()
+    )
+
+    assert warning is None
+    assert [bar["close"] for bar in bars] == [100.0, 106.0]
+    assert bars[-1]["time_et"].isoformat().startswith("2026-06-16T09:20:00")
+
+
+def test_fetch_paid_premarket_row_uses_timestamp_proven_minute_bars(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+
+    monkeypatch.setattr(
+        "stock_team.agents.macro_strategy.fetch_polygon_daily_aggs",
+        lambda symbol, api_key, days=40: [
+            {"t": int(datetime(2026, 6, 12, tzinfo=timezone.utc).timestamp() * 1000), "c": 100.0, "v": 1000},
+            {"t": int(datetime(2026, 6, 13, tzinfo=timezone.utc).timestamp() * 1000), "c": 101.0, "v": 1100},
+            {"t": int(datetime(2026, 6, 14, tzinfo=timezone.utc).timestamp() * 1000), "c": 102.0, "v": 1200},
+            {"t": int(datetime(2026, 6, 15, tzinfo=timezone.utc).timestamp() * 1000), "c": 105.0, "v": 1500},
+        ],
+    )
+    monkeypatch.setattr(
+        cli,
+        "_fetch_polygon_premarket_bars",
+        lambda symbol, date_str, stage0_as_of_et, api_key: (
+            [
+                {"time_et": as_of.replace(hour=8, minute=0), "close": 104.0, "volume": 100},
+                {"time_et": as_of.replace(hour=9, minute=20), "close": 106.25, "volume": 300},
+            ],
+            None,
+        ),
+    )
+
+    row, missing = cli._fetch_paid_premarket_row("QQQ", as_of, "test-key")
+
+    assert missing == []
+    assert row["price"] == 106.25
+    assert row["prev_close"] == 105.0
+    assert row["source"] == "polygon_premarket_1m_aggregates"
+    assert row["latest_bar_time_et"].startswith("2026-06-16T09:20:00")
+
+
 def test_intraday_dashboard_uses_polygon_runtime_snapshot(monkeypatch, tmp_path):
     """Dashboard manifest should expose Polygon runtime source for price/VWAP when available."""
     sys.path.insert(0, WORKSPACE_DIR)
@@ -310,6 +472,7 @@ def test_cli_help():
     res = subprocess.run([PYTHON, "-m", "stock_team.cli", "--help"], cwd=WORKSPACE_DIR, env=get_env(), capture_output=True, text=True, encoding="utf-8")
     assert res.returncode == 0
     assert "premarket" in res.stdout
+    assert "premarket-snapshot" in res.stdout
     assert "trade-evidence" in res.stdout
     assert "intraday-snapshot" in res.stdout
     assert "company-packet" in res.stdout
@@ -758,6 +921,160 @@ def test_cli_market_context_accepts_snapshot_with_utf8_bom(tmp_path):
 
     assert res.returncode == 0
     assert "polygon_premarket_snapshot" in out_file.read_text(encoding="utf-8")
+
+def test_generate_premarket_snapshot_payload_uses_paid_provider_rows(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+
+    monkeypatch.setattr(cli, "get_api_key", lambda: "test-key")
+
+    def fake_fetch(symbol, stage0_as_of_et, api_key):
+        assert api_key == "test-key"
+        rows = {
+            "QQQ": {"price": 736.7, "prev_close": 721.34, "source": "polygon_premarket_snapshot"},
+            "SPY": {"price": 751.15, "prev_close": 741.75, "source": "polygon_premarket_snapshot"},
+            "IWM": {"price": 297.4, "prev_close": 292.25, "source": "polygon_premarket_snapshot"},
+            "VIXY": {"price": 22.47, "prev_close": 23.29, "source": "polygon_premarket_snapshot"},
+            "SMH": {"price": 0, "prev_close": 0, "return_5d": 8.18, "return_20d": 16.31, "source": "polygon_premarket_snapshot"},
+            "SOXX": {"price": 0, "prev_close": 0, "return_5d": 5.0, "return_20d": 10.0, "source": "polygon_premarket_snapshot"},
+            "IGV": {"price": 0, "prev_close": 0, "return_5d": -3.09, "return_20d": 1.0, "source": "polygon_premarket_snapshot"},
+            "LITE": {"price": 0, "prev_close": 0, "return_5d": 2.1, "return_20d": 4.3, "source": "polygon_premarket_snapshot"},
+            "MU": {"price": 0, "prev_close": 0, "return_5d": 6.2, "return_20d": 12.5, "source": "polygon_premarket_snapshot"},
+            "XLU": {"price": 0, "prev_close": 0, "return_5d": 1.1, "return_20d": 3.3, "source": "polygon_premarket_snapshot"},
+        }
+        return rows[symbol], []
+
+    monkeypatch.setattr(cli, "_fetch_paid_premarket_row", fake_fetch)
+
+    payload = cli._generate_premarket_snapshot_payload(
+        "2026-06-16",
+        as_of,
+        focus_symbols=["AAOX", "MUU", "COHR"],
+        themes_text="ai_infrastructure,semiconductors,cloud,optical,memory,power",
+        catalysts_text="Manage AAOX and MUU exit timing.",
+        notes_text="IBKR positions already synced.",
+    )
+
+    assert payload["markets"]["QQQ"]["source"] == "polygon_premarket_snapshot"
+    assert payload["markets"]["QQQ"]["price"] == 736.7
+    assert payload["themes"]["memory"]["proxy"] == "MU"
+    assert payload["themes"]["memory"]["return_20d"] == 12.5
+    assert payload["focus_symbols"] == "AAOX, MUU, COHR"
+
+def test_fetch_paid_premarket_row_rejects_generic_snapshot_without_true_premarket_marker(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+
+    monkeypatch.setattr(
+        "stock_team.agents.macro_strategy.fetch_polygon_daily_aggs",
+        lambda symbol, api_key, days=40: [
+            {"c": 100.0, "v": 1000},
+            {"c": 101.0, "v": 1100},
+            {"c": 102.0, "v": 1200},
+            {"c": 103.0, "v": 1300},
+            {"c": 104.0, "v": 1400},
+            {"c": 105.0, "v": 1500},
+        ],
+    )
+    monkeypatch.setattr(
+        "stock_team.agents.macro_strategy.fetch_polygon_snapshot",
+        lambda symbol, api_key: {"price": 106.0, "prev_close": 105.0},
+    )
+
+    row, missing = cli._fetch_paid_premarket_row("QQQ", as_of, "test-key")
+
+    assert row == {}
+    assert "QQQ_snapshot_not_true_premarket" in missing
+
+def test_fetch_paid_premarket_row_accepts_explicit_true_premarket_snapshot(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+
+    monkeypatch.setattr(
+        "stock_team.agents.macro_strategy.fetch_polygon_daily_aggs",
+        lambda symbol, api_key, days=40: [
+            {"c": float(i), "v": float(1000 + i)} for i in range(100, 130)
+        ],
+    )
+    monkeypatch.setattr(
+        "stock_team.agents.macro_strategy.fetch_polygon_snapshot",
+        lambda symbol, api_key: {
+            "price": 131.25,
+            "prev_close": 129.0,
+            "session": "premarket",
+        },
+    )
+
+    row, missing = cli._fetch_paid_premarket_row("QQQ", as_of, "test-key")
+
+    assert missing == []
+    assert row["price"] == 131.25
+    assert row["prev_close"] == 129.0
+    assert row["source"] == "polygon_premarket_snapshot"
+
+def test_generate_premarket_snapshot_payload_fails_closed_when_core_market_missing(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+
+    monkeypatch.setattr(cli, "get_api_key", lambda: "test-key")
+
+    def fake_fetch(symbol, stage0_as_of_et, api_key):
+        if symbol == "QQQ":
+            return {}, ["QQQ_missing"]
+        return {"price": 1.0, "prev_close": 1.0, "source": "polygon_premarket_snapshot"}, []
+
+    monkeypatch.setattr(cli, "_fetch_paid_premarket_row", fake_fetch)
+
+    with pytest.raises(ValueError, match="missing_required_paid_premarket_rows"):
+        cli._generate_premarket_snapshot_payload(
+            "2026-06-16",
+            as_of,
+            focus_symbols=["AAOX"],
+            themes_text="ai_infrastructure",
+            catalysts_text="",
+            notes_text="",
+        )
+
+def test_generate_premarket_snapshot_payload_fetches_rows_concurrently(monkeypatch):
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+
+    as_of = cli._parse_stage0_as_of("2026-06-16T09:20:00-04:00")
+    monkeypatch.setattr(cli, "get_api_key", lambda: "test-key")
+
+    def fake_fetch(symbol, stage0_as_of_et, api_key):
+        time.sleep(0.2)
+        return {
+            "price": 1.0,
+            "prev_close": 1.0,
+            "return_5d": 0.0,
+            "return_20d": 0.0,
+            "source": "polygon_premarket_snapshot",
+        }, []
+
+    monkeypatch.setattr(cli, "_fetch_paid_premarket_row", fake_fetch)
+
+    started = time.monotonic()
+    payload = cli._generate_premarket_snapshot_payload(
+        "2026-06-16",
+        as_of,
+        focus_symbols=["AAOX", "MUU"],
+        themes_text="ai_infrastructure,semiconductors,cloud,optical,memory,power",
+        catalysts_text="",
+        notes_text="",
+    )
+    elapsed = time.monotonic() - started
+
+    assert "QQQ" in payload["markets"]
+    assert elapsed < 1.5
 
 def test_cli_market_context_generation_from_fixture(tmp_path):
     """Smoke test market-context without network by using an offline fixture."""

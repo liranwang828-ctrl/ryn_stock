@@ -95,6 +95,7 @@ THEME_PROXY_MAP = {
     "storage": "MU",
     "cloud": "IGV",
     "optical": "LITE",
+    "power": "XLU",
 }
 
 def _parse_stage0_as_of(as_of_text):
@@ -148,6 +149,15 @@ def _pct(a, b):
     except Exception:
         return None
 
+
+def _float_or_none(value):
+    try:
+        if value in (None, ""):
+            return None
+        return float(value)
+    except Exception:
+        return None
+
 def _load_market_context_fixture(path):
     with open(path, "r", encoding="utf-8") as f:
         raw = json.load(f)
@@ -185,15 +195,35 @@ def _load_premarket_snapshot_adapter(path, stage0_as_of_et):
     if raw.get("window") != "pre_market_before_09_30_ET":
         raise ValueError("pre-market snapshot window must be pre_market_before_09_30_ET")
 
+    raw_markets = raw.get("markets") or {}
+    if isinstance(raw_markets, list):
+        market_rows = []
+        for row in raw_markets:
+            if not isinstance(row, dict):
+                continue
+            symbol = str(row.get("symbol") or "").strip().upper()
+            if not symbol:
+                continue
+            market_rows.append((symbol, row))
+    else:
+        market_rows = [
+            (str(symbol).strip().upper(), row)
+            for symbol, row in raw_markets.items()
+            if isinstance(row, dict)
+        ]
+
     markets = []
-    for symbol, row in (raw.get("markets") or {}).items():
-        price = row.get("price")
+    for symbol, row in market_rows:
+        price = row.get("price", row.get("last"))
         prev_close = row.get("prev_close")
+        yesterday_change_pct = row.get("yesterday_change_pct")
+        if yesterday_change_pct in (None, ""):
+            yesterday_change_pct = row.get("premarket_change_pct")
         markets.append({
-            "symbol": symbol.upper(),
-            "label": MARKET_CONTEXT_SYMBOLS.get(symbol.upper(), "market proxy"),
-            "price": price,
-            "yesterday_change_pct": row.get("yesterday_change_pct", _pct(price, prev_close)),
+            "symbol": symbol,
+            "label": MARKET_CONTEXT_SYMBOLS.get(symbol, "market proxy"),
+            "price": _float_or_none(price),
+            "yesterday_change_pct": _float_or_none(yesterday_change_pct) if yesterday_change_pct not in (None, "") else _pct(price, prev_close),
             "return_5d": row.get("return_5d"),
             "return_20d": row.get("return_20d"),
             "volume_ratio": row.get("volume_ratio"),
@@ -202,18 +232,316 @@ def _load_premarket_snapshot_adapter(path, stage0_as_of_et):
             "as_of_et": snapshot_as_of.isoformat(),
         })
 
+    raw_themes = raw.get("themes") or {}
     themes = []
-    for theme, row in (raw.get("themes") or {}).items():
-        themes.append({
-            "theme": theme,
-            "proxy": row.get("proxy"),
+    if isinstance(raw_themes, str):
+        for theme in [x.strip() for x in raw_themes.split(",") if x.strip()]:
+            themes.append({
+                "theme": theme,
+                "proxy": THEME_PROXY_MAP.get(theme),
+                "return_5d": None,
+                "return_20d": None,
+                "source": "pre_market_snapshot_adapter",
+                "window": raw.get("window"),
+                "as_of_et": snapshot_as_of.isoformat(),
+            })
+    else:
+        for theme, row in raw_themes.items():
+            themes.append({
+                "theme": theme,
+                "proxy": row.get("proxy"),
+                "return_5d": row.get("return_5d"),
+                "return_20d": row.get("return_20d"),
+                "source": row.get("source", "pre_market_snapshot_adapter"),
+                "window": raw.get("window"),
+                "as_of_et": snapshot_as_of.isoformat(),
+            })
+
+    raw_catalysts = raw.get("catalysts") or []
+    if isinstance(raw_catalysts, str):
+        catalysts = [{
+            "type": "dashboard_note",
+            "title": raw_catalysts.strip(),
+            "source": "pre_market_snapshot_adapter",
+        }] if raw_catalysts.strip() else []
+    else:
+        catalysts = raw_catalysts
+    return markets, themes, catalysts, []
+
+
+def _requested_theme_proxies(themes_text):
+    requested_themes = [x.strip() for x in (themes_text or "").split(",") if x.strip()]
+    theme_proxies = {}
+    missing = []
+    for theme in requested_themes:
+        proxy = THEME_PROXY_MAP.get(theme)
+        if not proxy:
+            missing.append(f"no_proxy_configured_for_theme_{theme}")
+            proxy = theme.upper()
+        theme_proxies[theme] = proxy
+    return requested_themes, theme_proxies, missing
+
+
+def _fetch_polygon_premarket_bars(symbol, date_str, stage0_as_of_et, api_key, session=None, request_timeout_seconds=8):
+    sess = session or _get_polygon_session()
+    try:
+        response = sess.get(
+            f"https://api.polygon.io/v2/aggs/ticker/{symbol.upper()}/range/1/minute/{date_str}/{date_str}",
+            params={"adjusted": "true", "sort": "asc", "limit": 50000, "apiKey": api_key},
+            timeout=max(0.1, float(request_timeout_seconds)),
+        )
+        data = response.json()
+    except Exception as exc:
+        return [], f"{symbol}_polygon_premarket_bars_failed:{type(exc).__name__}"
+
+    bars = data.get("results") or []
+    if not response.ok or data.get("status") not in ("OK", "DELAYED") or not bars:
+        return [], f"{symbol}_polygon_premarket_bars_unavailable"
+
+    premarket_bars = []
+    window_start = _time(4, 0)
+    window_end = min(stage0_as_of_et.time(), _time(9, 29, 59))
+    for bar in bars:
+        raw_ts = bar.get("t")
+        if raw_ts is None or bar.get("c") in (None, ""):
+            continue
+        bar_et = datetime.fromtimestamp(float(raw_ts) / 1000.0, tz=timezone.utc).astimezone(stage0_as_of_et.tzinfo)
+        if bar_et.date() != stage0_as_of_et.date():
+            continue
+        if not (window_start <= bar_et.time() <= window_end):
+            continue
+        premarket_bars.append({
+            "time_et": bar_et,
+            "close": float(bar.get("c")),
+            "volume": float(bar.get("v") or 0),
+        })
+
+    if not premarket_bars:
+        return [], f"{symbol}_no_timestamp_proven_premarket_bars"
+    return premarket_bars, None
+
+
+def _previous_close_from_daily_aggs(aggs, stage0_as_of_et):
+    session_date = stage0_as_of_et.date()
+    candidates = []
+    undated = []
+    for row in aggs:
+        if row.get("c") in (None, ""):
+            continue
+        if row.get("t") in (None, ""):
+            undated.append(float(row["c"]))
+            continue
+        try:
+            row_date = datetime.fromtimestamp(float(row["t"]) / 1000.0, tz=timezone.utc).date()
+        except Exception:
+            continue
+        if row_date < session_date:
+            candidates.append(float(row["c"]))
+    if candidates:
+        return candidates[-1]
+    if undated:
+        return undated[-1]
+    return None
+
+
+def _fetch_paid_premarket_row(symbol, stage0_as_of_et, api_key):
+    from stock_team.agents.macro_strategy import fetch_polygon_daily_aggs, fetch_polygon_snapshot
+
+    missing = []
+    try:
+        aggs = fetch_polygon_daily_aggs(symbol, api_key, days=40)
+    except Exception as exc:
+        return {}, [f"{symbol}_polygon_daily_failed:{type(exc).__name__}"]
+
+    closes = [float(x["c"]) for x in aggs if "c" in x]
+    volumes = [float(x.get("v", 0)) for x in aggs if "c" in x]
+    if len(closes) < 2:
+        return {}, [f"{symbol}_insufficient_daily_history"]
+
+    date_str = stage0_as_of_et.date().isoformat()
+    bars, bars_warning = _fetch_polygon_premarket_bars(symbol, date_str, stage0_as_of_et, api_key)
+    if bars:
+        price = bars[-1]["close"]
+        prev_close = _previous_close_from_daily_aggs(aggs, stage0_as_of_et)
+        if prev_close in (None, ""):
+            return {}, [f"{symbol}_previous_close_missing"]
+        vol20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else None
+        volume_ratio = round(sum(bar["volume"] for bar in bars) / vol20, 2) if vol20 else None
+        return {
+            "price": round(float(price), 2),
+            "prev_close": round(float(prev_close), 2),
+            "return_5d": _pct(closes[-1], closes[-6]) if len(closes) >= 6 else None,
+            "return_20d": _pct(closes[-1], closes[-21]) if len(closes) >= 21 else None,
+            "volume_ratio": volume_ratio,
+            "source": "polygon_premarket_1m_aggregates",
+            "window": "pre_market_before_09_30_ET",
+            "as_of_et": stage0_as_of_et.isoformat(),
+            "latest_bar_time_et": bars[-1]["time_et"].isoformat(),
+            "premarket_bar_count": len(bars),
+        }, missing
+    snapshot = {}
+    try:
+        snapshot = fetch_polygon_snapshot(symbol, api_key)
+    except Exception as exc:
+        missing.append(f"{symbol}_polygon_snapshot_failed:{type(exc).__name__}")
+
+    snapshot_session = str(snapshot.get("session") or "").strip().lower()
+    if snapshot_session != "premarket":
+        if bars_warning:
+            missing.append(bars_warning)
+        missing.append(f"{symbol}_snapshot_not_true_premarket")
+        return {}, missing
+
+    price = snapshot.get("price")
+    prev_close = snapshot.get("prev_close", closes[-1] if closes else None)
+    if price in (None, ""):
+        missing.append(f"{symbol}_snapshot_price_missing")
+    if prev_close in (None, ""):
+        missing.append(f"{symbol}_snapshot_prev_close_missing")
+    if missing:
+        return {}, missing
+
+    vol20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else None
+    volume_ratio = round(volumes[-1] / vol20, 2) if vol20 else None
+    return {
+        "price": round(float(price), 2) if price not in (None, "") else None,
+        "prev_close": round(float(prev_close), 2) if prev_close not in (None, "") else None,
+        "return_5d": _pct(closes[-1], closes[-6]) if len(closes) >= 6 else None,
+        "return_20d": _pct(closes[-1], closes[-21]) if len(closes) >= 21 else None,
+        "volume_ratio": volume_ratio,
+        "source": "polygon_premarket_snapshot",
+        "window": "pre_market_before_09_30_ET",
+        "as_of_et": stage0_as_of_et.isoformat(),
+    }, missing
+
+
+def _generate_premarket_snapshot_payload(
+    date_text,
+    stage0_as_of_et,
+    focus_symbols,
+    themes_text,
+    catalysts_text,
+    notes_text,
+):
+    api_key = get_api_key()
+    if not api_key:
+        raise ValueError("missing_paid_provider_api_key")
+
+    requested_themes, theme_proxies, missing = _requested_theme_proxies(themes_text)
+    markets = {}
+    themes = {}
+
+    required_market_symbols = list(MARKET_CONTEXT_SYMBOLS.keys())
+    symbols_to_fetch = []
+    seen = set()
+    for symbol in required_market_symbols + [theme_proxies[theme] for theme in requested_themes]:
+        if symbol not in seen:
+            seen.add(symbol)
+            symbols_to_fetch.append(symbol)
+
+    fetched_rows = {}
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    with ThreadPoolExecutor(max_workers=min(8, len(symbols_to_fetch) or 1)) as executor:
+        futures = {
+            executor.submit(_fetch_paid_premarket_row, symbol, stage0_as_of_et, api_key): symbol
+            for symbol in symbols_to_fetch
+        }
+        for future in as_completed(futures):
+            symbol = futures[future]
+            row, row_missing = future.result()
+            fetched_rows[symbol] = row
+            missing.extend(row_missing)
+
+    for symbol in required_market_symbols:
+        row = fetched_rows.get(symbol, {})
+        if row.get("price") is None or row.get("prev_close") is None:
+            missing.append(f"{symbol}_required_market_row_incomplete")
+            continue
+        markets[symbol] = row
+
+    required_missing = [sym for sym in required_market_symbols if sym not in markets]
+    if required_missing:
+        raise ValueError(
+            "missing_required_paid_premarket_rows:" + ",".join(required_missing)
+        )
+
+    for theme in requested_themes:
+        proxy = theme_proxies[theme]
+        row = fetched_rows.get(proxy, {})
+        themes[theme] = {
+            "proxy": proxy,
             "return_5d": row.get("return_5d"),
             "return_20d": row.get("return_20d"),
-            "source": row.get("source", "pre_market_snapshot_adapter"),
-            "window": raw.get("window"),
-            "as_of_et": snapshot_as_of.isoformat(),
-        })
-    return markets, themes, raw.get("catalysts") or [], []
+            "source": row.get("source", "polygon_premarket_snapshot"),
+            "window": "pre_market_before_09_30_ET",
+            "as_of_et": stage0_as_of_et.isoformat(),
+        }
+
+    payload = {
+        "as_of_et": stage0_as_of_et.isoformat(),
+        "window": "pre_market_before_09_30_ET",
+        "markets": markets,
+        "themes": themes,
+        "focus_symbols": ", ".join([str(sym).upper().strip() for sym in focus_symbols if str(sym).strip()]),
+        "catalysts": catalysts_text or "",
+        "notes": notes_text or "",
+    }
+    if missing:
+        payload["missing_data"] = missing
+    return payload
+
+
+def _collect_history_context(symbols):
+    from concurrent.futures import ThreadPoolExecutor
+
+    history_results = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_sym = {executor.submit(_history_context, sym): sym for sym in symbols}
+        for future in future_to_sym:
+            sym = future_to_sym[future]
+            try:
+                row, row_missing = future.result()
+                history_results[sym] = (row, row_missing)
+            except Exception as e:
+                history_results[sym] = ({}, [f"{sym}_fetch_error:{str(e)[:50]}"])
+    return history_results
+
+
+def _enrich_premarket_snapshot_with_history(markets, themes, history_results):
+    enriched_markets = []
+    enriched_themes = []
+    missing = []
+
+    for row in markets:
+        symbol = str(row.get("symbol") or "").upper().strip()
+        history_row, row_missing = history_results.get(symbol, ({}, [f"{symbol}_missing_result"]))
+        missing.extend(row_missing)
+        merged = dict(row)
+        if history_row:
+            for field in ("return_5d", "return_20d", "volume_ratio"):
+                if merged.get(field) in (None, "") and history_row.get(field) not in (None, ""):
+                    merged[field] = history_row.get(field)
+            history_source = history_row.get("source")
+            if history_source and history_source != merged.get("source"):
+                merged["source"] = f"{merged.get('source', 'pre_market_snapshot_adapter')}+{history_source}"
+        enriched_markets.append(merged)
+
+    for row in themes:
+        proxy = str(row.get("proxy") or "").upper().strip()
+        history_row, row_missing = history_results.get(proxy, ({}, [f"{proxy or row.get('theme', 'theme')}_missing_result"]))
+        if proxy:
+            missing.extend(row_missing)
+        merged = dict(row)
+        if history_row:
+            for field in ("return_5d", "return_20d"):
+                if merged.get(field) in (None, "") and history_row.get(field) not in (None, ""):
+                    merged[field] = history_row.get(field)
+            history_source = history_row.get("source")
+            if history_source and history_source != merged.get("source"):
+                merged["source"] = f"{merged.get('source', 'pre_market_snapshot_adapter')}+{history_source}"
+        enriched_themes.append(merged)
+
+    return enriched_markets, enriched_themes, missing
 
 def _load_universe_document(path):
     if not path:
@@ -477,14 +805,27 @@ def handle_market_context(args):
         except ValueError as exc:
             print(f"[ERROR] {exc}", file=sys.stderr)
             sys.exit(1)
+        requested_themes, theme_proxies, proxy_missing = _requested_theme_proxies(args.themes)
+        missing.extend(proxy_missing)
+        history_symbols = []
+        for row in markets:
+            sym = str(row.get("symbol") or "").upper().strip()
+            if sym and sym not in history_symbols:
+                history_symbols.append(sym)
+        for theme in requested_themes:
+            proxy = theme_proxies.get(theme, theme.upper())
+            if proxy and proxy not in history_symbols:
+                history_symbols.append(proxy)
+        if history_symbols:
+            history_results = _collect_history_context(history_symbols)
+            markets, themes, enrich_missing = _enrich_premarket_snapshot_with_history(markets, themes, history_results)
+            missing.extend(enrich_missing)
     else:
         markets = []
         themes = []
         catalysts = []
         missing = []
         new_cache_entries = {}
-        
-        from concurrent.futures import ThreadPoolExecutor
         
         # Check API key presence
         from stock_team.data_ingest.data_agent import get_api_key
@@ -494,14 +835,10 @@ def handle_market_context(args):
             
         # Collect unique symbols for history
         history_symbols = list(MARKET_CONTEXT_SYMBOLS.keys())
-        requested_themes = [x.strip() for x in (args.themes or "").split(",") if x.strip()]
-        theme_proxies = {}
+        requested_themes, theme_proxies, proxy_missing = _requested_theme_proxies(args.themes)
+        missing.extend(proxy_missing)
         for theme in requested_themes:
-            proxy = THEME_PROXY_MAP.get(theme)
-            if not proxy:
-                missing.append(f"no_proxy_configured_for_theme_{theme}")
-                proxy = theme.upper()
-            theme_proxies[theme] = proxy
+            proxy = theme_proxies[theme]
             if proxy not in history_symbols:
                 history_symbols.append(proxy)
                 
@@ -516,22 +853,14 @@ def handle_market_context(args):
                 news_symbols.append(sym)
                 
         # 1. Execute history fetches concurrently
-        history_results = {}
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            future_to_sym = {executor.submit(_history_context, sym): sym for sym in history_symbols}
-            for future in future_to_sym:
-                sym = future_to_sym[future]
-                try:
-                    row, row_missing = future.result()
-                    history_results[sym] = (row, row_missing)
-                except Exception as e:
-                    history_results[sym] = ({}, [f"{sym}_fetch_error:{str(e)[:50]}"])
+        history_results = _collect_history_context(history_symbols)
                     
         # 2. Execute news fetches concurrently
         news_results = {}
         if api_key:
             try:
                 from stock_team.data_ingest.data_agent import fetch_polygon_news
+                from concurrent.futures import ThreadPoolExecutor
                 with ThreadPoolExecutor(max_workers=5) as executor:
                     future_to_news = {executor.submit(fetch_polygon_news, sym, api_key): sym for sym in news_symbols}
                     for future in future_to_news:
@@ -745,6 +1074,27 @@ def handle_market_context(args):
         else:
             f.write("- none\n")
     print(f"✨ Market context packet exported successfully to {args.out}")
+
+
+def handle_premarket_snapshot(args):
+    print("📡 Executing Premarket Snapshot command...")
+    try:
+        stage0_as_of_et = _validate_stage0_as_of(args.date, args.as_of)
+        payload = _generate_premarket_snapshot_payload(
+            args.date,
+            stage0_as_of_et,
+            focus_symbols=[x.strip().upper() for x in (args.focus_symbols or "").split(",") if x.strip()],
+            themes_text=args.themes,
+            catalysts_text=args.catalysts or "",
+            notes_text=args.notes or "",
+        )
+    except ValueError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    print(f"✨ Premarket snapshot exported successfully to {args.out}")
 
 
 def _parse_stage0_market_table(stage0_path):
@@ -3025,6 +3375,16 @@ def main():
     p_pre.add_argument("--refresh", action="store_true", help="Force price/analysis refresh")
     p_pre.add_argument("--out", required=True, help="Output packet path")
 
+    # Subcommand: premarket-snapshot
+    p_pre_snap = subparsers.add_parser("premarket-snapshot")
+    p_pre_snap.add_argument("--date", required=True, help="Date YYYY-MM-DD")
+    p_pre_snap.add_argument("--as-of", required=True, help="Pre-market as-of timestamp with timezone, e.g. 2026-06-16T09:20:00-04:00")
+    p_pre_snap.add_argument("--focus-symbols", default="", help="Comma-separated focus symbols to echo into the adapter")
+    p_pre_snap.add_argument("--themes", default="semiconductors,ai_infrastructure,memory,cloud", help="Comma-separated themes/proxies")
+    p_pre_snap.add_argument("--catalysts", default="", help="Plain-text catalyst notes")
+    p_pre_snap.add_argument("--notes", default="", help="Plain-text operator notes")
+    p_pre_snap.add_argument("--out", required=True, help="Output pre-market snapshot adapter JSON path")
+
     # Subcommand: market-context
     p_market = subparsers.add_parser("market-context")
     p_market.add_argument("--date", required=True, help="Date YYYY-MM-DD")
@@ -3104,6 +3464,8 @@ def main():
     # Route execution
     if args.command == "premarket":
         handle_premarket(args)
+    elif args.command == "premarket-snapshot":
+        handle_premarket_snapshot(args)
     elif args.command == "market-context":
         handle_market_context(args)
     elif args.command == "trade-evidence":
