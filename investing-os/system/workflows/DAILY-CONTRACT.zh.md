@@ -1,8 +1,9 @@
 # DAILY 每日交易工作流契约
 
-状态：v3 待用户批准三项决策
+状态：v3 高阶审核通过，等待用户批准 Q1–Q3
 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
 v2 审核：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md`](../../handoff/reviews/2026-06-30-daily-contract-v2-review.md)
+v3 审核：[`../../handoff/reviews/2026-07-01-daily-contract-v3-review.md`](../../handoff/reviews/2026-07-01-daily-contract-v3-review.md)
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
 v2 修正：R1–R6 六项阻断问题 + 非阻断修订；v3 修正：V2-1 至 V2-4（分类调整、时间窗口软化、H4 措辞修正、高阶推荐重构）
 
@@ -327,7 +328,7 @@ observation 模式：仅执行 Step 1–3，不生成交易计划和盘中指导
 
 ### 已知冲突
 
-1. **无独立状态** — DAILY-2 在 `transitions.py` 中被隐式合并进 `PLAN_APPROVED → INTRADAY_ACTIVE` 过渡。候选方案：保持隐式过渡，由时间窗口和用户行为定义 DAILY-2 语义；或创建独立 `OBSERVATION_ACTIVE` 状态。由用户决定。
+1. **无独立状态** — DAILY-2 在 `transitions.py` 中被隐式合并进 `PLAN_APPROVED → INTRADAY_ACTIVE` 过渡。高阶方案：创建独立 `OBSERVATION_ACTIVE` 状态，避免只读观察与交易活动混淆。
 2. **无时间窗口 enforce** — `handle_intraday_snapshot()` 不检查时间窗口。候选修正：添加窗口闸门。需注意迟到恢复和非美东时区操作不能被无意阻断。
 3. **adapters.py 不支持 intraday-snapshot** — 仅支持 intraday-dashboard。候选修正：添加适配器映射。
 
@@ -544,7 +545,7 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 
 ## 6. 候选修正清单
 
-以下条目来自五份审计报告，标注为 `verified_bug`（已核实缺陷）、`missing_capability`（缺失能力）或 `design_decision`（设计决策）。在用户批准前，不得作为低阶实现任务依据。
+以下条目来自五份审计报告，标注为 `verified_bug`（已核实缺陷）、`missing_capability`（缺失能力）、`design_decision`（设计决策）或 `boundary_conflict`（违反已确认系统边界）。在用户批准前，不得作为低阶实现任务依据。
 
 | 序号 | 问题 | 所在文件 | 分类 | 候选修正方向 |
 |------|------|---------|------|------------|
@@ -552,22 +553,22 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 | C2 | 跨日恢复零实现 | `transitions.py`、`coordinator_cli.py`、`store.py` | `missing_capability` | 实现 Architecture spec Section 7 的三种恢复选项 |
 | C3 | `REVIEW_REQUIRED` 不在任何 TRANSITIONS 字典中 | `transitions.py` | `missing_capability` | 添加到 BEGIN_TRANSITIONS |
 | C4 | `QUICK_REVIEWED`、`CLOSED_UNREVIEWED` 未注册 | `models.py` | `missing_capability` | 添加到 TRADING_STATES |
-| C5 | DAILY-2 无独立状态 | `transitions.py` | `design_decision` | 保持隐式过渡 / 创建 `OBSERVATION_ACTIVE` 状态，由用户决定 |
+| C5 | DAILY-2 无独立 observation 状态 | `transitions.py` | `design_decision` | 高阶确定创建 `OBSERVATION_ACTIVE`，避免与交易状态混淆 |
 | C6 | `archive_day` 无实际归档写入 | `transitions.py`、缺失归档模块 | `missing_capability` | 实现最小归档逻辑（文件汇总 + 产物清单 JSON） |
 | C7 | `record_focus_confirmation` 和 `record_plan_approval` 不校验产物内容 | `adapters.py` L141-144 | `missing_capability` | 添加产物存在性和必填字段校验 |
 | C8 | Stage 1 在 decision sheet 不存在时回退到 watchlist 全量 | `cli.py handle_premarket()` L1159 | `verified_bug` | decision sheet 缺失时阻止 Step 4，不静默回退 |
 | C9 | `post_open_adj` 无文档无权限控制 | `intraday_snapshot.py` get_effective_nodes() | `design_decision` | 移除 / 或添加 investing-os 写入闸门 + 审计日志，由用户决定 |
 | C10 | 盘中用户例外确认流程零实现 | coordinator、dashboard_server | `missing_capability` | 在 INTRADAY_ACTIVE 状态中添加例外确认流程 |
-| C11 | 单次刷新和循环模式是两套独立系统 | `cli.py` vs `poll.py` + `dashboard_server.py` | `design_decision` | 统一设计盘中刷新生命周期 |
-| C12 | Dashboard HTML 是纯消费者无后端生产者 | `dashboard_server.py`、`intraday-dashboard.html` | `missing_capability` | 在 dashboard_server 中确保 JSON 新鲜度 |
-| C13 | `generate_suggestions()` 在 stock_team 中产出经验类型 | `postmarket_data_collector.py` | `design_decision` | stock_team 只输出复盘事实；经验候选移至 investing-os |
-| C14 | 多种路径约定并存 | agent docs vs protocol doc vs code | `design_decision` | 由用户指定 canonical runtime 路径 |
+| C11 | 单次刷新和循环模式是两套独立系统 | `cli.py` vs `poll.py` + `dashboard_server.py` | `design_decision` | 以 `intraday-snapshot` 为唯一事实动作；循环只重复调度同一幂等动作 |
+| C12 | Dashboard 消费路径与 CLI 生产路径不一致 | `dashboard_server.py`、`intraday-dashboard.html`、`cli.py` | `missing_capability` | 统一读写 coordinator 登记的 runtime manifest，并验证新鲜度 |
+| C13 | `generate_suggestions()` 在 stock_team 中产出经验类型 | `postmarket_data_collector.py` | `boundary_conflict` | stock_team 只输出复盘事实；经验候选移至 investing-os |
+| C14 | 多种路径约定并存 | agent docs vs protocol doc vs code | `design_decision` | DAILY canonical runtime 统一为 `investing-os/system/runtime/{sessions,inputs,packets}` |
 
 ---
 
 ## 7. 高阶推荐与用户决策
 
-以下项目由高阶模型提出推荐方案，用户整体批准。v2 中的 Q1（跨日恢复）、Q2（observation 状态）、Q4（非交易模式入口）、Q5（confirm 产物）、Q7（时间窗口 enforce）已重新分类为本节高阶推荐——这些是架构与状态机决策，不应要求用户逐项设计技术细节。保留的三项（U1–U3）重新编号为 Q1–Q3，是真正需要用户决定的意义、权限与体验问题。
+以下架构与状态机事项由高阶模型提出方案，用户整体批准，不要求用户逐项设计技术细节。三项真正涉及意义、权限与体验的问题保留为 Q1–Q3。
 
 ### 高阶模型推荐方案
 
@@ -606,9 +607,13 @@ investing-os skill / 对话生成认知与计划产物
 
 CLI 不得自动编造焦点判断、风险计划或用户结论。
 
-**时间窗口（原 Q7）**
+**盘中事实刷新**
 
-推荐软提示而非硬拒绝。系统记录目标窗口和迟到状态，但允许跨时区、迟到恢复、观察和补做；数据真实性仍由 as-of、市场窗口和 freshness 单独严格校验。
+`intraday-snapshot` 是唯一事实生产动作；持续循环只负责重复调度同一幂等动作，不建立第二套盘中业务逻辑。
+
+**DAILY runtime 路径**
+
+统一使用 `investing-os/system/runtime/{sessions,inputs,packets}`。旧 `findings/`、`reports/` 和 `system/data/packets/` 路径保留为历史或工具工作区，不作为新 DAILY canonical 产物路径。
 
 ---
 
