@@ -1,10 +1,10 @@
 # DAILY 每日交易工作流契约
 
-状态：v2 高阶审核要求小幅修订，尚未进入用户批准
+状态：v3 待用户批准三项决策
 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
 v2 审核：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md`](../../handoff/reviews/2026-06-30-daily-contract-v2-review.md)
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
-本版修正：R1–R6 六项阻断问题 + 非阻断修订
+v2 修正：R1–R6 六项阻断问题 + 非阻断修订；v3 修正：V2-1 至 V2-4（分类调整、时间窗口软化、H4 措辞修正、高阶推荐重构）
 
 本契约定义 DAILY-0 至 DAILY-4 的合法顺序、进入/完成条件、系统动作、用户交互、固定产物和失败恢复。它是代码实现的唯一需求依据。
 
@@ -154,7 +154,7 @@ research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作�
 
 - 状态为 `DAY_INITIALIZED`
 - 活动类型为 `trading` 或 `observation`
-- as-of 时间在盘前窗口内（04:00–09:29:59 ET）
+- as-of 时间目标为盘前窗口（04:00–09:29:59 ET）；窗口外行为由 Q3（时间窗口软硬）决定
 
 ### 握手链
 
@@ -268,7 +268,7 @@ observation 模式：仅执行 Step 1–3，不生成交易计划和盘中指导
 
 - trading 模式：状态为 `PLAN_APPROVED`，存在已批准盘中指导
 - observation 模式：状态为 `FOCUS_CONFIRMED`（或等价观察状态）
-- 当前时间在开盘观察窗口内（9:30–10:00 ET 为原 Node 2 节奏）
+- 当前时间目标为开盘观察窗口（9:30–10:00 ET 为原 Node 2 节奏）；窗口外行为由 Q3（时间窗口软硬）决定
 
 ### 系统自动准备
 
@@ -349,7 +349,7 @@ observation 模式：仅执行 Step 1–3，不生成交易计划和盘中指导
 
 - trading 模式：状态为 `INTRADAY_ACTIVE`，存在已批准盘中指导和交易计划
 - observation 模式：状态为 `INTRADAY_ACTIVE` 的观察变体
-- 当前时间在市场交易时段内（09:30–16:00 ET）
+- 当前时间目标为市场交易时段（09:30–16:00 ET）；窗口外行为由 Q3（时间窗口软硬）决定
 
 ### 系统自动准备
 
@@ -548,9 +548,9 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 
 | 序号 | 问题 | 所在文件 | 分类 | 候选修正方向 |
 |------|------|---------|------|------------|
-| C1 | `init-day` 无活动类型参数，硬编码 `session_type="trading"` | `coordinator_cli.py`、`models.py` | `verified_bug` | 添加 `--session-type` 参数，支持全部 SESSION_TYPES |
+| C1 | `init-day` 无活动类型参数，硬编码 `session_type="trading"` | `coordinator_cli.py`、`models.py` | `missing_capability` | 添加 `--session-type` 参数，支持全部 SESSION_TYPES |
 | C2 | 跨日恢复零实现 | `transitions.py`、`coordinator_cli.py`、`store.py` | `missing_capability` | 实现 Architecture spec Section 7 的三种恢复选项 |
-| C3 | `REVIEW_REQUIRED` 不在任何 TRANSITIONS 字典中 | `transitions.py` | `verified_bug` | 添加到 BEGIN_TRANSITIONS |
+| C3 | `REVIEW_REQUIRED` 不在任何 TRANSITIONS 字典中 | `transitions.py` | `missing_capability` | 添加到 BEGIN_TRANSITIONS |
 | C4 | `QUICK_REVIEWED`、`CLOSED_UNREVIEWED` 未注册 | `models.py` | `missing_capability` | 添加到 TRADING_STATES |
 | C5 | DAILY-2 无独立状态 | `transitions.py` | `design_decision` | 保持隐式过渡 / 创建 `OBSERVATION_ACTIVE` 状态，由用户决定 |
 | C6 | `archive_day` 无实际归档写入 | `transitions.py`、缺失归档模块 | `missing_capability` | 实现最小归档逻辑（文件汇总 + 产物清单 JSON） |
@@ -565,58 +565,78 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 
 ---
 
-## 7. 需要用户决定的关键问题
+## 7. 高阶推荐与用户决策
 
-以下问题需用户逐项决定。每项列出选项和影响范围，不预设答案。
+以下项目由高阶模型提出推荐方案，用户整体批准。v2 中的 Q1（跨日恢复）、Q2（observation 状态）、Q4（非交易模式入口）、Q5（confirm 产物）、Q7（时间窗口 enforce）已重新分类为本节高阶推荐——这些是架构与状态机决策，不应要求用户逐项设计技术细节。保留的三项（U1–U3）重新编号为 Q1–Q3，是真正需要用户决定的意义、权限与体验问题。
 
-### Q1: 跨日恢复的三种选项，先实现哪一个？
+### 高阶模型推荐方案
 
-- A) 快速复盘（最少检查 → QUICK_REVIEWED）
-- B) 冻结收尾（创建欠账 → CLOSED_UNREVIEWED）
-- C) 完整复盘（先完成 DAILY-4 再开始今天）
+**跨日恢复（原 Q1）**
 
-影响：DAILY-0 用户确认流程、transitions.py 状态注册
+三种选项都是必须支持的用户路径，不是三选一。
 
-### Q2: observation 模式的 DAILY-2/3 是否需要独立状态（如 `OBSERVATION_ACTIVE`），还是复用现有状态 + 模式标记？
+推荐实施顺序：
+1. 冻结收尾：最小解除昨日阻塞并创建欠账；
+2. 快速复盘：完成最低风险检查；
+3. 完整复盘：复用 DAILY-4。
 
-- A) 创建独立 `OBSERVATION_ACTIVE` 状态
-- B) 复用 `INTRADAY_ACTIVE` + session 中 `session_type=observation` 标记
+界面最终必须同时提供三种选择。
 
-影响：transitions.py、coordinator、Dashboard 显示
+**observation 状态（原 Q2）**
 
-### Q3: `post_open_adj` 机制保留还是移除？
+推荐创建独立 `OBSERVATION_ACTIVE` 状态。
 
-- A) 保留，但添加 investing-os 写入闸门 + 审计日志
-- B) 移除，所有锚点调整必须通过 DAILY-1 重新批准
+理由：复用 `INTRADAY_ACTIVE` 容易把"正在交易"和"只读观察"混淆；独立状态更容易实施权限拒绝、Dashboard 标识和恢复测试。
+
+**非交易模式入口（原 Q4）**
+
+推荐协调器支持统一 session/action contract；CLI 和 Dashboard 都只是该契约的入口。
+
+第一阶段先提供 CLI 以便测试和恢复，Dashboard 随后接入同一动作。不是二选一。
+
+**confirm 产物（原 Q5）**
+
+推荐采用以下流程：
+
+```text
+investing-os skill / 对话生成认知与计划产物
+→ 用户确认
+→ coordinator 只做 schema、引用、版本和内容一致性校验
+```
+
+CLI 不得自动编造焦点判断、风险计划或用户结论。
+
+**时间窗口（原 Q7）**
+
+推荐软提示而非硬拒绝。系统记录目标窗口和迟到状态，但允许跨时区、迟到恢复、观察和补做；数据真实性仍由 as-of、市场窗口和 freshness 单独严格校验。
+
+---
+
+### Q1: `post_open_adj` 机制（原 U1 / 原 Q3）
+
+**高阶推荐：** 移除其覆盖盘前锚点的能力。盘中若需调整锚点，回到计划变更与用户确认流程，保留版本和审计记录。
+
+- A) 批准推荐 — 移除 `post_open_adj`
+- B) 否决推荐 — 保留 `post_open_adj`，但添加 investing-os 写入闸门 + 审计日志
 
 影响：`intraday_snapshot.py`、盘中权限模型
 
-### Q4: 非交易模式（research/review/maintenance）是否需要独立 CLI 入口？
+### Q2: 复盘交互形式（原 U2 / 原 Q6）
 
-- A) 独立 CLI 入口（如 `cli.py init-day --session-type research`）
-- B) 仅通过 Dashboard 触发
+**高阶推荐：** 对话为主、结构化产物为结果。用户通过对话完成判断，investing-os 把结果写入固定 schema；Dashboard 后续只展示和辅助确认，不要求用户在 CLI 表单中重复填写。
 
-影响：`coordinator_cli.py`、用户交互设计
-
-### Q5: confirm 类 intent（`record_focus_confirmation`、`record_plan_approval`）的产物生成方式？
-
-- A) CLI 命令自动化生成 + schema 校验
-- B) 保持 investing-os 手动写入，CLI 只校验存在性和必填字段
-
-影响：`adapters.py`、`cli.py`、investing-os 工作流
-
-### Q6: 复盘偏差分类（Step 3）的交互形式？
-
-- A) 纯对话（investing-os 提问 → 用户回答）
-- B) 结构化 CLI 表单
-- C) Dashboard 表单
+- A) 批准推荐 — 纯对话（investing-os 提问 → 用户回答 → investing-os 写入结构化产物）
+- B) CLI 表单辅助 — 对话 + CLI 结构化表单
+- C) Dashboard 表单辅助 — 对话 + Dashboard 表单
 
 影响：DAILY-4 实现方式、用户交互设计
 
-### Q7: 盘前窗口 9:30 截止和开盘观察 9:30–10:00 是否需要硬代码 enforce？
+### Q3: 时间窗口（原 U3 / 原 Q7）
 
-- A) 硬 enforce（代码拒绝窗口外操作）
-- B) 软提示（警告但允许，支持迟到恢复和非美东时区）
+**高阶推荐：** 软提示而非硬拒绝。系统记录目标窗口和迟到状态，但允许跨时区、迟到恢复、观察和补做；数据真实性仍由 as-of、市场窗口和 freshness 单独严格校验。
+
+- A) 批准推荐 — 软提示（警告但允许）
+- B) 否决推荐 — 硬 enforce（代码拒绝窗口外操作）
 
 影响：`cli.py` 时间窗口闸门设计
 
@@ -624,8 +644,8 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 
 ## 8. 契约生效条件
 
-1. 用户逐段批准 DAILY-0 至 DAILY-4 的修订内容
-2. 用户对第 7 节逐项给出决定
+1. 用户批准第 7 节的高阶推荐方案
+2. 用户对第 7 节三项决策（Q1/Q2/Q3）逐项给出决定
 3. `WORKFLOW-STATUS.zh.md` 已同步更新
 4. 本文件作为独立 commit 提交
 5. 此后方可拆分代码实现任务
