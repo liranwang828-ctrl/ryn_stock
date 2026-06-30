@@ -109,30 +109,58 @@ def test_signal_accuracy_pred_scene_match(tmp_path):
 
 # ── 测试 generate_suggestions ──────────────────────────────────────────────
 
-def test_generate_suggestions_lesson_always_present():
-    """lesson_record 每日必有"""
-    from stock_team.data_ingest.postmarket_data_collector import generate_suggestions
-    suggs = generate_suggestions(
-        sym="TEST", date="2026-05-20",
-        execution={"followed_plan": "yes"},
-        performance={"day_ret_pct": 0.5, "thesis_days": 5, "vs_stop_pct": 5.0},
-        signal_accuracy={},
-    )
-    types = [s["type"] for s in suggs]
-    assert "lesson_record" in types
-
-
-def test_generate_suggestions_thesis_status_on_breach():
-    """thesis_signal=breach 终盘 → thesis_status 建议"""
+def test_generate_suggestions_no_cognitive_types():
+    """Cognitive types (lesson_record, thesis_status, correlation_warning) 均已禁用
+    移至 investing-os per DAILY-CONTRACT v4 Section 7.10"""
     from stock_team.data_ingest.postmarket_data_collector import generate_suggestions
     suggs = generate_suggestions(
         sym="TEST", date="2026-05-20",
         execution={"followed_plan": "no"},
-        performance={"day_ret_pct": -3.5, "thesis_days": 5, "vs_stop_pct": -1.0},
+        performance={"day_ret_pct": -3.5, "thesis_days": 15, "vs_stop_pct": -1.0},
         signal_accuracy={"thesis_signal_correct": True},
     )
     types = [s["type"] for s in suggs]
-    assert "thesis_status" in types
+    cognitive_types = {"lesson_record", "thesis_status", "correlation_warning",
+                       "time_stop_eval", "trigger_deep_research", "thesis_confirmation"}
+    found_cognitive = cognitive_types & set(types)
+    assert not found_cognitive, f"Cognitive types should not be in output: {found_cognitive}"
+
+
+def test_generate_suggestions_includes_execution_facts():
+    """输出应包含 fact 类型：price_deviation, execution_deviation, signal_accuracy_stat"""
+    from stock_team.data_ingest.postmarket_data_collector import generate_suggestions
+    suggs = generate_suggestions(
+        sym="TEST", date="2026-05-20",
+        execution={"followed_plan": "no",
+                   "plan_entry_triggered": True, "actual_entry": False,
+                   "plan_exit_triggered": False, "actual_exit": None},
+        performance={"day_ret_pct": 5.0, "thesis_days": 5, "vs_stop_pct": 10.0,
+                     "close_price": 108.0, "open_price": 100.0},
+        signal_accuracy={"gate_correct": True, "pred_scene_correct": True,
+                         "master_consensus_correct": True},
+    )
+    types = [s["type"] for s in suggs]
+    fact_types = {"price_deviation", "execution_deviation", "signal_accuracy_stat"}
+    found_facts = fact_types & set(types)
+    assert found_facts, f"Should contain at least one fact type from {fact_types}, got {types}"
+
+
+def test_generate_suggestions_warns_on_cognitive_type_request():
+    """include_cognitive=True 时发出 deprecation warning 指向 investing-os"""
+    import warnings
+    from stock_team.data_ingest.postmarket_data_collector import generate_suggestions
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        generate_suggestions(
+            sym="TEST", date="2026-05-20",
+            execution={"followed_plan": "no"},
+            performance={"day_ret_pct": -3.5, "thesis_days": 15, "vs_stop_pct": -1.0},
+            signal_accuracy={"thesis_signal_correct": True},
+            include_cognitive=True,
+        )
+        assert len(w) >= 1, "Expected at least one deprecation warning"
+        assert any("investing-os" in str(warning.message) for warning in w), \
+            "Warning should mention investing-os"
 
 
 # ── Task 2 测试：build_per_stock_summary / write_per_stock_summary ──────────

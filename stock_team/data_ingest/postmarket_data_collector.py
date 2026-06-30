@@ -206,87 +206,145 @@ def build_signal_accuracy(sym: str, date: str, day_ret_pct: float | None,
 
 
 # ── generate_suggestions ───────────────────────────────────────────────────
+# Cognitive type generation (lesson_record, thesis_status, correlation_warning)
+# moved to investing-os per DAILY-CONTRACT v4 Section 7.10.
+# stock_team now generates only fact-based output:
+#   - price_deviation: price vs target/stop comparison
+#   - execution_deviation: planned vs actual execution gaps
+#   - signal_accuracy_stat: today's signal accuracy summary
+
+import warnings
 
 def generate_suggestions(
     sym: str, date: str,
     execution: dict,
     performance: dict,
     signal_accuracy: dict,
+    include_cognitive: bool = False,
 ) -> list[dict]:
     """
-    规则驱动生成 12 类建议草稿（不依赖 LLM）。
-    优先级：breach > warning > low。
+    规则驱动生成纯事实建议草稿（不依赖 LLM）。
+    Cognitive 类型已移至 investing-os。
     """
+    if include_cognitive:
+        warnings.warn(
+            "Cognitive type generation (lesson_record, thesis_status, correlation_warning) "
+            "has moved to investing-os per DAILY-CONTRACT v4 Section 7.10. "
+            "stock_team.generate_suggestions() now returns fact-only output regardless of include_cognitive.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     suggs = []
 
     day_ret     = performance.get("day_ret_pct", 0.0) or 0.0
     thesis_days = performance.get("thesis_days", 0) or 0
     vs_stop     = performance.get("vs_stop_pct")
-    followed    = execution.get("followed_plan", "na")
-    ts_correct  = signal_accuracy.get("thesis_signal_correct")
+    close_price = performance.get("close_price")
+    open_price  = performance.get("open_price")
 
-    # 1. thesis_status：今日大跌（< -3%）或论点破裂信号
-    if day_ret < -3.0 or ts_correct is True:
+    # ── 以下 cognitive 类型已移至 investing-os（保留代码供参考）──────────
+    # # 1. thesis_status：今日大跌（< -3%）或论点破裂信号
+    # if day_ret < -3.0 or signal_accuracy.get("thesis_signal_correct") is True:
+    #     suggs.append({...})
+
+    # # 2. time_stop_eval：thesis_days 超过 14 天
+    # if thesis_days > 14:
+    #     suggs.append({...})
+
+    # # 3. trigger_deep_research：亏损连续或跌幅 > 5%
+    # if day_ret < -5.0:
+    #     suggs.append({...})
+
+    # # 4. thesis_confirmation：今日大涨 + gate 通过
+    # if day_ret > 3.0 and signal_accuracy.get("gate_correct") is True:
+    #     suggs.append({...})
+
+    # # 5. lesson_record：每日必有
+    # suggs.append({...})
+    # ── cognitive 类型参考代码结束 ───────────────────────────────────────
+
+    # ── 纯事实类型（stock_team 职责边界）─────────────────────────────────
+
+    # price_deviation：价格偏离目标/止损的事实
+    vs_target = performance.get("vs_target_pct")
+    if vs_target is not None and close_price is not None:
         suggs.append({
-            "type": "thesis_status",
-            "priority": "high",
-            "description": f"{sym} 今日跌幅 {day_ret:.1f}%，建议重新评估论点状态",
-            "proposed_value": {"new_status": "weakening"},
+            "type": "price_deviation",
+            "priority": "medium" if abs(vs_target) > 5 else "low",
+            "description": f"{sym} close {close_price} vs target deviation {vs_target:+.1f}%",
+            "proposed_value": {
+                "close_price": close_price,
+                "vs_target_pct": vs_target,
+                "vs_stop_pct": vs_stop,
+            },
             "confirmed": None, "applied_at": None, "applied_to": None,
         })
 
-    # 2. stop_move：今日明显上涨（> 3%）且利润充足
+    # price_deviation (stop move)：stop_move 保留为 price_deviation 子类型
     if day_ret > 3.0 and vs_stop is not None and vs_stop > 8.0:
         suggs.append({
-            "type": "stop_move",
+            "type": "price_deviation",
             "priority": "medium",
-            "description": f"{sym} 今日涨幅 {day_ret:.1f}%，考虑上移止损锁定利润",
-            "proposed_value": {"new_stop": None},  # 由用户填写具体价位
+            "description": f"{sym} day_ret {day_ret:+.1f}% vs_stop {vs_stop:+.1f}% — stop buffer expanded",
+            "proposed_value": {
+                "day_ret_pct": day_ret,
+                "vs_stop_pct": vs_stop,
+                "close_price": close_price,
+            },
             "confirmed": None, "applied_at": None, "applied_to": None,
         })
 
-    # 3. time_stop_eval：thesis_days 超过 14 天
-    if thesis_days > 14:
+    # execution_deviation：计划执行偏差事实
+    plan_entry = execution.get("plan_entry_triggered")
+    actual_entry = execution.get("actual_entry")
+    plan_exit = execution.get("plan_exit_triggered")
+    actual_exit = execution.get("actual_exit")
+
+    entry_dev = (plan_entry is not None and actual_entry is not None
+                 and plan_entry != actual_entry)
+    exit_dev = (plan_exit is not None and actual_exit is not None
+                and plan_exit != actual_exit)
+
+    if entry_dev or exit_dev:
         suggs.append({
-            "type": "time_stop_eval",
-            "priority": "medium",
-            "description": f"{sym} 持仓 {thesis_days} 天，建议评估时间止损",
-            "proposed_value": {"thesis_days": thesis_days, "expected_days": 14},
+            "type": "execution_deviation",
+            "priority": "high" if (entry_dev and exit_dev) else "medium",
+            "description": f"{sym} execution gap: entry plan={plan_entry}/actual={actual_entry}, exit plan={plan_exit}/actual={actual_exit}",
+            "proposed_value": {
+                "plan_entry_triggered": plan_entry,
+                "actual_entry": actual_entry,
+                "plan_exit_triggered": plan_exit,
+                "actual_exit": actual_exit,
+            },
             "confirmed": None, "applied_at": None, "applied_to": None,
         })
 
-    # 4. trigger_deep_research：亏损连续或跌幅 > 5%
-    if day_ret < -5.0:
-        suggs.append({
-            "type": "trigger_deep_research",
-            "priority": "high",
-            "description": f"{sym} 今日跌 {day_ret:.1f}%，建议重新做深度研究",
-            "proposed_value": {"reason": f"单日跌幅 {day_ret:.1f}%"},
-            "confirmed": None, "applied_at": None, "applied_to": None,
-        })
+    # signal_accuracy_stat：今日信号准确率统计事实
+    accuracy_fields = {
+        "pred_scene_correct": signal_accuracy.get("pred_scene_correct"),
+        "master_consensus_correct": signal_accuracy.get("master_consensus_correct"),
+        "gate_correct": signal_accuracy.get("gate_correct"),
+        "thesis_signal_correct": signal_accuracy.get("thesis_signal_correct"),
+    }
+    defined = {k: v for k, v in accuracy_fields.items() if v is not None}
 
-    # 5. thesis_confirmation：今日大涨 + gate 通过
-    if day_ret > 3.0 and signal_accuracy.get("gate_correct") is True:
+    if defined:
+        correct_count = sum(1 for v in defined.values() if v is True)
+        total = len(defined)
         suggs.append({
-            "type": "thesis_confirmation",
+            "type": "signal_accuracy_stat",
             "priority": "low",
-            "description": f"{sym} 今日涨 {day_ret:.1f}%，gate 通过，论点积极确认",
-            "proposed_value": {"signal": "gate_pass_positive_day", "add_opportunity": True},
+            "description": f"{sym} signal accuracy: {correct_count}/{total} correct today",
+            "proposed_value": {
+                "accuracy_details": defined,
+                "correct_count": correct_count,
+                "total_defined": total,
+                "accuracy_rate": round(correct_count / total, 2) if total > 0 else None,
+            },
             "confirmed": None, "applied_at": None, "applied_to": None,
         })
 
-    # 6. lesson_record：每日必有
-    lesson = f"{sym} {date}: " + (
-        f"计划执行{'良好' if followed == 'yes' else '偏差'}，"
-        f"今日{'+' if day_ret >= 0 else ''}{day_ret:.1f}%"
-    )
-    suggs.append({
-        "type": "lesson_record",
-        "priority": "low",
-        "description": lesson[:80],
-        "proposed_value": {"lesson": lesson[:100]},
-        "confirmed": None, "applied_at": None, "applied_to": None,
-    })
     return suggs
 
 
