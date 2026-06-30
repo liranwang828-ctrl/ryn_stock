@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intent",
+    "session_id",
+    "expected_state",
+    "user_confirmation",
+    "parameters",
+    "idempotency_key"
+  ],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": [
+        "initialize_day",
+        "start_stage0",
+        "record_focus_confirmation",
+        "start_stage1",
+        "record_plan_approval",
+        "start_intraday",
+        "close_market",
+        "archive_day",
+        "retry_last_action"
+      ]
+    },
+    "session_id": { "type": "string" },
+    "expected_state": { "type": "string" },
+    "user_confirmation": { "type": "boolean" },
+    "parameters": { "type": "object" },
+    "idempotency_key": { "type": "string", "minLength": 1 }
+  }
+}
