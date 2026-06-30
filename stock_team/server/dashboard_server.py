@@ -19,10 +19,15 @@ import glob
 import subprocess
 import threading
 import time
+import uuid
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as HTTPServer
 from datetime import datetime, date as _date
 from stock_team.utils.workspace_paths import investing_os_home
+from stock_team.utils.capsule_utils import get_current_nodes_path, get_latest_premarket_plan_path
+from stock_team.orchestration.adapters import ExistingCliAdapter
+from stock_team.orchestration.coordinator import WorkflowCoordinator
+from stock_team.orchestration.store import SessionConflictError, SessionStore
 
 # 插入工作区根目录以支持模块导入
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 确保 BASE 路径计算正确
 _possible_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = _possible_base if os.path.exists(os.path.join(_possible_base, "templates")) else os.path.dirname(os.path.abspath(__file__))
+INVESTING_OS_DASHBOARDS = os.path.join(investing_os_home(BASE), "dashboards")
 
 CFG_DIR = os.path.join(BASE, "config")
 FIND_DIR = os.path.join(BASE, "findings")
@@ -63,6 +69,10 @@ def init_folders():
     os.makedirs(RPT_DIR, exist_ok=True)
 
 
+def _dashboard_path(*parts):
+    return os.path.join(INVESTING_OS_DASHBOARDS, *parts)
+
+
 def updated_symbols_from_live_status(path: str) -> list[str]:
     """Return symbols with refreshed local live-status detail."""
     try:
@@ -93,11 +103,728 @@ def _load_json_any(path: str, default):
     return value
 
 
+def _parse_symbol_list(raw_value) -> list[str]:
+    if isinstance(raw_value, list):
+        values = raw_value
+    elif isinstance(raw_value, str):
+        values = raw_value.split(",")
+    else:
+        values = []
+    result = []
+    seen = set()
+    for item in values:
+        symbol = str(item).upper().strip()
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        result.append(symbol)
+    return result
+
+
+def _infer_position_theme(position: dict) -> str:
+    text = " ".join(str(position.get(key) or "") for key in ("position_type", "note", "thesis")).lower()
+    mapping = [
+        ("ai_power", "power"),
+        ("power", "power"),
+        ("memory", "memory"),
+        ("cloud", "cloud"),
+        ("optical", "optical"),
+        ("semiconductor", "semiconductors"),
+        ("gpu", "semiconductors"),
+        ("ai", "ai_infrastructure"),
+    ]
+    for token, theme in mapping:
+        if token in text:
+            return theme
+    return "user_focus"
+
+
 def _save_json(path: str, payload) -> str:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
     return path
+
+
+def _save_text(path: str, content: str) -> str:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return path
+
+
+def _stage0_snapshot_source_kind(payload) -> str:
+    if not isinstance(payload, dict):
+        return "missing"
+    markets = payload.get("markets")
+    if isinstance(markets, dict):
+        required = {"QQQ", "SPY", "IWM", "VIXY"}
+        if not required.issubset(set(markets.keys())):
+            return "incomplete_formal_snapshot"
+        for sym in required:
+            row = markets.get(sym) or {}
+            if not isinstance(row, dict):
+                return "incomplete_formal_snapshot"
+            source = row.get("source")
+            if source == "polygon_premarket_1m_aggregates" and not row.get("latest_bar_time_et"):
+                return "incomplete_formal_snapshot"
+            if source not in ("polygon_premarket_snapshot", "polygon_premarket_1m_aggregates"):
+                return "incomplete_formal_snapshot"
+            if row.get("price") in (None, "") or row.get("prev_close") in (None, ""):
+                return "incomplete_formal_snapshot"
+        return "formal_provider_snapshot"
+    if isinstance(markets, list):
+        return "manual_draft"
+    return "missing"
+
+
+def _coordinator_sessions_dir(base_dir: str) -> str:
+    return os.path.join(investing_os_home(base_dir), "system", "runtime", "sessions")
+
+
+def _coordinator_decisions_dir(base_dir: str) -> str:
+    return os.path.join(investing_os_home(base_dir), "system", "runtime", "coordinator-decisions")
+
+
+def _coordinator_inputs_dir(base_dir: str) -> str:
+    return os.path.join(investing_os_home(base_dir), "system", "runtime", "inputs")
+
+
+def _coordinator_packets_dir(base_dir: str) -> str:
+    return os.path.join(investing_os_home(base_dir), "system", "runtime", "packets")
+
+
+def _latest_journal_path(base_dir: str) -> str:
+    journals_dir = os.path.join(investing_os_home(base_dir), "wiki", "journals")
+    if not os.path.isdir(journals_dir):
+        return ""
+    candidates = sorted(glob.glob(os.path.join(journals_dir, "*.md")), reverse=True)
+    return candidates[0] if candidates else ""
+
+
+def _build_stage0_universe_document(base_dir: str, market_date: str, session_id: str) -> tuple[str, str]:
+    inputs_dir = _coordinator_inputs_dir(base_dir)
+    os.makedirs(inputs_dir, exist_ok=True)
+    universe_path = os.path.join(inputs_dir, f"{session_id}-stage0-universe.json")
+    journal_path = _latest_journal_path(base_dir)
+    snapshot_path = os.path.join(inputs_dir, f"{session_id}-pre-market-snapshot.json")
+    snapshot = _load_json_any(snapshot_path, {})
+    snapshot_symbols = _parse_symbol_list(snapshot.get("focus_symbols"))
+    snapshot_themes = _parse_symbol_list(snapshot.get("themes"))
+    positions_payload = _load_json_any(os.path.join(base_dir, "config", "positions.json"), {})
+    current_positions = positions_payload.get("positions") if isinstance(positions_payload, dict) else {}
+    if not isinstance(current_positions, dict):
+        current_positions = {}
+
+    universe_rows = []
+    seen_symbols = set()
+    for symbol in snapshot_symbols:
+        position = current_positions.get(symbol) if isinstance(current_positions.get(symbol), dict) else {}
+        is_position = bool(position)
+        universe_rows.append({
+            "symbol": symbol,
+            "role": "current_position" if is_position else "watchlist",
+            "theme": _infer_position_theme(position) if is_position else (snapshot_themes[0].lower() if snapshot_themes else "user_focus"),
+            "research_status": str(position.get("thesis_status") or "pending").strip() if is_position else "pending",
+            "source": "current_positions+snapshot_focus" if is_position else "snapshot_focus_symbols",
+            "brain_note": "Imported from current holdings and explicit daily focus." if is_position else "Explicit daily focus symbol from pre-market snapshot.",
+        })
+        seen_symbols.add(symbol)
+
+    for symbol, position in current_positions.items():
+        symbol = str(symbol).upper().strip()
+        if not symbol or symbol in seen_symbols or not isinstance(position, dict):
+            continue
+        universe_rows.append({
+            "symbol": symbol,
+            "role": "current_position",
+            "theme": _infer_position_theme(position),
+            "research_status": str(position.get("thesis_status") or "needs_review").strip(),
+            "source": "current_positions",
+            "brain_note": "Live IBKR position added to the daily observation universe.",
+        })
+        seen_symbols.add(symbol)
+
+    universe_document = {
+        "artifact_type": "pre_market_universe",
+        "version": "1.0",
+        "date": market_date,
+        "created_by": "investing-os-dashboard",
+        "purpose": "Dashboard-generated minimum Stage 0 universe. This is not a trading permission list.",
+        "source_inputs": {
+            "positions": [
+                {
+                    "source": "ibkr_live_api" if current_positions else "dashboard_runtime_placeholder",
+                    "as_of_et": f"{market_date}T08:00:00-04:00",
+                    "symbols": sorted(seen_symbols),
+                    "notes": "Derived from local live-synced positions.json for Stage 0 dashboard bootstrap." if current_positions else "No live broker position snapshot was attached from the dashboard runtime.",
+                }
+            ],
+            "prior_review": {
+                "path": os.path.relpath(journal_path, investing_os_home(base_dir)).replace("\\", "/") if journal_path else "",
+                "status": "not_attached" if not journal_path else "reviewed_for_stage0_input",
+                "key_risks": [],
+            },
+            "cognition_state": {
+                "permission_basis": "normal",
+                "active_risks": [],
+            },
+        },
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": [
+            "new_short_term_trade_without_plan",
+            "new_leveraged_product_trade_without_explicit_brain_approval",
+            "loss_repair_reentry",
+        ],
+        "selection_policy": {
+            "allowed_sources": [
+                "current_positions",
+                "active_watchlist",
+                "researched_or_explicitly_approved_candidates",
+                "market_or_sector_proxies",
+            ],
+            "forbidden_interpretations": [
+                "focus_pool",
+                "trade_permission",
+                "buy_sell_hold_recommendation",
+                "symbol_selection_by_stock_team",
+            ],
+        },
+        "themes": snapshot_themes or [
+            "semiconductors",
+            "ai_infrastructure",
+            "memory",
+            "cloud",
+            "optical",
+        ],
+        "universe": universe_rows,
+        "proxies": [
+            {
+                "symbol": "QQQ",
+                "role": "market_proxy",
+                "theme": "market_context",
+                "research_status": "proxy",
+                "source": "proxy",
+                "brain_note": "Nasdaq growth proxy for Stage 0 market context.",
+            },
+            {
+                "symbol": "SPY",
+                "role": "market_proxy",
+                "theme": "market_context",
+                "research_status": "proxy",
+                "source": "proxy",
+                "brain_note": "Broad market proxy for Stage 0 market context.",
+            },
+        ],
+        "forbidden_sections_absent": [
+            "buy_sell_hold_recommendation",
+            "trading_permission_state",
+            "symbol_selection_recommendation",
+            "final_thesis_adoption",
+            "psychological_interpretation",
+        ],
+    }
+    _save_json(universe_path, universe_document)
+    return universe_path, journal_path
+
+
+def _default_stage0_action(base_dir: str, session: dict) -> dict:
+    market_date = session.get("market_date") or _date.today().strftime("%Y-%m-%d")
+    session_id = session["session_id"]
+    universe_path, journal_path = _build_stage0_universe_document(base_dir, market_date, session_id)
+    packets_dir = _coordinator_packets_dir(base_dir)
+    os.makedirs(packets_dir, exist_ok=True)
+    out_path = os.path.join(packets_dir, f"{session_id}-stage0-market-context.md")
+    parameters = {
+        "date": market_date,
+        "as_of": f"{market_date}T09:20:00-04:00",
+        "universe": universe_path,
+        "out": out_path,
+    }
+    snapshot_path = os.path.join(inputs_dir := _coordinator_inputs_dir(base_dir), f"{session_id}-pre-market-snapshot.json")
+    snapshot_payload = _load_json_any(snapshot_path, None)
+    snapshot_kind = _stage0_snapshot_source_kind(snapshot_payload)
+    formal_ready = snapshot_kind == "formal_provider_snapshot"
+    if formal_ready:
+        parameters["pre_market_snapshot"] = snapshot_path
+    state = session.get("state", "DAY_INITIALIZED")
+    effective_state = _effective_coordinator_state(session) or state
+    intent = "retry_last_action" if state == "FAILED_TOOL" else "start_stage0"
+    action = {
+        "intent": intent,
+        "session_id": session_id,
+        "expected_state": effective_state,
+        "user_confirmation": False,
+        "parameters": parameters,
+        "idempotency_key": str(uuid.uuid4()),
+    }
+    context = {
+        "generated_universe_path": universe_path,
+        "latest_journal_path": journal_path,
+        "expected_snapshot_path": snapshot_path,
+        "snapshot_formal_ready": formal_ready,
+        "snapshot_source_kind": snapshot_kind,
+        "stage0_output_path": out_path,
+    }
+    return {"action": action, "context": context}
+
+
+def _default_focus_confirmation_action(session: dict, task: dict) -> dict:
+    session_id = session["session_id"]
+    outputs = {item.get("role"): item.get("path") for item in task.get("outputs", [])}
+    return {
+        "intent": "record_focus_confirmation",
+        "session_id": session_id,
+        "expected_state": session.get("state", "STAGE0_READY"),
+        "user_confirmation": True,
+        "parameters": {
+            "discussion_notes": outputs.get("discussion_notes", ""),
+            "decision_sheet": outputs.get("decision_sheet", ""),
+        },
+        "idempotency_key": str(uuid.uuid4()),
+    }
+
+
+def _default_stage1_action(base_dir: str, session: dict, task: dict) -> dict:
+    session_id = session["session_id"]
+    inputs = {item.get("role"): item.get("path") for item in task.get("inputs", [])}
+    out_path = _runtime_path(base_dir, "packets", session_id, "stage1-plan-evidence.md")
+    return {
+        "intent": "start_stage1",
+        "session_id": session_id,
+        "expected_state": session.get("state", "FOCUS_CONFIRMED"),
+        "user_confirmation": False,
+        "parameters": {
+            "context_packet": inputs.get("stock_team_packet", ""),
+            "decision_sheet": inputs.get("decision_sheet", ""),
+            "out": out_path,
+        },
+        "idempotency_key": str(uuid.uuid4()),
+    }
+
+
+def _default_stage0_snapshot_payload(base_dir: str, market_date: str, session_id: str) -> tuple[str, dict]:
+    snapshot_path = os.path.join(_coordinator_inputs_dir(base_dir), f"{session_id}-pre-market-snapshot.json")
+    payload = {
+        "as_of_et": f"{market_date}T09:20:00-04:00",
+        "window": "pre_market_before_09_30_ET",
+        "markets": [
+            {"symbol": "QQQ", "last": "", "premarket_change_pct": "", "note": ""},
+            {"symbol": "SPY", "last": "", "premarket_change_pct": "", "note": ""},
+            {"symbol": "IWM", "last": "", "premarket_change_pct": "", "note": ""},
+            {"symbol": "VIXY", "last": "", "premarket_change_pct": "", "note": ""},
+        ],
+        "focus_symbols": "",
+        "themes": "",
+        "catalysts": "",
+        "notes": "",
+    }
+    return snapshot_path, payload
+
+
+def _load_stage0_snapshot_form(base_dir: str, session: dict | None) -> dict:
+    market_date = (session or {}).get("market_date") or _date.today().strftime("%Y-%m-%d")
+    session_id = (session or {}).get("session_id") or f"trading-{market_date}"
+    snapshot_path, default_payload = _default_stage0_snapshot_payload(base_dir, market_date, session_id)
+    existing = _load_json_any(snapshot_path, None)
+    payload = existing if isinstance(existing, dict) else default_payload
+    source_kind = _stage0_snapshot_source_kind(existing)
+    return {
+        "status": "ok",
+        "session_id": session_id,
+        "market_date": market_date,
+        "path": snapshot_path,
+        "exists": os.path.exists(snapshot_path),
+        "formal_ready": source_kind == "formal_provider_snapshot",
+        "source_kind": source_kind,
+        "payload": payload,
+    }
+
+
+def _save_stage0_snapshot_form(base_dir: str, session: dict, payload: dict) -> dict:
+    market_date = session.get("market_date") or _date.today().strftime("%Y-%m-%d")
+    session_id = session["session_id"]
+    snapshot_path, default_payload = _default_stage0_snapshot_payload(base_dir, market_date, session_id)
+    merged = dict(default_payload)
+    merged.update({
+        "as_of_et": str(payload.get("as_of_et") or default_payload["as_of_et"]).strip(),
+        "window": str(payload.get("window") or default_payload["window"]).strip(),
+        "focus_symbols": str(payload.get("focus_symbols") or "").strip(),
+        "themes": str(payload.get("themes") or "").strip(),
+        "catalysts": str(payload.get("catalysts") or "").strip(),
+        "notes": str(payload.get("notes") or "").strip(),
+    })
+    markets = payload.get("markets") if isinstance(payload.get("markets"), list) else default_payload["markets"]
+    clean_markets = []
+    for row in markets:
+        if not isinstance(row, dict):
+            continue
+        clean_markets.append({
+            "symbol": str(row.get("symbol") or "").strip().upper(),
+            "last": str(row.get("last") or "").strip(),
+            "premarket_change_pct": str(row.get("premarket_change_pct") or "").strip(),
+            "note": str(row.get("note") or "").strip(),
+        })
+    merged["markets"] = clean_markets or default_payload["markets"]
+    _save_json(snapshot_path, merged)
+    return {
+        "status": "ok",
+        "session_id": session_id,
+        "market_date": market_date,
+        "path": snapshot_path,
+        "exists": True,
+        "payload": merged,
+    }
+
+
+def _effective_coordinator_state(session: dict) -> str | None:
+    state = session.get("state")
+    if state == "FAILED_TOOL":
+        last_error = session.get("last_error") or {}
+        return last_error.get("resume_from_state") or state
+    return state
+
+
+def _coordinator_phase_from_state(state: str | None) -> str:
+    if state == "IDLE":
+        return "idle"
+    if state in {
+        "DAY_INITIALIZED",
+        "STAGE0_RUNNING",
+        "STAGE0_READY",
+        "DISCUSSION_REQUIRED",
+        "FOCUS_CONFIRMED",
+        "STAGE1_RUNNING",
+        "STAGE1_READY",
+        "PLAN_CONFIRMATION",
+        "PLAN_APPROVED",
+    }:
+        return "pre_market"
+    if state == "INTRADAY_ACTIVE":
+        return "intraday"
+    if state in {"MARKET_CLOSED", "REVIEW_REQUIRED"}:
+        return "post_market"
+    return "done"
+
+
+def _coordinator_first_action(phase: str, state: str | None, decision: dict | None) -> str:
+    if state == "IDLE":
+        return "init-day"
+    state_action_map = {
+        "DAY_INITIALIZED": "start_stage0",
+        "STAGE0_RUNNING": "start_stage0",
+        "STAGE0_READY": "record_focus_confirmation",
+        "DISCUSSION_REQUIRED": "record_focus_confirmation",
+        "FOCUS_CONFIRMED": "start_stage1",
+        "STAGE1_RUNNING": "start_stage1",
+        "STAGE1_READY": "record_plan_approval",
+        "PLAN_CONFIRMATION": "record_plan_approval",
+        "PLAN_APPROVED": "start_intraday",
+        "FAILED_TOOL": "retry_last_action",
+        "MARKET_CLOSED": "close_market",
+        "REVIEW_REQUIRED": "archive_day",
+        "DAY_ARCHIVED": "init-day",
+    }
+    if state in state_action_map:
+        return state_action_map[state]
+    if phase == "pre_market":
+        return "start_stage0"
+    if phase == "intraday":
+        return "start_intraday"
+    if phase == "post_market":
+        if decision and decision.get("choice") in {"freeze", "quick_review", "full_review"}:
+            return "init-day"
+        return "record_plan_approval"
+    if phase == "done":
+        return "init-day"
+    return "continue-session"
+
+
+def _coordinator_next_step(state: str | None, decision: dict | None) -> str:
+    if state == "FAILED_TOOL":
+        return "retry-last-action"
+    if decision and decision.get("choice") in {"freeze", "quick_review", "full_review", "continue"}:
+        return "init-day" if state == "DAY_ARCHIVED" else "new-day-ready"
+    if state == "MARKET_CLOSED":
+        return "need-review"
+    return "continue-session"
+
+
+def _artifact_status(path: str, label: str, role: str) -> dict:
+    return {
+        "label": label,
+        "role": role,
+        "path": path,
+        "exists": bool(path and os.path.exists(path)),
+    }
+
+
+def _runtime_path(base_dir: str, kind: str, session_id: str, suffix: str) -> str:
+    if kind == "inputs":
+        root = _coordinator_inputs_dir(base_dir)
+    elif kind == "packets":
+        root = _coordinator_packets_dir(base_dir)
+    else:
+        root = os.path.join(investing_os_home(base_dir), "system", "runtime", kind)
+    return os.path.join(root, f"{session_id}-{suffix}")
+
+
+def _build_current_task_payload(session: dict, decision: dict | None, base_dir: str) -> dict:
+    state = session.get("state")
+    session_id = session.get("session_id") or ""
+    market_date = session.get("market_date") or _date.today().strftime("%Y-%m-%d")
+    stage0_packet = _runtime_path(base_dir, "packets", session_id, "stage0-market-context.md")
+    discussion_notes = _runtime_path(base_dir, "inputs", session_id, "stage0-discussion-notes.md")
+    decision_sheet = _runtime_path(base_dir, "inputs", session_id, "stage1-decision-sheet.json")
+    stage1_packet = _runtime_path(base_dir, "packets", session_id, "stage1-plan-evidence.md")
+    trading_plan = _runtime_path(base_dir, "inputs", session_id, "trading-plan.json")
+    intraday_guidance = _runtime_path(base_dir, "inputs", session_id, "intraday-guidance.json")
+
+    if state in {"STAGE0_READY", "DISCUSSION_REQUIRED"}:
+        return {
+            "id": "stage0_discussion",
+            "title": "Stage 0 Discussion",
+            "summary": "Use the planning skill to turn factual Stage 0 evidence into a confirmed focus pool and Stage 1 decision sheet.",
+            "recommended_skill": "pre-market-planning",
+            "skill_path": os.path.join(investing_os_home(base_dir), "agents", "pre-market-planning-agent.md"),
+            "agent_role": "investing-os planning agent",
+            "stock_team_function": "market-context already produced; next stock_team call is Stage 1 evidence after decision_sheet exists",
+            "instructions": [
+                "Read the Stage 0 market-context packet.",
+                "Combine current positions, recent trades, cognition state, and user focus.",
+                "Discuss the day plan with the user before confirming focus symbols.",
+                "Write discussion notes and a Stage 1 decision sheet before advancing.",
+            ],
+            "inputs": [
+                _artifact_status(stage0_packet, "Stage 0 market context", "stock_team_packet"),
+                _artifact_status(os.path.join(base_dir, "findings", "portfolio_snapshot_current.json"), "Current portfolio snapshot", "broker_snapshot"),
+                _artifact_status(os.path.join(investing_os_home(base_dir), "evolution", "promotion-queue.md"), "Cognitive promotion queue", "cognition_state"),
+            ],
+            "outputs": [
+                _artifact_status(discussion_notes, "Stage 0 discussion notes", "discussion_notes"),
+                _artifact_status(decision_sheet, "Stage 1 decision sheet", "decision_sheet"),
+            ],
+            "unlock_action": "record_focus_confirmation",
+            "unlock_ready": os.path.exists(discussion_notes) and os.path.exists(decision_sheet),
+        }
+    if state == "FOCUS_CONFIRMED":
+        return {
+            "id": "stage1_evidence",
+            "title": "Stage 1 Evidence",
+            "summary": "Run stock_team evidence generation from the confirmed decision sheet.",
+            "recommended_skill": "stock-team-evidence",
+            "skill_path": os.path.join(investing_os_home(base_dir), "agents", "stock-team-evidence-agent.md"),
+            "agent_role": "stock_team evidence agent",
+            "stock_team_function": "python -m stock_team.cli premarket",
+            "instructions": [
+                "Use the confirmed decision sheet, not a fresh ad hoc focus list.",
+                "Generate the plan evidence packet.",
+                "Keep buy/sell interpretation outside stock_team.",
+            ],
+            "inputs": [
+                _artifact_status(stage0_packet, "Stage 0 market context", "stock_team_packet"),
+                _artifact_status(decision_sheet, "Stage 1 decision sheet", "decision_sheet"),
+            ],
+            "outputs": [
+                _artifact_status(stage1_packet, "Stage 1 plan evidence packet", "stock_team_packet"),
+            ],
+            "unlock_action": "start_stage1",
+            "unlock_ready": os.path.exists(decision_sheet) and os.path.exists(stage0_packet),
+        }
+    if state == "STAGE1_READY":
+        return {
+            "id": "plan_approval",
+            "title": "Plan Approval",
+            "summary": "Use the risk-boundary skill to convert Stage 1 evidence into a written plan and intraday guidance.",
+            "recommended_skill": "risk-boundary-plan-approval",
+            "skill_path": os.path.join(investing_os_home(base_dir), "agents", "risk-boundary-plan-approval-agent.md"),
+            "agent_role": "investing-os risk agent",
+            "stock_team_function": "none; interpret evidence and write brain-owned plan artifacts",
+            "instructions": [
+                "Read Stage 1 evidence before approving any intraday action.",
+                "Write allowed actions, forbidden actions, risk mode, and invalidation conditions.",
+                "If fields are missing, default to observe_only or reduce_risk_only.",
+            ],
+            "inputs": [
+                _artifact_status(stage1_packet, "Stage 1 plan evidence packet", "stock_team_packet"),
+            ],
+            "outputs": [
+                _artifact_status(trading_plan, "Trading plan", "brain_plan"),
+                _artifact_status(intraday_guidance, "Intraday guidance", "brain_guidance"),
+            ],
+            "unlock_action": "record_plan_approval",
+            "unlock_ready": os.path.exists(trading_plan) and os.path.exists(intraday_guidance),
+        }
+    return {
+        "id": "main_chain",
+        "title": "Main Trading Chain",
+        "summary": f"Current state is {state or 'unknown'} for {market_date}. Follow the next required action shown above.",
+        "recommended_skill": "",
+        "skill_path": "",
+        "agent_role": "",
+        "stock_team_function": "",
+        "instructions": [],
+        "inputs": [],
+        "outputs": [],
+        "unlock_action": "",
+        "unlock_ready": False,
+    }
+
+
+def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_dir: str) -> dict:
+    task = _build_current_task_payload(session, decision, base_dir)
+    session_id = session.get("session_id") or ""
+    market_date = session.get("market_date") or _date.today().strftime("%Y-%m-%d")
+    created_paths = []
+
+    if task.get("id") == "stage0_discussion":
+        discussion_notes = _runtime_path(base_dir, "inputs", session_id, "stage0-discussion-notes.md")
+        decision_sheet = _runtime_path(base_dir, "inputs", session_id, "stage1-decision-sheet.json")
+        stage0_packet = _runtime_path(base_dir, "packets", session_id, "stage0-market-context.md")
+        if not os.path.exists(discussion_notes):
+            created_paths.append(_save_text(discussion_notes, "\n".join([
+                f"# Stage 0 Discussion Notes ({market_date})",
+                "",
+                f"Source Stage 0 packet: `{stage0_packet}`",
+                "",
+                "## Market Context",
+                "-",
+                "",
+                "## Current Positions To Review",
+                "-",
+                "",
+                "## Focus Symbols Confirmed With User",
+                "-",
+                "",
+                "## Symbols Excluded Today",
+                "-",
+                "",
+                "## Risk Mode",
+                "- observe_only / reduce_risk_only / conditional_action / normal",
+                "",
+                "## Forbidden Actions Before Stage 1",
+                "-",
+                "",
+                "## Notes",
+                "-",
+                "",
+            ])))
+        if not os.path.exists(decision_sheet):
+            created_paths.append(_save_json(decision_sheet, {
+                "date": market_date,
+                "source_stage0_packet": stage0_packet,
+                "focus_symbols": [],
+                "excluded_symbols": [],
+                "risk_mode": "observe_only",
+                "allowed_tactics": [],
+                "forbidden_actions": [],
+                "user_confirmed": False,
+                "notes": "",
+            }))
+    elif task.get("id") == "plan_approval":
+        trading_plan = _runtime_path(base_dir, "inputs", session_id, "trading-plan.json")
+        intraday_guidance = _runtime_path(base_dir, "inputs", session_id, "intraday-guidance.json")
+        stage1_packet = _runtime_path(base_dir, "packets", session_id, "stage1-plan-evidence.md")
+        if not os.path.exists(trading_plan):
+            created_paths.append(_save_json(trading_plan, {
+                "date": market_date,
+                "source_stage1_packet": stage1_packet,
+                "risk_mode": "observe_only",
+                "allowed_actions": [],
+                "forbidden_actions": [],
+                "invalidation_conditions": [],
+                "notes": "",
+            }))
+        if not os.path.exists(intraday_guidance):
+            created_paths.append(_save_json(intraday_guidance, {
+                "date": market_date,
+                "source_trading_plan": trading_plan,
+                "default_action": "observe_only",
+                "symbol_guidance": [],
+                "global_checks": [],
+                "notes": "",
+            }))
+
+    return {
+        "task": task,
+        "created_paths": created_paths,
+    }
+
+
+def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir: str = BASE) -> dict:
+    state = session.get("state")
+    effective_state = _effective_coordinator_state(session)
+    phase = _coordinator_phase_from_state(effective_state)
+    first_action = _coordinator_first_action(phase, state, decision)
+    next_step = _coordinator_next_step(state, decision)
+    start_here = {
+        "idle": "init-day first",
+        "pre_market": "start pre-market",
+        "intraday": "start intraday",
+        "post_market": "start post-market review",
+        "done": "start new day",
+    }.get(phase, "continue current flow")
+    route_priority = {
+        "idle": "init-day",
+        "pre_market": "pre_market",
+        "intraday": "intraday_check",
+        "post_market": "trade_review",
+        "done": "continue-session",
+    }.get(phase, "continue-session")
+    needs_review = phase == "post_market" and next_step == "need-review"
+    return {
+        "status": "ok",
+        "session": {
+            "session_id": session.get("session_id"),
+            "state": state,
+            "market_date": session.get("market_date"),
+        },
+        "effective_state": effective_state,
+        "decision": decision,
+        "phase": phase,
+        "first_action": first_action,
+        "next_step": next_step,
+        "start_here": start_here,
+        "route_priority": route_priority,
+        "needs_review": needs_review,
+        "mode": "mixed-entry",
+        "cross_day": {
+            "needs_review": needs_review,
+            "decision_applied": bool(decision),
+            "decision": decision,
+        },
+        "current_task": _build_current_task_payload(session, decision, base_dir),
+    }
+
+
+def _load_coordinator_manifest(base_dir: str) -> dict:
+    sessions_dir = _coordinator_sessions_dir(base_dir)
+    decisions_dir = _coordinator_decisions_dir(base_dir)
+    candidates = []
+    if os.path.isdir(sessions_dir):
+        candidates = sorted(
+            (os.path.join(sessions_dir, name) for name in os.listdir(sessions_dir) if name.endswith(".json")),
+            key=lambda path: os.path.getmtime(path),
+            reverse=True,
+        )
+    if not candidates:
+        return {
+            "status": "empty",
+            "session": None,
+            "decision": None,
+            "next_step": "init-day",
+            "phase": "idle",
+            "first_action": "init-day",
+            "start_here": "init-day first",
+            "route_priority": "init-day",
+            "needs_review": False,
+            "mode": "mixed-entry",
+        }
+    session = _load_json_any(candidates[0], {})
+    session_id = session.get("session_id")
+    decision_path = os.path.join(decisions_dir, f"{session_id}.json") if session_id else ""
+    decision = _load_json_any(decision_path, None) if decision_path else None
+    return _coordinator_summary_payload(session, decision)
 
 
 def _extract_live_price_payload(live_status: dict) -> dict[str, dict]:
@@ -234,7 +961,7 @@ def _write_live_nodes(base_dir: str, live_status: dict, symbols: list[str], asof
         card = details.get(sym)
         if not isinstance(card, dict):
             continue
-        path = os.path.join(base_dir, "findings", "symbols", sym, "current_nodes.json")
+        path = get_current_nodes_path(sym, base_dir)
         existing = _load_json_any(path, {})
         if isinstance(existing, dict) and existing.get("source") == "human_agent_consensus" and existing.get("nodes"):
             continue
@@ -332,6 +1059,14 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
             self.handle_static_finding(path)
             return
 
+        elif path.startswith("/assets/"):
+            self.handle_static_dashboard_asset(path)
+            return
+
+        elif path.endswith(".html"):
+            self.handle_static_dashboard_page(path)
+            return
+
         # ── 3. API: 获取系统整体状态 ─────────────────────────────────
         elif path == "/api/status":
             self.handle_api_status()
@@ -343,6 +1078,13 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/ib-events" or path == "/api/ib_events":
             self.handle_api_ib_events()
+            return
+
+        elif path == "/api/coordinator-summary":
+            self.handle_api_coordinator_summary()
+            return
+        elif path == "/api/coordinator-stage0-snapshot":
+            self.handle_api_coordinator_stage0_snapshot()
             return
 
         # ── 4. API: 运行特定流水线任务 ────────────────────────────────
@@ -419,6 +1161,21 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         elif path == "/api/record_trade":
             self.handle_api_record_trade()
             return
+        elif path == "/api/coordinator-decision":
+            self.handle_api_coordinator_decision()
+            return
+        elif path == "/api/coordinator-init-day":
+            self.handle_api_coordinator_init_day()
+            return
+        elif path == "/api/coordinator-action":
+            self.handle_api_coordinator_action()
+            return
+        elif path == "/api/coordinator-task-bootstrap":
+            self.handle_api_coordinator_task_bootstrap()
+            return
+        elif path == "/api/coordinator-stage0-snapshot":
+            self.handle_api_coordinator_stage0_snapshot_save()
+            return
         else:
             self._set_headers("text/plain", 404)
             self.wfile.write(b"404 Not Found")
@@ -428,44 +1185,18 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
     # ────────────────────────────────────────────────────────────────────────
 
     def handle_dashboard_render(self, query):
-        """动态编译渲染每日仪表盘并输出"""
-        if not write_dashboard:
-            self._set_headers("text/plain; charset=utf-8", 500)
-            self.wfile.write("系统配置错误: dashboard_writer 模块加载失败。".encode("utf-8"))
-            return
-
-        # 支持通过 ?date=YYYY-MM-DD 渲染指定日期的仪表盘，默认今天
-        date_str = query.get("date", [None])[0]
-        if not date_str:
-            today = _date.today().strftime("%Y-%m-%d")
-            candidates_today = os.path.join(BASE, f"candidates_{today}.json")
-            plan_today = os.path.join(BASE, f"daily_plan_{today}.json")
-            if not os.path.exists(candidates_today) and not os.path.exists(plan_today):
-                import glob, re
-                plans = sorted(glob.glob(os.path.join(BASE, "daily_plan_*.json")))
-                if plans:
-                    m = re.search(r"daily_plan_(20\d{2}-\d{2}-\d{2})\.json", os.path.basename(plans[-1]))
-                    if m:
-                        date_str = m.group(1)
-            if not date_str:
-                date_str = today
-
+        """Serve the Investing-OS operating console as the main entry."""
         try:
-            # 重新编译渲染最新的数据
-            dashboard_path = write_dashboard(date_str)
-            if not os.path.exists(dashboard_path):
-                self._set_headers("text/plain; charset=utf-8", 500)
-                self.wfile.write(f"仪表盘文件编译失败: 路径不存在 {dashboard_path}".encode("utf-8"))
-                return
-
-            with open(dashboard_path, "r", encoding="utf-8") as f:
+            console_path = os.path.abspath(_dashboard_path("operating-console.html"))
+            if not os.path.exists(console_path):
+                raise FileNotFoundError(console_path)
+            with open(console_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
-
             self._set_headers("text/html; charset=utf-8")
             self.wfile.write(html_content.encode("utf-8"))
         except Exception as e:
             self._set_headers("text/plain; charset=utf-8", 500)
-            self.wfile.write(f"仪表盘编译渲染异常: {str(e)}".encode("utf-8"))
+            self.wfile.write(f"Operating console load failed: {str(e)}".encode("utf-8"))
 
     def handle_static_report(self, path):
         """处理 reports/ 文件夹下的静态报告服务（防跨路径攻击）"""
@@ -504,6 +1235,209 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._set_headers("text/plain; charset=utf-8", 500)
             self.wfile.write(f"读取备忘失败: {str(e)}".encode("utf-8"))
+
+    def handle_static_dashboard_asset(self, path):
+        filename = os.path.basename(path)
+        assets_dir = os.path.abspath(_dashboard_path("assets"))
+        filepath = os.path.join(assets_dir, filename)
+        if not os.path.exists(filepath):
+            self._set_headers("text/plain; charset=utf-8", 404)
+            self.wfile.write(f"Asset not found: {filename}".encode("utf-8"))
+            return
+        content_type = "application/javascript; charset=utf-8"
+        if filename.endswith(".css"):
+            content_type = "text/css; charset=utf-8"
+        elif filename.endswith(".json"):
+            content_type = "application/json; charset=utf-8"
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+            self._set_headers(content_type)
+            self.wfile.write(content.encode("utf-8"))
+        except Exception as err:
+            self._set_headers("text/plain; charset=utf-8", 500)
+            self.wfile.write(f"Asset read failed: {err}".encode("utf-8"))
+
+    def handle_static_dashboard_page(self, path):
+        filename = os.path.basename(path)
+        dashboards_dir = os.path.abspath(_dashboard_path())
+        filepath = os.path.join(dashboards_dir, filename)
+        if not os.path.exists(filepath):
+            self._set_headers("text/plain; charset=utf-8", 404)
+            self.wfile.write(f"Dashboard page not found: {filename}".encode("utf-8"))
+            return
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+            self._set_headers("text/html; charset=utf-8")
+            self.wfile.write(content.encode("utf-8"))
+        except Exception as err:
+            self._set_headers("text/plain; charset=utf-8", 500)
+            self.wfile.write(f"Dashboard page read failed: {err}".encode("utf-8"))
+
+    def handle_api_coordinator_summary(self):
+        try:
+            payload = _load_coordinator_manifest(BASE)
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_stage0_snapshot(self):
+        try:
+            summary = _load_coordinator_manifest(BASE)
+            payload = _load_stage0_snapshot_form(BASE, summary.get("session"))
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_decision(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            payload = json.loads(self.rfile.read(content_length).decode("utf-8") or "{}")
+            summary = _load_coordinator_manifest(BASE)
+            session = summary.get("session") or {}
+            session_id = session.get("session_id")
+            if not session_id:
+                self._set_headers("application/json; charset=utf-8", 404)
+                self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
+                return
+            choice = payload.get("choice")
+            if not choice:
+                self._set_headers("application/json; charset=utf-8", 400)
+                self.wfile.write(json.dumps({"error": "missing choice"}, ensure_ascii=False).encode("utf-8"))
+                return
+            decisions_dir = _coordinator_decisions_dir(BASE)
+            os.makedirs(decisions_dir, exist_ok=True)
+            decision = {
+                "session_id": session_id,
+                "choice": choice,
+                "note": payload.get("note", ""),
+                "updated_at": datetime.now().isoformat(),
+            }
+            _save_json(os.path.join(decisions_dir, f"{session_id}.json"), decision)
+            session_path = os.path.join(_coordinator_sessions_dir(BASE), f"{session_id}.json")
+            session_payload = _load_json_any(session_path, {})
+            response = _coordinator_summary_payload(session_payload, decision)
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(response, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_init_day(self):
+        try:
+            runtime_dir = _coordinator_sessions_dir(BASE)
+            store = SessionStore(runtime_dir)
+            coordinator = WorkflowCoordinator(
+                store,
+                ExistingCliAdapter(workspace_root=os.path.dirname(BASE), python_executable=get_python_executable()),
+                now_fn=lambda: datetime.now().astimezone().isoformat(),
+            )
+            market_date = _date.today().strftime("%Y-%m-%d")
+            session_id = f"trading-{market_date}"
+            try:
+                state = coordinator.execute(
+                    {
+                        "intent": "initialize_day",
+                        "session_id": session_id,
+                        "expected_state": "IDLE",
+                        "user_confirmation": False,
+                        "parameters": {"market_date": market_date},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                )
+            except SessionConflictError:
+                state = store.load(session_id)
+            payload = _coordinator_summary_payload(state, None)
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_action(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            payload = json.loads(self.rfile.read(content_length).decode("utf-8") or "{}")
+            summary = _load_coordinator_manifest(BASE)
+            session = summary.get("session") or {}
+            session_id = session.get("session_id")
+            if not session_id:
+                self._set_headers("application/json; charset=utf-8", 404)
+                self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
+                return
+            choice = payload.get("choice")
+            if choice not in {"start_stage0", "record_focus_confirmation", "start_stage1"}:
+                self._set_headers("application/json; charset=utf-8", 400)
+                self.wfile.write(json.dumps({"error": f"unsupported choice: {choice}"}, ensure_ascii=False).encode("utf-8"))
+                return
+            runtime_dir = _coordinator_sessions_dir(BASE)
+            store = SessionStore(runtime_dir)
+            coordinator = WorkflowCoordinator(
+                store,
+                ExistingCliAdapter(workspace_root=os.path.dirname(BASE), python_executable=get_python_executable()),
+                now_fn=lambda: datetime.now().astimezone().isoformat(),
+            )
+            action_context = {}
+            if choice == "start_stage0":
+                stage0_bundle = _default_stage0_action(BASE, session)
+                action = stage0_bundle["action"]
+                action_context = stage0_bundle["context"]
+            else:
+                task = _build_current_task_payload(session, summary.get("decision"), BASE)
+                if choice == "record_focus_confirmation":
+                    action = _default_focus_confirmation_action(session, task)
+                else:
+                    action = _default_stage1_action(BASE, session, task)
+                action_context = {"task": task}
+            state = coordinator.execute(action)
+            response = _coordinator_summary_payload(state, summary.get("decision"))
+            response["action_context"] = action_context
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(response, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_stage0_snapshot_save(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            payload = json.loads(self.rfile.read(content_length).decode("utf-8") or "{}")
+            summary = _load_coordinator_manifest(BASE)
+            session = summary.get("session") or {}
+            session_id = session.get("session_id")
+            if not session_id:
+                self._set_headers("application/json; charset=utf-8", 404)
+                self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
+                return
+            response = _save_stage0_snapshot_form(BASE, session, payload)
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(response, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
+
+    def handle_api_coordinator_task_bootstrap(self):
+        try:
+            summary = _load_coordinator_manifest(BASE)
+            session = summary.get("session") or {}
+            session_id = session.get("session_id")
+            if not session_id:
+                self._set_headers("application/json; charset=utf-8", 404)
+                self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
+                return
+            result = _bootstrap_current_task_outputs(session, summary.get("decision"), BASE)
+            refreshed = _coordinator_summary_payload(session, summary.get("decision"))
+            refreshed["bootstrap"] = result
+            self._set_headers("application/json; charset=utf-8")
+            self.wfile.write(json.dumps(refreshed, ensure_ascii=False, indent=2).encode("utf-8"))
+        except Exception as err:
+            self._set_headers("application/json; charset=utf-8", 500)
+            self.wfile.write(json.dumps({"error": str(err)}, ensure_ascii=False).encode("utf-8"))
 
     def handle_static_finding(self, path):
         """处理 findings/ 文件夹下的静态证据包服务（防跨路径攻击）"""
@@ -705,8 +1639,8 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
         for sym in focus_stocks:
             sym_upper = sym.upper()
             prem_path = os.path.join(FIND_DIR, f"premarket_summary_{date_str}_{sym_upper}.json")
-            latest_prem_path = os.path.join(FIND_DIR, "symbols", sym_upper, "latest_premarket_plan.json")
-            current_nodes_path = os.path.join(FIND_DIR, "symbols", sym_upper, "current_nodes.json")
+            latest_prem_path = get_latest_premarket_plan_path(sym_upper, BASE)
+            current_nodes_path = get_current_nodes_path(sym_upper, BASE)
             memo_path = os.path.join(BASE, f"strategic_memo_{sym_upper}.json")
             macro_path = os.path.join(BASE, f"macro_strategy_{sym_upper}.json")
             if (

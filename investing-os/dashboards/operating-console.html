@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Investing-OS Operating Console</title>
-  <script src="assets/operating-console-data.js"></script>
   <style>
     :root {
       --bg: #f5f7fa;
@@ -19,127 +18,104 @@
       --ink: #344054;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Arial, "Microsoft YaHei", sans-serif;
-      letter-spacing: 0;
-    }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, "Microsoft YaHei", sans-serif; }
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .shell { max-width: 1440px; margin: 0 auto; padding: 14px; }
-    header, section, .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-    }
+    header, section, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
     header { padding: 16px 18px; margin-bottom: 12px; }
-    h1 { margin: 0; font-size: 23px; line-height: 1.2; }
+    h1 { margin: 0; font-size: 23px; }
     h2 { margin: 0 0 10px; font-size: 16px; }
     h3 { margin: 0 0 8px; font-size: 14px; }
     .sub { margin-top: 6px; color: var(--muted); font-size: 13px; }
-    .top {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
+    .top { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .panel { padding: 14px; min-height: 132px; }
-    .permission {
-      border-color: #fecdca;
-      background: #fffafa;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 9px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
+    .permission { border-color: #fecdca; background: #fffafa; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 700; white-space: nowrap; }
     .red { color: var(--red); background: #fef3f2; border-color: #fecdca; }
     .amber { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
     .blue { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
     .green { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
     .muted { color: var(--muted); }
-    .grid {
-      display: grid;
-      grid-template-columns: minmax(580px, 1.15fr) minmax(360px, .85fr);
-      gap: 12px;
-      align-items: start;
-    }
+    .grid { display: grid; grid-template-columns: minmax(580px, 1.15fr) minmax(360px, .85fr); gap: 12px; align-items: start; }
     section { padding: 14px; margin-bottom: 12px; }
-    .routes {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .route-card {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      background: #fbfcfe;
-      min-height: 152px;
-    }
-    .route-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-    }
+    .routes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .route-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfcfe; min-height: 152px; }
+    .route-card.recommended { border-color: #84caff; background: #f8fbff; box-shadow: 0 0 0 1px rgba(23, 92, 211, 0.08); }
+    .route-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
     .route-name { font-size: 15px; font-weight: 700; }
     .route-en { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .line { margin: 8px 0 0; font-size: 13px; color: var(--ink); }
     .label { color: var(--muted); }
-    .list {
-      display: grid;
-      gap: 8px;
-    }
-    .item {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
-      background: #fbfcfe;
-    }
-    .item-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 700;
-    }
+    .list { display: grid; gap: 8px; }
+    .item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .item-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 700; }
     .item p { margin: 7px 0 0; color: var(--ink); font-size: 13px; line-height: 1.45; }
-    .split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     ul { margin: 8px 0 0; padding-left: 18px; }
     li { margin: 4px 0; font-size: 13px; color: var(--ink); }
-    .links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .link-pill {
-      display: inline-flex;
-      padding: 7px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: #fbfcfe;
-      font-size: 12px;
-      font-weight: 700;
-    }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .link-pill { display: inline-flex; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: #fbfcfe; font-size: 12px; font-weight: 700; }
+    .build-chip { display: inline-flex; margin-top: 10px; padding: 6px 10px; border-radius: 999px; background: #eff8ff; border: 1px solid #b2ddff; color: var(--blue); font-size: 12px; font-weight: 700; }
+    .hero { padding: 24px; margin-bottom: 12px; border-color: #b2ddff; background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%); box-shadow: 0 10px 24px rgba(23, 92, 211, 0.06); }
+    .hero-top { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .85fr); gap: 20px; align-items: flex-start; }
+    .hero-eyebrow { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .04em; }
+    .hero-title { margin: 8px 0 0; font-size: 34px; line-height: 1.12; }
+    .hero-copy { margin-top: 12px; max-width: 820px; color: var(--ink); font-size: 15px; line-height: 1.6; }
+    .hero-side { min-width: 260px; display: grid; gap: 10px; }
+    .hero-box { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: rgba(255,255,255,.92); }
+    .hero-box strong { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+    .hero-box span { font-size: 18px; font-weight: 700; color: var(--text); }
+    .hero-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .hero-summary-card { border: 1px solid #d1e9ff; border-radius: 12px; background: rgba(255,255,255,.92); padding: 14px; }
+    .hero-summary-card strong { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+    .hero-summary-card span { display: block; font-size: 18px; font-weight: 700; line-height: 1.3; }
+    .hero-summary-card p { margin: 8px 0 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+    .workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+    .workflow-step { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fbfcfe; min-height: 120px; }
+    .workflow-step.active { border-color: #84caff; background: #eff8ff; box-shadow: 0 0 0 1px rgba(23, 92, 211, 0.08); }
+    .workflow-step.done { border-color: #abefc6; background: #ecfdf3; }
+    .workflow-step.future { opacity: .7; }
+    .workflow-kicker { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .workflow-status { display: inline-flex; margin-top: 8px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); font-size: 11px; font-weight: 700; background: #fff; }
+    .workflow-name { margin-top: 6px; font-size: 16px; font-weight: 700; }
+    .workflow-note { margin-top: 6px; color: var(--ink); font-size: 12px; line-height: 1.45; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .hero-actions .button { padding: 12px 18px; font-size: 14px; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .coordinator { padding: 14px; margin-bottom: 12px; }
+    .coordinator-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+    .coordinator-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .coordinator-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .cognitive { padding: 14px; margin-bottom: 12px; border-color: #d1e9ff; background: #f8fbff; }
+    .cognitive-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .cognitive-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px; }
+    .cognitive-card h3 { margin: 0 0 8px; font-size: 13px; }
+    .cognitive-card p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.45; }
+    .snapshot { padding: 16px; margin-bottom: 12px; border-color: #fedf89; background: #fffcf5; }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .field input, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; background: #fff; color: var(--text); }
+    .field textarea { min-height: 90px; resize: vertical; }
+    .snapshot-table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .snapshot-table th, .snapshot-table td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; font-size: 13px; vertical-align: top; }
+    .snapshot-table th { color: var(--muted); background: #fff9eb; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+    .snapshot-table input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+    .snapshot-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .snapshot-status { margin-top: 10px; font-size: 13px; color: var(--ink); }
+    .task-card { padding: 16px; margin-bottom: 12px; border-color: #b2ddff; background: #f8fbff; }
+    .task-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+    .task-list { display: grid; gap: 8px; margin-top: 8px; }
+    .task-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
+    .task-dot { width: 10px; height: 10px; border-radius: 999px; margin-top: 4px; background: #f04438; }
+    .task-dot.ready { background: #12b76a; }
+    .task-path { display: block; margin-top: 3px; color: var(--muted); font-family: Consolas, monospace; font-size: 11px; word-break: break-all; }
+    .button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fbfcfe; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 700; }
+    .button.primary { border-color: #b2ddff; background: #eff8ff; color: var(--blue); }
+    .button.secondary { border-color: #fedf89; background: #fffaeb; color: var(--amber); }
     code { font-family: Consolas, monospace; font-size: 12px; }
-    @media (max-width: 1100px) {
-      .top, .grid, .routes, .split { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 1100px) { .top, .grid, .routes, .split, .cognitive-grid, .workflow, .hero-summary { grid-template-columns: 1fr; } .hero-title { font-size: 26px; } .hero-top { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -147,8 +123,154 @@
     <header>
       <h1 id="title"></h1>
       <div class="sub" id="subtitle"></div>
+      <div class="build-chip">Build: 2026-06-14 CN-FIX-1</div>
       <div class="links" id="links"></div>
     </header>
+
+    <section class="hero" id="coordinator-summary">
+      <div class="hero-top">
+        <div>
+          <div class="hero-eyebrow">Coordinator Summary</div>
+          <h2 class="hero-title" id="heroTitle">Loading daily workflow...</h2>
+          <div class="hero-copy" id="coordinatorLead">正在加载协调器摘要...</div>
+          <div class="hero-meta" id="coordinatorMeta"></div>
+          <div class="hero-actions" id="coordinatorActions"></div>
+          <div class="hero-summary">
+            <div class="hero-summary-card">
+              <strong>Main Action / 主动作</strong>
+              <span id="heroMainAction">loading</span>
+              <p id="heroMainActionNote">等待协调器给出当前应推进的动作。</p>
+            </div>
+            <div class="hero-summary-card">
+              <strong>Next Step / 下一步</strong>
+              <span id="heroNextStep">loading</span>
+              <p id="heroNextStepNote">主链路严格推进，状态不会被旁路功能偷偷改写。</p>
+            </div>
+            <div class="hero-summary-card">
+              <strong>Mode / 入口模式</strong>
+              <span id="heroMode">mixed-entry</span>
+              <p id="heroModeNote">主交易链在这里推进，认知系统和研究入口在下方随时可用。</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-side">
+          <div class="hero-box">
+            <strong>Today</strong>
+            <span id="heroDate">--</span>
+          </div>
+          <div class="hero-box">
+            <strong>Current Phase</strong>
+            <span id="coordinatorPhase">loading</span>
+          </div>
+          <div class="hero-box">
+            <strong>Session</strong>
+            <span id="heroSession">--</span>
+          </div>
+        </div>
+      </div>
+      <div class="workflow" id="workflowSteps"></div>
+    </section>
+
+    <section class="task-card" id="skillTaskCard">
+      <div class="coordinator-head">
+        <div>
+          <h2 id="skillTaskTitle">Current Skill Task</h2>
+          <div class="sub" id="skillTaskSummary">Loading current skill-guided task...</div>
+        </div>
+        <span class="badge blue" id="skillTaskBadge">skill</span>
+      </div>
+      <div class="coordinator-meta" id="skillTaskMeta"></div>
+      <div class="task-grid">
+        <div>
+          <h3>Required Inputs</h3>
+          <div class="task-list" id="skillTaskInputs"></div>
+        </div>
+        <div>
+          <h3>Required Outputs</h3>
+          <div class="task-list" id="skillTaskOutputs"></div>
+        </div>
+      </div>
+      <div class="task-list" id="skillTaskInstructions"></div>
+      <div class="hero-actions" id="skillTaskActions"></div>
+    </section>
+
+    <section class="snapshot">
+      <div class="coordinator-head">
+        <div>
+          <h2>Stage 0 Snapshot / 盘前事实录入</h2>
+          <div class="sub">先在这里填写或补充今天的盘前事实，再启动 Stage 0。你不需要手写 JSON。</div>
+        </div>
+        <span class="badge amber">required before stable stage0</span>
+      </div>
+      <div class="snapshot-meta" id="snapshotMeta"></div>
+      <div class="snapshot-grid">
+        <div class="field">
+          <label for="snapshotAsOf">As Of ET</label>
+          <input id="snapshotAsOf" placeholder="2026-06-15T09:20:00-04:00">
+        </div>
+        <div class="field">
+          <label for="snapshotWindow">Window</label>
+          <input id="snapshotWindow" placeholder="pre_market_before_09_30_ET">
+        </div>
+        <div class="field">
+          <label for="snapshotFocus">Focus Symbols</label>
+          <input id="snapshotFocus" placeholder="NVDA, MU, COHR">
+        </div>
+        <div class="field">
+          <label for="snapshotThemes">Themes</label>
+          <input id="snapshotThemes" placeholder="ai_infrastructure, memory, optical">
+        </div>
+      </div>
+      <table class="snapshot-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Last</th>
+            <th>Pre-market %</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody id="snapshotMarkets"></tbody>
+      </table>
+      <div class="snapshot-grid">
+        <div class="field">
+          <label for="snapshotCatalysts">Catalysts / News</label>
+          <textarea id="snapshotCatalysts" placeholder="Major news, earnings, macro catalysts..."></textarea>
+        </div>
+        <div class="field">
+          <label for="snapshotNotes">Notes</label>
+          <textarea id="snapshotNotes" placeholder="Anything you already know or want to preserve before Stage 0 runs..."></textarea>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button class="button secondary" id="saveSnapshotButton">Save Snapshot</button>
+      </div>
+      <div class="snapshot-status" id="snapshotStatus">Loading snapshot form...</div>
+    </section>
+
+    <section class="cognitive">
+      <div class="coordinator-head">
+        <div>
+          <h2>Investing-OS Cognitive System / 认知系统</h2>
+          <div class="sub">这里展示教训、证据和长期研究如何影响下一步动作。</div>
+        </div>
+        <span class="badge blue">system memory</span>
+      </div>
+      <div class="cognitive-grid">
+        <div class="cognitive-card">
+          <h3>Lessons / 教训</h3>
+          <p id="cognitiveLessons">正在加载...</p>
+        </div>
+        <div class="cognitive-card">
+          <h3>Evidence / 证据</h3>
+          <p id="cognitiveEvidence">正在加载...</p>
+        </div>
+        <div class="cognitive-card">
+          <h3>Research / 长期研究</h3>
+          <p id="cognitiveResearch">正在加载...</p>
+        </div>
+      </div>
+    </section>
 
     <div class="top">
       <div class="panel permission">
@@ -199,23 +321,492 @@
   </div>
 
   <script>
+    window.OPERATING_CONSOLE_DATA = {
+      updatedAt: "2026-06-14",
+      title: "Investing-OS Operating Console",
+      subtitle: "主入口：盘前、盘中、盘后、研究和系统认知都从这里进入。",
+      permission: {
+        state: "Red",
+        labelZh: "红色权限",
+        labelEn: "Red Permission",
+        summary: "当前偏向复盘、研究和证据整理，避免无计划短线和过度风险。",
+        allowed: ["复盘与情绪降温", "风险降低计划", "公司 / 行业研究", "盘前计划与证据收集"],
+        blocked: ["无计划短线", "杠杆产品扩张风险", "止损后立刻再交易", "为弥补亏损而加仓"]
+      },
+      nextActions: [
+        {
+          id: "NA-001",
+          priority: "High",
+          title: "盘前重新决策 MUU",
+          detail: "确认 thesis 是否仍有效，instrument 是否适合，trapped position 如何降风险。",
+          route: "pre_market",
+          evidenceNeeded: ["QQQ / VIX / MUU / MU 盘前与日线证据", "当前持仓与最大可承受亏损"]
+        },
+        {
+          id: "NA-002",
+          priority: "High",
+          title: "等待 stock_team CLI contract 验收",
+          detail: "主脑稳定调用证据引擎后，才能批量生成 packets。",
+          route: "stock_team_contract",
+          evidenceNeeded: ["CLI --help", "packet examples", "forbidden behavior check"]
+        },
+        {
+          id: "NA-003",
+          priority: "Medium",
+          title: "继续 COHR / ORCL 长期研究",
+          detail: "用完整研究流程沉淀 thesis、falsification 和 position role。",
+          route: "company_research",
+          evidenceNeeded: ["COHR peer packet", "ORCL company packet"]
+        }
+      ],
+      routes: [
+        {
+          id: "pre_market",
+          nameZh: "盘前计划",
+          nameEn: "Pre-market Plan",
+          userSays: "做盘前 / 今晚怎么计划",
+          workflow: "system/workflows/pre-market.md",
+          packet: "pre-market packet",
+          output: "trading day plan",
+          status: "available_without_cli",
+          note: "可先人工规划，CLI 完成后自动补证据。"
+        },
+        {
+          id: "intraday_check",
+          nameZh: "盘中检查",
+          nameEn: "Intraday Check",
+          userSays: "盘中看 MUU / 现在还能按计划吗",
+          workflow: "system/workflows/intraday-guidance-protocol.md",
+          packet: "runtime monitor packet",
+          output: "intraday guidance sheet",
+          status: "waiting_for_cli",
+          note: "把盘前计划、认知风险和只读证据映射成 Green / Yellow / Red / No-Trade。"
+        },
+        {
+          id: "trade_review",
+          nameZh: "交易复盘",
+          nameEn: "Trade Review",
+          userSays: "复盘 SNXX / 复盘这笔交易",
+          workflow: "system/workflows/post-market.md",
+          packet: "contextual trade evidence packet",
+          output: "review + lessons",
+          status: "available_manual",
+          note: "可先复盘，CLI 完成后再补成交易证据包。"
+        },
+        {
+          id: "post_market",
+          nameZh: "盘后总结",
+          nameEn: "Post-market Review",
+          userSays: "盘后复盘 / 今天总结",
+          workflow: "system/workflows/post-market.md",
+          packet: "post-market packet",
+          output: "daily report + HTML",
+          status: "available_manual",
+          note: "先看 QQQ / VIX / 市场背景，再做盘后总结。"
+        },
+        {
+          id: "company_research",
+          nameZh: "公司研究",
+          nameEn: "Company Research",
+          userSays: "研究 COHR / 研究 ORCL",
+          workflow: "system/workflows/company-research.md",
+          packet: "company research packet",
+          output: "dossier + thesis candidate",
+          status: "available_manual",
+          note: "短线可以压缩流程，长期研究保持完整。"
+        },
+        {
+          id: "industry_research",
+          nameZh: "行业研究",
+          nameEn: "Industry Research",
+          userSays: "研究 AI GPU / 存储周期",
+          workflow: "templates/industry-research.md",
+          packet: "industry research packet",
+          output: "industry dossier",
+          status: "waiting_for_cli",
+          note: "用于沉淀世界观、产业链和估值框架。"
+        },
+        {
+          id: "weekly_review",
+          nameZh: "周末复盘",
+          nameEn: "Weekend Review",
+          userSays: "周末复盘",
+          workflow: "system/workflows/weekend-review.md",
+          packet: "combined packets",
+          output: "weekly report",
+          status: "available_manual",
+          note: "复盘交易、研究质量、系统更新和下周重点。"
+        }
+      ],
+      evidenceGaps: [
+        {
+          id: "GAP-001",
+          severity: "High",
+          title: "stock_team CLI 尚未稳定验收",
+          detail: "主脑还不能稳定通过统一命令拿到 evidence packets。",
+          owner: "Antigravity",
+          target: "handoff/requests/antigravity-current-tasks.md"
+        },
+        {
+          id: "GAP-002",
+          severity: "High",
+          title: "MUU 当前持仓证据未形成 packet",
+          detail: "需要 MUU / MU / QQQ / VIX 的盘前与日线证据，以及当前风险数据。",
+          owner: "Codex + stock_team after CLI",
+          target: "system/data/packets/"
+        },
+        {
+          id: "GAP-003",
+          severity: "Medium",
+          title: "COHR / ORCL 研究证据包未自动化",
+          detail: "已有研究流程，但 peer/company factual packet 还需要固化。",
+          owner: "Antigravity",
+          target: "company research packet"
+        }
+      ],
+      packets: [
+        { type: "RS rebound backtest", status: "absorbed", path: "../wiki/sources/stock-team-rs-pullback-backtest-2026-06-06.md", usedIn: "decision/tactics/rs-pullback-rebound-candidate.md" },
+        { type: "Major drawdown report", status: "html_ready", path: "reports/2026-06-05-major-drawdown-review.html", usedIn: "system/traceability/reports-index.json" },
+        { type: "SNXX trade evidence", status: "waiting_for_cli_fixture", path: "../wiki/journals/2026-06-04-snxx-fill-review.md", usedIn: "future contextual trade evidence packet" },
+        { type: "COHR peer packet", status: "waiting_for_stock_team", path: "../system/data/packets/", usedIn: "COHR swing thesis refinement" },
+        { type: "ORCL company packet", status: "waiting_for_stock_team", path: "../system/data/packets/", usedIn: "ORCL company research lifecycle" }
+      ],
+      pendingLessons: [
+        { id: "CAND-2026-06-06-005", title: "RS pullback rebound tactic remains restricted", status: "pending_review", source: "stock_team RS backtest", target: "decision/tactics/rs-pullback-rebound-candidate.md" }
+      ],
+      links: [
+        { label: "Growth Dashboard / 认知成长页", href: "growth-dashboard-draft.html" },
+        { label: "Intraday Guidance Demo / 盘中引导 Demo", href: "reports/intraday-guidance-demo.html" },
+        { label: "Latest Review HTML / 最新复盘报告", href: "reports/2026-06-05-major-drawdown-review.html" },
+        { label: "Stock Team Dashboard / 证据引擎面板", href: "file:///D:/gemini/lianghua/stock_team/reports/dashboard.html" }
+      ]
+    };
     const data = window.OPERATING_CONSOLE_DATA;
 
     const badgeClass = (status) => {
-      if (status.includes("absorbed") || status.includes("ready")) return "badge green";
-      if (status.includes("waiting") || status.includes("pending")) return "badge amber";
-      if (status.includes("available")) return "badge blue";
+      const s = String(status || "");
+      if (s.includes("absorbed") || s.includes("ready")) return "badge green";
+      if (s.includes("waiting") || s.includes("pending")) return "badge amber";
+      if (s.includes("available")) return "badge blue";
       return "badge";
     };
 
     const priorityClass = (priority) => priority === "High" ? "badge red" : "badge amber";
+    const html = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+    const list = (id, items) => { document.getElementById(id).innerHTML = items.map((item) => `<li>${html(item)}</li>`).join(""); };
+    let snapshotState = null;
+    const workflowSteps = [
+      { id: "init-day", name: "Init Day", note: "Create or resume today's session." },
+      { id: "stage0", name: "Stage 0", note: "Collect market context and pre-market evidence." },
+      { id: "discussion", name: "Focus Discussion", note: "Confirm focus pool, meaning, and constraints." },
+      { id: "stage1", name: "Stage 1", note: "Produce plan evidence before approval." },
+      { id: "approval", name: "Plan Approval", note: "Lock today's permission, risk budget, and exceptions." },
+      { id: "intraday", name: "Intraday", note: "Monitor live execution without rewriting the plan anchor." },
+      { id: "review", name: "Post Market", note: "Close, review, and decide what to absorb." },
+    ];
 
-    const html = (value) => String(value).replace(/[&<>"']/g, (ch) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-    }[ch]));
+    const renderWorkflow = (phase, firstAction) => {
+      const stepState = {
+        idle: 0,
+        pre_market: firstAction === "record_focus_confirmation" ? 2 : firstAction === "start_stage1" ? 3 : firstAction === "record_plan_approval" ? 4 : 1,
+        intraday: 5,
+        post_market: 6,
+        done: 6,
+      };
+      const activeIndex = stepState[phase] ?? 0;
+      document.getElementById("workflowSteps").innerHTML = workflowSteps.map((step, index) => {
+        const cls = index < activeIndex ? "workflow-step done" : index === activeIndex ? "workflow-step active" : "workflow-step future";
+        const statusText = index < activeIndex ? "Done" : index === activeIndex ? "Current" : "Upcoming";
+        return `
+          <article class="${cls}">
+            <div class="workflow-kicker">Step ${index + 1}</div>
+            <div class="workflow-status">${statusText}</div>
+            <div class="workflow-name">${html(step.name)}</div>
+            <div class="workflow-note">${html(step.note)}</div>
+          </article>`;
+      }).join("");
+    };
 
-    const list = (id, items) => {
-      document.getElementById(id).innerHTML = items.map((item) => `<li>${html(item)}</li>`).join("");
+    const renderRoutes = (phase, routePriority) => {
+      const phaseOrder = {
+        idle: ["pre_market", "intraday_check", "trade_review", "post_market", "company_research", "industry_research", "weekly_review"],
+        pre_market: ["pre_market", "trade_review", "post_market", "intraday_check", "company_research", "industry_research", "weekly_review"],
+        intraday: ["intraday_check", "trade_review", "pre_market", "post_market", "company_research", "industry_research", "weekly_review"],
+        post_market: ["trade_review", "weekly_review", "post_market", "pre_market", "intraday_check", "company_research", "industry_research"],
+        done: ["weekly_review", "post_market", "trade_review", "pre_market", "intraday_check", "company_research", "industry_research"],
+      };
+      const priorityMap = phaseOrder[phase] || phaseOrder.idle;
+      const cards = data.routes.slice().sort((a, b) => {
+        const ai = priorityMap.indexOf(a.id);
+        const bi = priorityMap.indexOf(b.id);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      document.getElementById("routes").innerHTML = cards.map((route) => {
+        const recommended = route.id === routePriority || (phase === "intraday" && route.id === "intraday_check");
+        return `
+      <article class="route-card ${recommended ? "recommended" : ""}">
+        <div class="route-head">
+          <div>
+            <div class="route-name">${html(route.nameZh)}</div>
+            <div class="route-en">${html(route.nameEn)}</div>
+          </div>
+          <span class="${badgeClass(route.status)}">${html(route.status)}</span>
+        </div>
+        <p class="line"><span class="label">You can say:</span> ${html(route.userSays)}</p>
+        <p class="line"><span class="label">Workflow:</span> <code>${html(route.workflow)}</code></p>
+        <p class="line"><span class="label">Packet:</span> ${html(route.packet)}</p>
+        <p class="line"><span class="label">Output:</span> ${html(route.output)}</p>
+        <p class="line">${recommended ? "Recommended for current stage" : html(route.note)}</p>
+      </article>`;
+      }).join("");
+    };
+
+    const artifactRows = (items) => (items || []).map((item) => `
+      <div class="task-row">
+        <span class="task-dot ${item.exists ? "ready" : ""}"></span>
+        <div>
+          <strong>${html(item.label || item.role || "artifact")}</strong>
+          <span class="task-path">${html(item.path || "")}</span>
+        </div>
+      </div>
+    `).join("") || `<div class="task-row"><span class="task-dot"></span><div>No artifacts required.</div></div>`;
+
+    const renderSkillTask = (task) => {
+      task = task || {};
+      document.getElementById("skillTaskTitle").textContent = task.title || "Current Skill Task";
+      document.getElementById("skillTaskSummary").textContent = task.summary || "No skill-guided task is active.";
+      document.getElementById("skillTaskBadge").textContent = task.recommended_skill || "main-chain";
+      document.getElementById("skillTaskMeta").innerHTML = [
+        `<span class="badge blue">Skill: ${html(task.recommended_skill || "none")}</span>`,
+        `<span class="badge">Agent: ${html(task.agent_role || "none")}</span>`,
+        `<span class="badge">Guide: ${html(task.skill_path || "none")}</span>`,
+        `<span class="${task.unlock_ready ? "badge green" : "badge amber"}">${task.unlock_ready ? "outputs ready" : "waiting for outputs"}</span>`,
+      ].join("");
+      document.getElementById("skillTaskInputs").innerHTML = artifactRows(task.inputs);
+      document.getElementById("skillTaskOutputs").innerHTML = artifactRows(task.outputs);
+      document.getElementById("skillTaskInstructions").innerHTML = (task.instructions || []).map((line) => `
+        <div class="task-row"><span class="task-dot ready"></span><div>${html(line)}</div></div>
+      `).join("");
+      const actions = [];
+      if ((task.outputs || []).some((item) => !item.exists)) {
+        actions.push(`<button class="button secondary" data-choice="bootstrap_current_task">Create Starter Files</button>`);
+      }
+      if (task.unlock_action === "record_focus_confirmation") {
+        actions.push(`<button class="button primary" data-choice="record_focus_confirmation" ${task.unlock_ready ? "" : "disabled"}>Confirm Discussion Outputs</button>`);
+      }
+      if (task.unlock_action === "start_stage1") {
+        actions.push(`<button class="button primary" data-choice="start_stage1" ${task.unlock_ready ? "" : "disabled"}>Start Stage 1 Evidence</button>`);
+      }
+      document.getElementById("skillTaskActions").innerHTML = actions.join("") || `<span class="badge">No task action available</span>`;
+      document.querySelectorAll("#skillTaskActions button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const choice = button.getAttribute("data-choice");
+          button.disabled = true;
+          try {
+            const response = choice === "bootstrap_current_task"
+              ? await fetch("/api/coordinator-task-bootstrap", { method: "POST" })
+              : await fetch("/api/coordinator-action", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ choice }),
+                });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const updated = await response.json();
+            renderCoordinator(updated);
+          } catch (err) {
+            document.getElementById("skillTaskSummary").textContent = `Task action failed: ${err.message}`;
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+    };
+
+    const readSnapshotForm = () => ({
+      as_of_et: document.getElementById("snapshotAsOf").value.trim(),
+      window: document.getElementById("snapshotWindow").value.trim(),
+      focus_symbols: document.getElementById("snapshotFocus").value.trim(),
+      themes: document.getElementById("snapshotThemes").value.trim(),
+      catalysts: document.getElementById("snapshotCatalysts").value.trim(),
+      notes: document.getElementById("snapshotNotes").value.trim(),
+      markets: Array.from(document.querySelectorAll("#snapshotMarkets tr")).map((row) => ({
+        symbol: row.querySelector("[data-key='symbol']").value.trim().toUpperCase(),
+        last: row.querySelector("[data-key='last']").value.trim(),
+        premarket_change_pct: row.querySelector("[data-key='premarket_change_pct']").value.trim(),
+        note: row.querySelector("[data-key='note']").value.trim(),
+      })),
+    });
+
+    const renderSnapshotForm = (snapshot) => {
+      snapshotState = snapshot;
+      const payload = snapshot.payload || {};
+      document.getElementById("snapshotAsOf").value = payload.as_of_et || "";
+      document.getElementById("snapshotWindow").value = payload.window || "";
+      document.getElementById("snapshotFocus").value = payload.focus_symbols || "";
+      document.getElementById("snapshotThemes").value = payload.themes || "";
+      document.getElementById("snapshotCatalysts").value = payload.catalysts || "";
+      document.getElementById("snapshotNotes").value = payload.notes || "";
+      const markets = Array.isArray(payload.markets) ? payload.markets : [];
+      document.getElementById("snapshotMarkets").innerHTML = markets.map((row) => `
+        <tr>
+          <td><input data-key="symbol" value="${html(row.symbol || "")}"></td>
+          <td><input data-key="last" value="${html(row.last || "")}"></td>
+          <td><input data-key="premarket_change_pct" value="${html(row.premarket_change_pct || "")}"></td>
+          <td><input data-key="note" value="${html(row.note || "")}"></td>
+        </tr>
+      `).join("");
+      document.getElementById("snapshotMeta").innerHTML = [
+        `<span class="badge ${snapshot.formal_ready ? "green" : "amber"}">${snapshot.formal_ready ? "verified premarket feed" : (snapshot.exists ? "manual draft only" : "no snapshot yet")}</span>`,
+        `<span class="badge blue">${html(snapshot.market_date || "--")}</span>`,
+        `<span class="badge">${html(snapshot.path || "")}</span>`,
+      ].join("");
+      document.getElementById("snapshotStatus").textContent = snapshot.formal_ready
+        ? "Provider-backed premarket data is ready. Stage 0 will use timestamped stock_team evidence."
+        : (snapshot.exists
+          ? "Manual snapshot draft loaded. Stage 0 will refresh provider data before it proceeds."
+          : "No saved snapshot yet. Stage 0 will generate provider-backed premarket data before it proceeds.");
+    };
+
+    const loadSnapshotForm = async () => {
+      try {
+        const response = await fetch("/api/coordinator-stage0-snapshot");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const snapshot = await response.json();
+        renderSnapshotForm(snapshot);
+      } catch (err) {
+        document.getElementById("snapshotStatus").textContent = `Snapshot load failed: ${err.message}`;
+      }
+    };
+
+    const renderCoordinator = (manifest) => {
+      if (manifest.status === "empty") {
+        document.getElementById("heroTitle").textContent = "No active trading day yet";
+        document.getElementById("coordinatorLead").textContent = "Start a new day to enter the operating workflow. The system will create today's session, mark your place in the chain, and guide the next required action.";
+        document.getElementById("coordinatorPhase").textContent = "idle";
+        document.getElementById("heroDate").textContent = new Date().toISOString().slice(0, 10);
+        document.getElementById("heroSession").textContent = "not started";
+        document.getElementById("heroMainAction").textContent = "Init Day";
+        document.getElementById("heroMainActionNote").textContent = "先创建今天的会话，再让主交易链进入可推进状态。";
+        document.getElementById("heroNextStep").textContent = "Start Stage 0";
+        document.getElementById("heroNextStepNote").textContent = "完成建日后，系统会把你送到盘前主流程。";
+        document.getElementById("heroMode").textContent = "mixed-entry";
+        document.getElementById("heroModeNote").textContent = "你可以旁路讨论或研究，但当天交易状态只由主链路推进。";
+        document.getElementById("coordinatorMeta").innerHTML = [
+          `<span class="badge blue">First action: init-day</span>`,
+          `<span class="badge amber">Next step: start_stage0</span>`,
+          `<span class="badge">Mode: mixed-entry</span>`,
+        ].join("");
+        document.getElementById("coordinatorActions").innerHTML =
+          `<button class="button primary" data-choice="init_day">Init Day</button>`;
+        document.querySelectorAll("#coordinatorActions button").forEach((button) => {
+          button.addEventListener("click", async () => {
+            button.disabled = true;
+            try {
+              const response = await fetch("/api/coordinator-init-day", { method: "POST" });
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const updated = await response.json();
+              renderCoordinator(updated);
+            } catch (err) {
+              document.getElementById("coordinatorLead").textContent = `Init failed: ${err.message}`;
+            } finally {
+              button.disabled = false;
+            }
+          });
+        });
+        renderWorkflow("idle", "init-day");
+        renderRoutes("idle", "pre_market");
+        renderSkillTask(manifest.current_task);
+        return;
+      }
+      const phase = manifest.phase || "idle";
+      const effectiveState = manifest.effective_state || (manifest.session && manifest.session.state) || "idle";
+      const firstAction = manifest.first_action || "init-day";
+      const nextStep = manifest.next_step || "continue-session";
+      const startHere = manifest.start_here || "continue current flow";
+      const routePriority = manifest.route_priority || "continue-session";
+      const decision = manifest.decision && manifest.decision.choice ? manifest.decision.choice : "none";
+      const marketDate = manifest.session && manifest.session.market_date ? manifest.session.market_date : "--";
+      const sessionId = manifest.session && manifest.session.session_id ? manifest.session.session_id : "--";
+      document.getElementById("heroTitle").textContent = `You are in ${phase.replace("_", " ")}. Next required action: ${firstAction}.`;
+      document.getElementById("coordinatorLead").textContent = manifest.session && manifest.session.state === "FAILED_TOOL"
+        ? `The last tool run failed, but your workflow anchor is still ${effectiveState}. Fix the missing input, then use ${firstAction} to continue from the same stage.`
+        : `${startHere}. The workflow is live for ${marketDate}, and the coordinator expects ${firstAction} before moving to ${nextStep}.`;
+      document.getElementById("coordinatorPhase").textContent = phase;
+      document.getElementById("heroDate").textContent = marketDate;
+      document.getElementById("heroSession").textContent = sessionId;
+      document.getElementById("heroMainAction").textContent = firstAction;
+      document.getElementById("heroMainActionNote").textContent = manifest.session && manifest.session.state === "FAILED_TOOL"
+        ? `上一次工具执行失败了，但主链路没有丢。补齐输入后，从 ${firstAction} 重试即可。`
+        : `这是当前应该推进的主动作，完成它之后系统才会进入 ${nextStep}。`;
+      document.getElementById("heroNextStep").textContent = nextStep;
+      document.getElementById("heroNextStepNote").textContent = `当前阶段 ${phase} 完成后，主链路会继续推进到这个节点。`;
+      document.getElementById("heroMode").textContent = manifest.mode || "mixed-entry";
+      document.getElementById("heroModeNote").textContent = manifest.needs_review
+        ? "昨天还有待处理收尾，你可以快速复盘或确认冻结后开始新一天。"
+        : "主链路正在推进；下方研究与认知入口可随时调用，但不会直接改写今日状态。";
+      document.getElementById("coordinatorMeta").innerHTML = [
+        `<span class="badge green">First action: ${html(firstAction)}</span>`,
+        `<span class="badge amber">Next step: ${html(nextStep)}</span>`,
+        `<span class="badge blue">Priority: ${html(routePriority)}</span>`,
+        `<span class="badge">Decision: ${html(decision)}</span>`,
+      ].join("");
+      const buttons = [];
+      if (manifest.needs_review) {
+        buttons.push(`<button class="button primary" data-choice="freeze">Freeze and start new day</button>`);
+        buttons.push(`<button class="button secondary" data-choice="quick_review">Quick review</button>`);
+      }
+      if (firstAction === "start_stage0") {
+        buttons.push(`<button class="button primary" data-choice="start_stage0">Start Stage 0</button>`);
+      } else if (firstAction === "retry_last_action") {
+        buttons.push(`<button class="button primary" data-choice="start_stage0">Retry Stage 0</button>`);
+      }
+      buttons.push(`<button class="button" data-choice="continue">Continue current session</button>`);
+      document.getElementById("coordinatorActions").innerHTML = buttons.join("");
+      document.querySelectorAll("#coordinatorActions button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const choice = button.getAttribute("data-choice");
+          const note = choice === "quick_review" ? "quick review from console" : "";
+          button.disabled = true;
+          try {
+            const response = choice === "start_stage0"
+              ? await fetch("/api/coordinator-action", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ choice }),
+                })
+              : await fetch("/api/coordinator-decision", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ choice, note }),
+                });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const updated = await response.json();
+            renderCoordinator(updated);
+            if (choice === "start_stage0" && updated.action_context) {
+              const context = updated.action_context;
+              document.getElementById("coordinatorLead").textContent =
+                `Stage 0 launched. Universe input: ${context.generated_universe_path}. Market packet: ${context.stage0_output_path}. Premarket source: ${context.snapshot_formal_ready ? "verified provider feed" : "refreshing provider feed"}.`;
+            }
+            await loadSnapshotForm();
+          } catch (err) {
+            document.getElementById("coordinatorLead").textContent = `Submit failed: ${err.message}`;
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+      renderWorkflow(phase, firstAction);
+      renderRoutes(phase, routePriority);
+      renderSkillTask(manifest.current_task);
+    };
+
+    const renderCognitive = () => {
+      const lessonText = (data.pendingLessons || []).slice(0, 2).map((item) => item.title).join(" / ") || "No pending lessons";
+      const evidenceText = (data.evidenceGaps || []).slice(0, 2).map((item) => item.title).join(" / ") || "No active gaps";
+      const researchText = (data.nextActions || []).slice(0, 2).map((item) => item.title).join(" / ") || "No research focus";
+      document.getElementById("cognitiveLessons").textContent = lessonText;
+      document.getElementById("cognitiveEvidence").textContent = evidenceText;
+      document.getElementById("cognitiveResearch").textContent = researchText;
     };
 
     document.getElementById("title").textContent = data.title;
@@ -224,10 +815,7 @@
     document.getElementById("permissionSummary").textContent = data.permission.summary;
     list("allowedList", data.permission.allowed);
     list("blockedList", data.permission.blocked);
-
-    document.getElementById("links").innerHTML = data.links.map((link) =>
-      `<a class="link-pill" href="${html(link.href)}">${html(link.label)}</a>`
-    ).join("");
+    document.getElementById("links").innerHTML = data.links.map((link) => `<a class="link-pill" href="${html(link.href)}">${html(link.label)}</a>`).join("");
 
     document.getElementById("nextActions").innerHTML = data.nextActions.map((item) => `
       <div class="item">
@@ -238,8 +826,7 @@
         <p>${html(item.detail)}</p>
         <p><span class="label">Route:</span> <code>${html(item.route)}</code></p>
         <p><span class="label">Evidence:</span> ${html(item.evidenceNeeded.join(" / "))}</p>
-      </div>
-    `).join("");
+      </div>`).join("");
 
     document.getElementById("evidenceGaps").innerHTML = data.evidenceGaps.map((gap) => `
       <div class="item">
@@ -250,25 +837,7 @@
         <p>${html(gap.detail)}</p>
         <p><span class="label">Owner:</span> ${html(gap.owner)}</p>
         <p><span class="label">Target:</span> <code>${html(gap.target)}</code></p>
-      </div>
-    `).join("");
-
-    document.getElementById("routes").innerHTML = data.routes.map((route) => `
-      <article class="route-card">
-        <div class="route-head">
-          <div>
-            <div class="route-name">${html(route.nameZh)}</div>
-            <div class="route-en">${html(route.nameEn)}</div>
-          </div>
-          <span class="${badgeClass(route.status)}">${html(route.status)}</span>
-        </div>
-        <p class="line"><span class="label">你可以说:</span> ${html(route.userSays)}</p>
-        <p class="line"><span class="label">Workflow:</span> <code>${html(route.workflow)}</code></p>
-        <p class="line"><span class="label">Packet:</span> ${html(route.packet)}</p>
-        <p class="line"><span class="label">Output:</span> ${html(route.output)}</p>
-        <p class="line">${html(route.note)}</p>
-      </article>
-    `).join("");
+      </div>`).join("");
 
     document.getElementById("packets").innerHTML = data.packets.map((packet) => `
       <div class="item">
@@ -278,8 +847,7 @@
         </div>
         <p><span class="label">Path:</span> <a href="${html(packet.path)}">${html(packet.path)}</a></p>
         <p><span class="label">Used in:</span> ${html(packet.usedIn)}</p>
-      </div>
-    `).join("");
+      </div>`).join("");
 
     document.getElementById("pendingLessons").innerHTML = data.pendingLessons.map((lesson) => `
       <div class="item">
@@ -290,8 +858,40 @@
         <p><span class="label">ID:</span> <code>${html(lesson.id)}</code></p>
         <p><span class="label">Source:</span> ${html(lesson.source)}</p>
         <p><span class="label">Target:</span> <code>${html(lesson.target)}</code></p>
-      </div>
-    `).join("");
+      </div>`).join("");
+
+    document.getElementById("saveSnapshotButton").addEventListener("click", async () => {
+      const button = document.getElementById("saveSnapshotButton");
+      button.disabled = true;
+      document.getElementById("snapshotStatus").textContent = "Saving snapshot...";
+      try {
+        const response = await fetch("/api/coordinator-stage0-snapshot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(readSnapshotForm()),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const saved = await response.json();
+        renderSnapshotForm(saved);
+        document.getElementById("snapshotStatus").textContent = "Snapshot saved. You can now continue to Stage 0.";
+      } catch (err) {
+        document.getElementById("snapshotStatus").textContent = `Snapshot save failed: ${err.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    loadSnapshotForm();
+    fetch("/api/coordinator-summary")
+      .then((res) => res.json())
+      .then(renderCoordinator)
+      .catch(() => {
+        document.getElementById("coordinatorLead").textContent = "无法读取 coordinator 状态，但其它静态面板仍可用。";
+        document.getElementById("coordinatorPhase").textContent = "offline";
+        renderRoutes("idle", "pre_market");
+      });
+
+    renderCognitive();
   </script>
 </body>
 </html>

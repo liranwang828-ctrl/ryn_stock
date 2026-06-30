@@ -80,3 +80,219 @@ def test_price_refresh_state_sync_updates_positions_snapshot_and_nodes(tmp_path)
     assert nodes["nodes"]["entry_base"]["price"] == 96
     assert nodes["nodes"]["hard_stop"]["price"] == 82
     assert nodes["nodes"]["target"]["price"] == 135
+
+
+def test_build_stage0_universe_document_uses_snapshot_focus_symbols_and_positions(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _build_stage0_universe_document
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (stock_team_home / "config").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    (investing_os_home / "wiki" / "journals").mkdir(parents=True)
+
+    (stock_team_home / "config" / "positions.json").write_text(json.dumps({
+        "positions": {
+            "NVDA": {"shares": 30, "tranche": "core", "thesis_status": "intact"},
+            "MRVU": {"shares": 10, "tranche": "tactical", "thesis_status": "needs_review"},
+        }
+    }), encoding="utf-8")
+    (investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-06-15-pre-market-snapshot.json").write_text(
+        json.dumps({
+            "focus_symbols": "MRVU, GOOGL, ORCL",
+            "themes": "ai_infrastructure, cloud",
+        }),
+        encoding="utf-8",
+    )
+    (investing_os_home / "wiki" / "journals" / "2026-06-14-review.md").write_text(
+        "# review",
+        encoding="utf-8",
+    )
+
+    universe_path, journal_path = _build_stage0_universe_document(
+        str(stock_team_home),
+        "2026-06-15",
+        "trading-2026-06-15",
+    )
+
+    data = json.loads(open(universe_path, encoding="utf-8").read())
+    symbols = {row["symbol"]: row for row in data["universe"]}
+
+    assert journal_path.endswith("2026-06-14-review.md")
+    assert set(symbols) == {"MRVU", "GOOGL", "ORCL", "NVDA"}
+    assert symbols["NVDA"]["role"] == "current_position"
+    assert symbols["MRVU"]["role"] == "current_position"
+    assert symbols["GOOGL"]["role"] == "watchlist"
+    assert symbols["ORCL"]["source"] == "snapshot_focus_symbols"
+
+
+def test_stage0_snapshot_form_marks_manual_draft_not_ready(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _load_stage0_snapshot_form
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    snapshot_path = investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-06-16-pre-market-snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "as_of_et": "2026-06-16T09:20:00-04:00",
+        "window": "pre_market_before_09_30_ET",
+        "markets": [
+            {"symbol": "QQQ", "last": "736.7", "premarket_change_pct": "2.13", "note": "manual"},
+        ],
+        "themes": "ai_infrastructure",
+        "focus_symbols": "AAOX, MUU",
+    }), encoding="utf-8")
+
+    data = _load_stage0_snapshot_form(str(stock_team_home), {"market_date": "2026-06-16", "session_id": "trading-2026-06-16"})
+
+    assert data["exists"] is True
+    assert data["formal_ready"] is False
+    assert data["source_kind"] == "manual_draft"
+
+
+def test_stage0_snapshot_form_marks_formal_provider_snapshot_ready(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _load_stage0_snapshot_form
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    snapshot_path = investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-06-16-pre-market-snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "as_of_et": "2026-06-16T09:20:00-04:00",
+        "window": "pre_market_before_09_30_ET",
+        "markets": {
+            "QQQ": {"price": 736.7, "prev_close": 721.34, "source": "polygon_premarket_snapshot"},
+            "SPY": {"price": 751.15, "prev_close": 741.75, "source": "polygon_premarket_snapshot"},
+            "IWM": {"price": 297.4, "prev_close": 292.25, "source": "polygon_premarket_snapshot"},
+            "VIXY": {"price": 22.47, "prev_close": 23.29, "source": "polygon_premarket_snapshot"},
+        },
+        "themes": {
+            "ai_infrastructure": {"proxy": "SMH", "return_5d": 8.18, "return_20d": 16.31, "source": "polygon_premarket_snapshot"}
+        },
+        "focus_symbols": "AAOX, MUU",
+    }), encoding="utf-8")
+
+    data = _load_stage0_snapshot_form(str(stock_team_home), {"market_date": "2026-06-16", "session_id": "trading-2026-06-16"})
+
+    assert data["exists"] is True
+    assert data["formal_ready"] is True
+    assert data["source_kind"] == "formal_provider_snapshot"
+
+
+def test_stage0_snapshot_form_marks_premarket_minute_snapshot_ready(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _load_stage0_snapshot_form
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    snapshot_path = investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-06-16-pre-market-snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "as_of_et": "2026-06-16T09:20:00-04:00",
+        "window": "pre_market_before_09_30_ET",
+        "markets": {
+            "QQQ": {"price": 742.92, "prev_close": 744.0, "source": "polygon_premarket_1m_aggregates", "latest_bar_time_et": "2026-06-16T09:20:00-04:00"},
+            "SPY": {"price": 754.48, "prev_close": 754.83, "source": "polygon_premarket_1m_aggregates", "latest_bar_time_et": "2026-06-16T09:20:00-04:00"},
+            "IWM": {"price": 295.07, "prev_close": 294.64, "source": "polygon_premarket_1m_aggregates", "latest_bar_time_et": "2026-06-16T09:20:00-04:00"},
+            "VIXY": {"price": 21.8, "prev_close": 21.7, "source": "polygon_premarket_1m_aggregates", "latest_bar_time_et": "2026-06-16T09:14:00-04:00"},
+        },
+        "themes": {
+            "ai_infrastructure": {"proxy": "SMH", "return_5d": 8.27, "return_20d": 16.86, "source": "polygon_premarket_1m_aggregates"}
+        },
+        "focus_symbols": "AAOX, MUU",
+    }), encoding="utf-8")
+
+    data = _load_stage0_snapshot_form(str(stock_team_home), {"market_date": "2026-06-16", "session_id": "trading-2026-06-16"})
+
+    assert data["exists"] is True
+    assert data["formal_ready"] is True
+    assert data["source_kind"] == "formal_provider_snapshot"
+
+
+def test_coordinator_summary_exposes_skill_guided_stage0_discussion(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    stage0_packet = investing_os_home / "system" / "runtime" / "packets" / "trading-2026-06-16-stage0-market-context.md"
+    stage0_packet.write_text("# Stage 0", encoding="utf-8")
+
+    session = {
+        "session_id": "trading-2026-06-16",
+        "state": "STAGE0_READY",
+        "market_date": "2026-06-16",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+    task = payload["current_task"]
+
+    assert task["id"] == "stage0_discussion"
+    assert task["recommended_skill"] == "pre-market-planning"
+    assert task["skill_path"].endswith("agents{}pre-market-planning-agent.md".format("\\" if "\\" in task["skill_path"] else "/"))
+    assert task["agent_role"] == "investing-os planning agent"
+    assert task["inputs"][0]["exists"] is True
+    assert task["outputs"][0]["path"].endswith("trading-2026-06-16-stage0-discussion-notes.md")
+    assert task["outputs"][1]["path"].endswith("trading-2026-06-16-stage1-decision-sheet.json")
+    assert payload["first_action"] == "record_focus_confirmation"
+
+
+def test_bootstrap_current_task_outputs_creates_stage0_discussion_templates(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    stage0_packet = investing_os_home / "system" / "runtime" / "packets" / "trading-2026-06-16-stage0-market-context.md"
+    stage0_packet.write_text("# Stage 0", encoding="utf-8")
+
+    session = {
+        "session_id": "trading-2026-06-16",
+        "state": "STAGE0_READY",
+        "market_date": "2026-06-16",
+    }
+
+    result = _bootstrap_current_task_outputs(session, None, str(stock_team_home))
+
+    assert result["created_paths"][0].endswith("trading-2026-06-16-stage0-discussion-notes.md")
+    assert result["created_paths"][1].endswith("trading-2026-06-16-stage1-decision-sheet.json")
+    assert "Stage 0 Discussion Notes" in open(result["created_paths"][0], encoding="utf-8").read()
+    decision_sheet = json.loads(open(result["created_paths"][1], encoding="utf-8").read())
+    assert decision_sheet["risk_mode"] == "observe_only"
+    assert decision_sheet["user_confirmed"] is False
+
+
+def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    stage1_packet = investing_os_home / "system" / "runtime" / "packets" / "trading-2026-06-16-stage1-plan-evidence.md"
+    stage1_packet.write_text("# Stage 1", encoding="utf-8")
+
+    session = {
+        "session_id": "trading-2026-06-16",
+        "state": "STAGE1_READY",
+        "market_date": "2026-06-16",
+    }
+
+    result = _bootstrap_current_task_outputs(session, None, str(stock_team_home))
+
+    assert result["created_paths"][0].endswith("trading-2026-06-16-trading-plan.json")
+    assert result["created_paths"][1].endswith("trading-2026-06-16-intraday-guidance.json")
+    trading_plan = json.loads(open(result["created_paths"][0], encoding="utf-8").read())
+    intraday_guidance = json.loads(open(result["created_paths"][1], encoding="utf-8").read())
+    assert trading_plan["risk_mode"] == "observe_only"
+    assert intraday_guidance["default_action"] == "observe_only"

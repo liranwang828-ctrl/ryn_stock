@@ -1,12 +1,12 @@
 window.OPERATING_CONSOLE_DATA = {
-  updatedAt: "2026-06-06",
+  updatedAt: "2026-06-14",
   title: "Investing-OS Operating Console",
-  subtitle: "主脑入口：从这里进入盘前、盘中、复盘、研究和系统吸收。",
+  subtitle: "主入口：盘前、盘中、盘后、研究和系统认知都从这里进入。",
   permission: {
     state: "Red",
     labelZh: "红色权限",
     labelEn: "Red Permission",
-    summary: "短线与杠杆新风险受限。优先处理 MUU trapped position、复盘吸收、证据补全。",
+    summary: "当前偏向复盘、研究和证据整理，避免无计划短线和过度风险。",
     allowed: [
       "复盘与情绪降温",
       "风险降低计划",
@@ -15,9 +15,9 @@ window.OPERATING_CONSOLE_DATA = {
     ],
     blocked: [
       "无计划短线",
-      "杠杆产品扩大风险",
+      "杠杆产品扩张风险",
       "止损后立刻再交易",
-      "为了修复亏损而加仓"
+      "为弥补亏损而加仓"
     ]
   },
   nextActions: [
@@ -25,7 +25,7 @@ window.OPERATING_CONSOLE_DATA = {
       id: "NA-001",
       priority: "High",
       title: "盘前重新决策 MUU",
-      detail: "区分 thesis 是否仍有效、instrument 是否适合、trapped position 如何降风险。",
+      detail: "确认 thesis 是否仍有效，instrument 是否适合，trapped position 如何降风险。",
       route: "pre_market",
       evidenceNeeded: ["QQQ / VIX / MUU / MU 盘前与日线证据", "当前持仓与最大可承受亏损"]
     },
@@ -33,15 +33,15 @@ window.OPERATING_CONSOLE_DATA = {
       id: "NA-002",
       priority: "High",
       title: "等待 stock_team CLI contract 验收",
-      detail: "anti 完成后，主脑才能稳定调用证据引擎生成 packets。",
+      detail: "主脑稳定调用证据引擎后，才能批量生成 packets。",
       route: "stock_team_contract",
       evidenceNeeded: ["CLI --help", "packet examples", "forbidden behavior check"]
     },
     {
       id: "NA-003",
       priority: "Medium",
-      title: "继续 COHR / ORCL 研究吸收",
-      detail: "用完整公司研究流程沉淀 thesis、falsification、position role。",
+      title: "继续 COHR / ORCL 长期研究",
+      detail: "用完整研究流程沉淀 thesis、falsification 和 position role。",
       route: "company_research",
       evidenceNeeded: ["COHR peer packet", "ORCL company packet"]
     }
@@ -49,14 +49,14 @@ window.OPERATING_CONSOLE_DATA = {
   routes: [
     {
       id: "pre_market",
-      nameZh: "做盘前",
+      nameZh: "盘前计划",
       nameEn: "Pre-market Plan",
       userSays: "做盘前 / 今晚怎么计划",
       workflow: "system/workflows/pre-market.md",
       packet: "pre-market packet",
       output: "trading day plan",
       status: "available_without_cli",
-      note: "可先人工计划；CLI 完成后自动补证据。"
+      note: "可先人工规划，CLI 完成后自动补证据。"
     },
     {
       id: "intraday_check",
@@ -67,7 +67,7 @@ window.OPERATING_CONSOLE_DATA = {
       packet: "runtime monitor packet",
       output: "intraday guidance sheet",
       status: "waiting_for_cli",
-      note: "把盘前计划、认知风险和只读证据投射成 Green / Yellow / Red / No-Trade 状态。"
+      note: "把盘前计划、认知风险和只读证据映射成 Green / Yellow / Red / No-Trade。"
     },
     {
       id: "trade_review",
@@ -78,7 +78,7 @@ window.OPERATING_CONSOLE_DATA = {
       packet: "contextual trade evidence packet",
       output: "review + lessons",
       status: "available_manual",
-      note: "截图和口述可先复盘；CLI 完成后补逐笔成交证据。"
+      note: "可先复盘，CLI 完成后再补成交易证据包。"
     },
     {
       id: "post_market",
@@ -89,18 +89,18 @@ window.OPERATING_CONSOLE_DATA = {
       packet: "post-market packet",
       output: "daily report + HTML",
       status: "available_manual",
-      note: "必须先看 QQQ / VIX / 市场背景再分类错误。"
+      note: "先看 QQQ / VIX / 市场背景，再做盘后总结。"
     },
     {
       id: "company_research",
       nameZh: "公司研究",
       nameEn: "Company Research",
-      userSays: "查 COHR / 研究 ORCL",
+      userSays: "研究 COHR / 研究 ORCL",
       workflow: "system/workflows/company-research.md",
       packet: "company research packet",
       output: "dossier + thesis candidate",
       status: "available_manual",
-      note: "短线可压缩流程，波段/核心仓走完整流程。"
+      note: "短线可以压缩流程，长期研究保持完整。"
     },
     {
       id: "industry_research",
@@ -111,7 +111,7 @@ window.OPERATING_CONSOLE_DATA = {
       packet: "industry research packet",
       output: "industry dossier",
       status: "waiting_for_cli",
-      note: "用于沉淀世界观、产业链、瓶颈和价值捕获。"
+      note: "用于沉淀世界观、产业链和估值框架。"
     },
     {
       id: "weekly_review",
@@ -129,8 +129,8 @@ window.OPERATING_CONSOLE_DATA = {
     {
       id: "GAP-001",
       severity: "High",
-      title: "stock_team CLI 尚未验收",
-      detail: "当前主脑还不能稳定通过统一命令拿到 evidence packets。",
+      title: "stock_team CLI 尚未稳定验收",
+      detail: "主脑还不能稳定通过统一命令拿到 evidence packets。",
       owner: "Antigravity",
       target: "handoff/requests/antigravity-current-tasks.md"
     },
@@ -138,7 +138,7 @@ window.OPERATING_CONSOLE_DATA = {
       id: "GAP-002",
       severity: "High",
       title: "MUU 当前持仓证据未形成 packet",
-      detail: "需要 MUU / MU / QQQ / VIX 的盘前与日线证据，以及当前持仓风险数据。",
+      detail: "需要 MUU / MU / QQQ / VIX 的盘前与日线证据，以及当前风险数据。",
       owner: "Codex + stock_team after CLI",
       target: "system/data/packets/"
     },
@@ -146,7 +146,7 @@ window.OPERATING_CONSOLE_DATA = {
       id: "GAP-003",
       severity: "Medium",
       title: "COHR / ORCL 研究证据包未自动化",
-      detail: "已有研究流程，但 peer/company factual packet 还等待 stock_team 固化。",
+      detail: "已有研究流程，但 peer/company factual packet 还需要固化。",
       owner: "Antigravity",
       target: "company research packet"
     }
