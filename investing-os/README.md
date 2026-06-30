@@ -5,6 +5,8 @@ Date: 2026-06-04
 
 ## Start Here
 
+Read [PROJECT-CHARTER.zh.md](PROJECT-CHARTER.zh.md) for the current project-wide mission, workflow names, system boundaries, and delivery priorities.
+
 Read [WHY.md](WHY.md) first.
 
 It explains why this system exists: cognition is the engine, AI is the amplifier, discipline is the moat, review is the evolution mechanism, and returns are a byproduct.
@@ -42,6 +44,7 @@ Returns are an output. Cognitive evolution is the core objective.
 ```text
 investing-os/
 +-- README.md
++-- PROJECT-CHARTER.zh.md
 +-- WHY.md
 +-- OPERATING-MODEL.md
 +-- PROJECT.md
