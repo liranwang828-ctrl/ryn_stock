@@ -9,6 +9,7 @@ BEGIN_TRANSITIONS = {
     ("STAGE1_READY", "record_plan_approval"): "PLAN_APPROVED",
     ("PLAN_APPROVED", "start_intraday"): "INTRADAY_ACTIVE",
     ("INTRADAY_ACTIVE", "close_market"): "MARKET_CLOSED",
+    ("INTRADAY_ACTIVE", "request_exception"): "INTRADAY_ACTIVE",
     ("OBSERVATION_ACTIVE", "close_market"): "MARKET_CLOSED",
     ("MARKET_CLOSED", "review_day"): "REVIEW_REQUIRED",
     ("REVIEW_REQUIRED", "archive_day"): "DAY_ARCHIVED",
@@ -29,7 +30,7 @@ ALLOWED_ACTIONS = {
     "FOCUS_CONFIRMED": ["start_stage1", "start_observation"],
     "STAGE1_READY": ["record_plan_approval"],
     "PLAN_APPROVED": ["start_intraday"],
-    "INTRADAY_ACTIVE": ["close_market"],
+    "INTRADAY_ACTIVE": ["close_market", "request_exception"],
     "OBSERVATION_ACTIVE": ["intraday-snapshot", "close_market", "archive_day"],
     "MARKET_CLOSED": ["review_day", "quick_review", "freeze"],
     "REVIEW_REQUIRED": ["archive_day"],
@@ -37,7 +38,7 @@ ALLOWED_ACTIONS = {
     "FAILED_TOOL": ["retry_last_action"],
 }
 
-CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval"}
+CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval", "request_exception"}
 
 
 class TransitionError(RuntimeError):

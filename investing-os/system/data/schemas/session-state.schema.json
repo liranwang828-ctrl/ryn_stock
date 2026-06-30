@@ -125,6 +125,20 @@
         { "type": "null" }
       ]
     },
+    "intraday_exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason", "confirmed_by_user", "confirmed_at"],
+        "properties": {
+          "reason": { "type": "string" },
+          "detail": { "type": "string" },
+          "confirmed_by_user": { "type": "boolean" },
+          "confirmed_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
     "updated_at": { "type": "string", "format": "date-time" }
   }
 }

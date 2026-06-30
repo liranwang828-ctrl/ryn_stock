@@ -56,3 +56,14 @@ def test_closed_unreviewed_transition():
 
 def test_archive_day_action_exists():
     assert "archive_day" in allowed_actions("REVIEW_REQUIRED")
+
+
+def test_intraday_active_allows_request_exception():
+    actions = allowed_actions("INTRADAY_ACTIVE")
+    assert "request_exception" in actions
+    assert "close_market" in actions
+
+
+def test_request_exception_transition():
+    result = begin_transition("INTRADAY_ACTIVE", "request_exception")
+    assert result == "INTRADAY_ACTIVE"

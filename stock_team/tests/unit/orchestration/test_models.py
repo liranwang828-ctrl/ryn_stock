@@ -88,6 +88,7 @@ def test_session_schema_declares_required_state_fields():
         "processed_at",
     ]
     assert "backlog_links" in schema["properties"]
+    assert "intraday_exceptions" in schema["properties"]
     assert schema["properties"]["last_error"] == {
         "anyOf": [
             {
@@ -141,6 +142,7 @@ def test_action_schema_requires_optimistic_state_and_idempotency():
         "archive_day",
         "retry_last_action",
         "start_observation",
+        "request_exception",
     ]
     assert schema["properties"]["session_id"] == {"type": "string"}
     assert schema["properties"]["expected_state"] == {"type": "string"}

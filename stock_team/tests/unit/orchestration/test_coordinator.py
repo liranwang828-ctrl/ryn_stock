@@ -189,3 +189,42 @@ def test_retry_last_action_replays_original_intent_once(tmp_path):
     assert state["state"] == "STAGE0_READY"
     assert len(succeeding.calls) == 1
     assert succeeding.calls[0][0] == "start_stage0"
+
+
+def test_intraday_exception_requires_user_confirmation(tmp_path):
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "INTRADAY_ACTIVE"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["close_market", "request_exception"]
+    store.create(session)
+
+    adapter = FakeAdapter(result=make_result(tmp_path))
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T14:30:00+00:00")
+
+    with pytest.raises(ValueError, match="requires user_confirmation"):
+        coordinator.execute(
+            {
+                "intent": "request_exception",
+                "session_id": "trading-2026-06-15",
+                "expected_state": "INTRADAY_ACTIVE",
+                "user_confirmation": False,
+                "parameters": {"reason": "unexpected volatility", "detail": "SPX dropped 2% in 5 min"},
+                "idempotency_key": "exc-1",
+            }
+        )
+
+    state = coordinator.execute(
+        {
+            "intent": "request_exception",
+            "session_id": "trading-2026-06-15",
+            "expected_state": "INTRADAY_ACTIVE",
+            "user_confirmation": True,
+            "parameters": {"reason": "unexpected volatility", "detail": "SPX dropped 2% in 5 min"},
+            "idempotency_key": "exc-2",
+        }
+    )
+    assert state["state"] == "INTRADAY_ACTIVE"
+    assert len(state["intraday_exceptions"]) == 1
+    assert state["intraday_exceptions"][0]["reason"] == "unexpected volatility"
+    assert state["intraday_exceptions"][0]["confirmed_at"] == "2026-06-15T14:30:00+00:00"

@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from .adapters import AdapterError
+from .adapters import AdapterError, AdapterResult
 from .models import new_trading_session, validate_action
 from .transitions import allowed_actions, begin_transition, complete_transition, requires_confirmation
 
@@ -65,7 +65,10 @@ class WorkflowCoordinator:
         self.store.save(state, expected_version=previous_version)
 
         try:
-            result = self.adapter.run(action["intent"], action["parameters"])
+            if action["intent"] == "request_exception":
+                result = AdapterResult(command=[], stdout="", stderr="", artifact_paths=[])
+            else:
+                result = self.adapter.run(action["intent"], action["parameters"])
         except AdapterError as err:
             failed = self.store.load(action["session_id"])
             prev = failed["state_version"]
@@ -100,6 +103,15 @@ class WorkflowCoordinator:
         completed["last_error"] = None
         completed["allowed_actions"] = allowed_actions(completed["state"])
         completed["updated_at"] = now
+        if action["intent"] == "request_exception":
+            completed.setdefault("intraday_exceptions", []).append(
+                {
+                    "reason": action["parameters"].get("reason", ""),
+                    "detail": action["parameters"].get("detail", ""),
+                    "confirmed_by_user": True,
+                    "confirmed_at": now,
+                }
+            )
         for artifact_path in result.artifact_paths:
             path = Path(artifact_path)
             completed["artifacts"].append(

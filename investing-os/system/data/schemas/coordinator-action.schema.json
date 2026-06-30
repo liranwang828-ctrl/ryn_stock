@@ -26,7 +26,8 @@
         "freeze",
         "archive_day",
         "retry_last_action",
-        "start_observation"
+        "start_observation",
+        "request_exception"
       ]
     },
     "session_id": { "type": "string" },
