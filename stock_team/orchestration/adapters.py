@@ -216,6 +216,21 @@ class ExistingCliAdapter:
                 out,
             ]
             return [(command, 30)], [out]
+        if intent == "intraday-snapshot":
+            out = str(parameters["out"])
+            command = [
+                self.python_executable,
+                "-m",
+                "stock_team.cli",
+                "intraday-snapshot",
+                "--symbols",
+                str(parameters["symbols"]),
+                "--out",
+                out,
+            ]
+            if parameters.get("refresh"):
+                command.append("--refresh")
+            return [(command, 60)], [out]
         raise AdapterError(f"unsupported intent: {intent}", retryable=False)
 
     def _is_retryable(self, returncode: int, stderr: str) -> bool:

@@ -185,6 +185,46 @@ def test_record_plan_approval_validates_required_fields(tmp_path):
     assert caught.value.retryable is False
 
 
+def test_adapter_supports_intraday_snapshot(tmp_path, monkeypatch):
+    calls = []
+    snapshot_out = tmp_path / "snapshot.md"
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        snapshot_out.write_text("ok", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    result = adapter.run(
+        "intraday-snapshot",
+        {"symbols": "MSFT,NVDA", "out": str(snapshot_out)},
+    )
+    assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "intraday-snapshot"]
+    assert "--symbols" in calls[0][0]
+    assert "MSFT,NVDA" in calls[0][0]
+    assert "--out" in calls[0][0]
+    assert result.artifact_paths == [str(snapshot_out)]
+
+
+def test_adapter_supports_intraday_snapshot_with_refresh(tmp_path, monkeypatch):
+    calls = []
+    snapshot_out = tmp_path / "snapshot.md"
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        snapshot_out.write_text("ok", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run(
+        "intraday-snapshot",
+        {"symbols": "MSFT,NVDA", "refresh": True, "out": str(snapshot_out)},
+    )
+    assert "--refresh" in calls[0][0]
+
+
 def test_record_plan_approval_accepts_valid_plan_files(tmp_path):
     trading_plan = tmp_path / "trading-plan.json"
     intraday = tmp_path / "intraday-guidance.json"

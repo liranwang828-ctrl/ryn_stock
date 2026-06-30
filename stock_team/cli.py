@@ -1697,8 +1697,30 @@ def handle_trade_evidence(args):
         sys.exit(res.returncode)
 
 
+def _et_now():
+    try:
+        from zoneinfo import ZoneInfo
+        eastern = ZoneInfo("America/New_York")
+    except Exception:
+        from datetime import timedelta, timezone as _tz
+        eastern = _tz(timedelta(hours=-5))
+    return datetime.now(eastern)
+
+
 def handle_intraday_snapshot(args):
     print("📡 Executing Intraday Snapshot command...")
+
+    now_et = _et_now()
+    target_start = _time(9, 30)
+    target_end = _time(16, 0)
+    now_time = now_et.time()
+    in_window = target_start <= now_time <= target_end
+    target_window_str = "09:30-16:00 ET"
+
+    if not in_window:
+        now_str = now_et.strftime("%H:%M")
+        print(f"[提示] 当前时间 {now_str} ET 不在目标盘中窗口 {target_window_str} 内。继续执行，但请注意数据可能不是盘中实时数据。")
+
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     date_str = _date.today().strftime("%Y-%m-%d")
     out_path = args.out
@@ -1803,12 +1825,20 @@ def handle_intraday_snapshot(args):
             f, 
             packet_type="runtime_monitor_packet", 
             command_name="intraday-snapshot",
-            inputs={"symbols": args.symbols, "refresh": args.refresh},
+            inputs={
+                "symbols": args.symbols,
+                "refresh": str(args.refresh),
+                "target_window": target_window_str,
+                "in_window": str(in_window),
+            },
             data_sources=["yfinance", "local_cache"],
             missing_data=missing
         )
         f.write(f"# Intraday Snapshot Runtime Packet ({date_str})\n\n")
         f.write("Boundary: Factual intraday quote monitoring & proximity alerts only.\n\n")
+        f.write(f"- target_window: {target_window_str}\n")
+        f.write(f"- in_window: {str(in_window).lower()}\n")
+        f.write(f"- executed_at_et: {now_et.strftime('%Y-%m-%dT%H:%M:%S%z')}\n\n")
         f.write("## 1. Intraday Snapshot Indicators\n\n")
         f.write("| Ticker | Current Price | Preset Entry | Hard Stop | Distance to Stop % | Cooldown Until | State |\n")
         f.write("| :--- | :---: | :---: | :---: | :---: | :---: | :--- |\n")

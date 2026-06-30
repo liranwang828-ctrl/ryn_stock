@@ -1460,6 +1460,88 @@ status: fallback_data
     assert "status: fallback_data" in content
     assert "polygon_api_key_missing_or_failed" in content
 
+def test_intraday_snapshot_soft_warns_outside_window(monkeypatch, tmp_path):
+    """When called outside 9:30-16:00 ET, handle_intraday_snapshot prints warning but still executes."""
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    import types
+
+    eastern = ZoneInfo("America/New_York")
+    fake_now = datetime(2026, 6, 30, 17, 30, 0, tzinfo=eastern)
+    monkeypatch.setattr(cli, "_et_now", lambda: fake_now)
+
+    class FakeHistory:
+        empty = True
+
+    class FakeTicker:
+        def history(self, period=None):
+            return FakeHistory()
+
+    fake_yf = types.ModuleType("yfinance")
+    fake_yf.Ticker = lambda sym: FakeTicker()
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+
+    out_file = tmp_path / "snapshot.md"
+    args = SimpleNamespace(symbols="MSFT", refresh=False, out=str(out_file))
+
+    import io
+    captured = io.StringIO()
+    old_stdout = cli.sys.stdout
+    cli.sys.stdout = captured
+    try:
+        cli.handle_intraday_snapshot(args)
+    finally:
+        cli.sys.stdout = old_stdout
+
+    output = captured.getvalue()
+    assert "[提示]" in output
+    assert "不在目标盘中窗口" in output
+    assert "17:30" in output
+    assert out_file.exists()
+
+
+def test_intraday_snapshot_no_warning_inside_window(monkeypatch, tmp_path):
+    """When called inside 9:30-16:00 ET, handle_intraday_snapshot prints no time window warning."""
+    sys.path.insert(0, WORKSPACE_DIR)
+    import stock_team.cli as cli
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    import types
+
+    eastern = ZoneInfo("America/New_York")
+    fake_now = datetime(2026, 6, 30, 11, 0, 0, tzinfo=eastern)
+    monkeypatch.setattr(cli, "_et_now", lambda: fake_now)
+
+    class FakeHistory:
+        empty = True
+
+    class FakeTicker:
+        def history(self, period=None):
+            return FakeHistory()
+
+    fake_yf = types.ModuleType("yfinance")
+    fake_yf.Ticker = lambda sym: FakeTicker()
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+
+    out_file = tmp_path / "snapshot.md"
+    args = SimpleNamespace(symbols="MSFT", refresh=False, out=str(out_file))
+
+    import io
+    captured = io.StringIO()
+    old_stdout = cli.sys.stdout
+    cli.sys.stdout = captured
+    try:
+        cli.handle_intraday_snapshot(args)
+    finally:
+        cli.sys.stdout = old_stdout
+
+    output = captured.getvalue()
+    assert "[提示]" not in output
+    assert out_file.exists()
+
+
 def test_cli_intraday_dashboard_generation(tmp_path):
     """Verify that intraday-dashboard subcommand executes cleanly and generates compliant manifest, HTML, and Markdown outputs."""
     guidance = tmp_path / "guidance.json"
