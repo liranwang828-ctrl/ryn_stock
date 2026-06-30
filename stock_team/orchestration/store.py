@@ -80,6 +80,24 @@ class SessionStore:
             except FileNotFoundError:
                 pass
 
+    TERMINAL_STATES = {"DAY_ARCHIVED", "CLOSED_UNREVIEWED"}
+
+    def list_sessions(self, *, market_date: str | None = None, only_open: bool = False) -> list[dict]:
+        sessions = []
+        for path in sorted(self.root.glob("*.json")):
+            try:
+                with path.open("r", encoding="utf-8") as fh:
+                    state = json.load(fh)
+                state = validate_session(state)
+            except Exception:
+                continue
+            if market_date is not None and state.get("market_date") != market_date:
+                continue
+            if only_open and state.get("state") in self.TERMINAL_STATES:
+                continue
+            sessions.append(state)
+        return sessions
+
     def _validate_session_id(self, session_id: str) -> str:
         if not isinstance(session_id, str) or not session_id or ".." in session_id or "/" in session_id or "\\" in session_id:
             raise SessionConflictError(f"invalid session id: {session_id!r}")

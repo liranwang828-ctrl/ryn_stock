@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_day.add_argument("--date", required=True)
     init_day.add_argument("--session-type", choices=sorted(SESSION_TYPES), default="trading")
     init_day.add_argument("--runtime-dir", default=str(default_runtime_dir()))
+    init_day.add_argument("--recovery", choices=["freeze", "quick_review", "full_review"], default=None)
 
     show = sub.add_parser("show")
     show.add_argument("--session-id", required=True)
@@ -52,7 +53,77 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "init-day":
+            store = SessionStore(args.runtime_dir)
+            open_sessions = store.list_sessions(only_open=True)
+
+            previous_open = [
+                s for s in open_sessions
+                if s["market_date"] < args.date
+            ]
+
+            if previous_open and not args.recovery:
+                prev = previous_open[0]
+                print(
+                    f"发现未关闭会话: {prev['session_id']} (状态: {prev['state']}, "
+                    f"日期: {prev['market_date']})",
+                    file=sys.stderr,
+                )
+                print(
+                    "请使用 --recovery {freeze|quick_review|full_review} 选择恢复路径后重试。",
+                    file=sys.stderr,
+                )
+                return 1
+
             coordinator = _coordinator(args.runtime_dir)
+
+            if previous_open and args.recovery:
+                prev = previous_open[0]
+                recovery_map = {
+                    "freeze": "freeze",
+                    "quick_review": "quick_review",
+                    "full_review": "review_day",
+                }
+                recovery_intent = recovery_map[args.recovery]
+
+                # If old session is in an active state, close market first
+                if prev["state"] in ("INTRADAY_ACTIVE", "OBSERVATION_ACTIVE"):
+                    close_action = {
+                        "intent": "close_market",
+                        "session_id": prev["session_id"],
+                        "expected_state": prev["state"],
+                        "user_confirmation": False,
+                        "parameters": {},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                    coordinator.execute(close_action)
+                    prev = store.load(prev["session_id"])
+
+                recovery_action = {
+                    "intent": recovery_intent,
+                    "session_id": prev["session_id"],
+                    "expected_state": prev["state"],
+                    "user_confirmation": False,
+                    "parameters": {},
+                    "idempotency_key": str(uuid.uuid4()),
+                }
+                recovered = coordinator.execute(recovery_action)
+                print(
+                    f"已恢复: {prev['session_id']} -> {recovered['state']}",
+                    file=sys.stderr,
+                )
+
+                # If quick_review, also archive
+                if args.recovery == "quick_review":
+                    archive_action = {
+                        "intent": "archive_day",
+                        "session_id": prev["session_id"],
+                        "expected_state": "QUICK_REVIEWED",
+                        "user_confirmation": False,
+                        "parameters": {},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                    coordinator.execute(archive_action)
+
             state = coordinator.execute(
                 {
                     "intent": "initialize_day",

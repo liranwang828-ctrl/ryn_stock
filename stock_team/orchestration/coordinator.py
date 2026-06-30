@@ -65,7 +65,8 @@ class WorkflowCoordinator:
         self.store.save(state, expected_version=previous_version)
 
         try:
-            if action["intent"] == "request_exception":
+            _meta_intents = {"request_exception", "close_market", "freeze", "quick_review", "review_day", "archive_day"}
+            if action["intent"] in _meta_intents:
                 result = AdapterResult(command=[], stdout="", stderr="", artifact_paths=[])
             else:
                 result = self.adapter.run(action["intent"], action["parameters"])
