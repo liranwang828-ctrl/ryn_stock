@@ -51,6 +51,18 @@ investing-os/dashboards/latest_evidence_dashboard.html
 investing-os/system/data/packets/ib_event_log.json
 investing-os/system/data/packets/intraday_snapshot.json
 investing-os/system/data/snapshots/broker/
+investing-os/system/runtime/sessions/*
+!investing-os/system/runtime/sessions/.gitkeep
+investing-os/system/runtime/coordinator-decisions/
+investing-os/system/runtime/inputs/
+investing-os/system/runtime/packets/
+investing-os/system/runtime/trade-history/
+investing-os/system/runtime/*.lock
+investing-os/system/runtime/*.tmp
+
+# Workspace launch logs
+dashboard-*.out.log
+dashboard-*.err.log
 
 # Editor and OS noise
 **/.vscode/
