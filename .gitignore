@@ -37,7 +37,9 @@ stock_team/data_verified.json
 stock_team/discussion_board.jsonl
 stock_team/strategy_result.json
 stock_team/reports/latest_evidence_dashboard.json
+stock_team/reports/dashboard.html
 stock_team/config/positions.json
+stock_team/config/server_port.json
 stock_team/config/daily_focus.json
 stock_team/config/today_focus.json
 stock_team/config/target_orders_rebalance.json

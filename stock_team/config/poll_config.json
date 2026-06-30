@@ -47,25 +47,8 @@
     "LITX",
     "TSM"
   ],
-  "portfolio_symbols": [
-    "BABA",
-    "NVDA",
-    "COHR",
-    "IAU",
-    "FUTU",
-    "SYM",
-    "SGOV",
-    "NOW",
-    "VST",
-    "MSFT",
-    "GOOGL"
-  ],
-  "default_symbols": [
-    "NOW",
-    "VST",
-    "SYM",
-    "TSM"
-  ],
+  "portfolio_symbols": [],
+  "default_symbols": [],
   "sector_map": {
     "AAOI": {
       "ref": "LITE",
