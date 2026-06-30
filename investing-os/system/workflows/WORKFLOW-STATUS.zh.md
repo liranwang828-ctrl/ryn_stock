@@ -14,7 +14,7 @@
 
 | 工作流 | 当前状态 | 最近核验 | 当前判断 |
 |---|---|---:|---|
-| `DAILY` 每日交易 | `partial` | 2026-06-30 | DAILY-0 至 4 已完成事实审计（89 tests passed）；DAILY-CONTRACT 修订版待用户逐段批准；代码实施不得开始 |
+| `DAILY` 每日交易 | `partial` | 2026-06-30 | DAILY-0 至 4 已完成事实审计；DAILY-CONTRACT v2 已修复 R1–R6，但高阶复核仍要求小幅修订；代码实施不得开始 |
 | `RESEARCH` 投资研究 | `documented` | 2026-06-30 | 公司、行业等流程与 Packet 文档存在；当前端到端运行状态未核验 |
 | `REVIEW` 周期复盘 | `documented` | 2026-06-30 | 周末、交易和论点复盘资料存在；统一周期复盘入口未核验 |
 | `LEARNING` 经验进化 | `documented` | 2026-06-30 | Packet absorption、journal promotion 和 approval 流程存在；运行闭环未核验 |
@@ -26,7 +26,10 @@
 当前行动计划：[`../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md`](../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md)
 
 当前审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
-DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（修订版 v2，待用户逐段批准）
+
+v2 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md`](../../handoff/reviews/2026-06-30-daily-contract-v2-review.md)
+
+DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v2 待小幅修订）
 
 | 步骤 | 状态 | 已知证据 | 已知缺口 | 下一验收动作 |
 |---|---|---|---|---|

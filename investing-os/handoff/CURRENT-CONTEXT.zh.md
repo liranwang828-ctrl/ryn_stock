@@ -135,8 +135,8 @@ Git push：
 
 1. 将 `DAILY-AUDIT-0` 至 `DAILY-AUDIT-4` 分发给低阶模型，在独立分支或 worktree 中完成。
 2. 每个低阶任务只生成自己的事实审计报告，不修改业务代码、schema 或共享状态台账。
-3. 五份审计报告已经完成；低阶模型生成的 `DAILY-CONTRACT.zh.md` 在高阶审核中未通过。
-4. 当前必须先按 `handoff/reviews/2026-06-30-daily-contract-review.md` 修订契约，不得开始代码实施。
+3. 五份审计报告已经完成；`DAILY-CONTRACT.zh.md` v2 已修复首次审核的 R1–R6。
+4. 当前必须先按 `handoff/reviews/2026-06-30-daily-contract-v2-review.md` 完成小幅修订，不得开始代码实施。
 5. 用户批准 DAILY 的交互点、完成条件和恢复路径后，再拆分代码实现任务。
 6. 完成实现后用非交易模拟验证 `DAILY-0` 至 `DAILY-4`。
 7. DAILY 稳定后，再推进其他工作流和旧代码整理。

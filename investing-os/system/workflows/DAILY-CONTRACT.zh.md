@@ -1,7 +1,8 @@
 # DAILY 每日交易工作流契约
 
-状态：修订版，待用户逐段批准
+状态：v2 高阶审核要求小幅修订，尚未进入用户批准
 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
+v2 审核：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md`](../../handoff/reviews/2026-06-30-daily-contract-v2-review.md)
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
 本版修正：R1–R6 六项阻断问题 + 非阻断修订
 
