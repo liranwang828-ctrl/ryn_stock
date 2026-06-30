@@ -6,6 +6,8 @@
 
 项目级名称、边界和行动方向以 [`../PROJECT-CHARTER.zh.md`](../PROJECT-CHARTER.zh.md) 为准。工作流实际实现状态见 [`../system/workflows/WORKFLOW-STATUS.zh.md`](../system/workflows/WORKFLOW-STATUS.zh.md)。
 
+用户与模型形成的项目结论必须写入对应仓库文件并 commit、push。未落盘的聊天内容不是项目事实，也不能作为后续模型的执行依据。
+
 ## 一句话目标
 
 把 `investing-os` 的认知与决策能力和 `stock_team` 的数据、计算、报告能力串成一个可日常使用、可中断恢复、由技能驱动的交易工作流。
