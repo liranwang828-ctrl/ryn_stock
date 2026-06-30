@@ -47,9 +47,15 @@ The committed branch tests passed:
 29 passed
 ```
 
-Do not merge the branch's uncommitted UI/server changes together with these
-foundation commits. Those changes have a failing server test and overlap with
-newer main-worktree implementations.
+The branch's former uncommitted UI/server changes were preserved in:
+
+```text
+stash@{0}: archive phase1 coordinator post-foundation ui experiments 2026-06-30
+```
+
+They had a failing server test and overlap with newer main-worktree
+implementations. The worktree is now clean. Do not merge or apply that stash
+without a contract comparison.
 
 ### Current Main-Worktree Source Changes
 
