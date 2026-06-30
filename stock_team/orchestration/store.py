@@ -21,7 +21,11 @@ class SessionBusyError(RuntimeError):
 
 
 class SessionStore:
-    def __init__(self, root):
+    def __init__(self, root=None):
+        if root is None:
+            from .protocol import SESSIONS_DIR
+
+            root = SESSIONS_DIR
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
 
