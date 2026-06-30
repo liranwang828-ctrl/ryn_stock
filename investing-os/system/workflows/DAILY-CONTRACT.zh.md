@@ -1,9 +1,9 @@
 # DAILY 每日交易工作流契约
 
-状态：高阶审核未通过，待按审核记录修订
-审核记录：`investing-os/handoff/reviews/2026-06-30-daily-contract-review.md`
+状态：修订版，待用户逐段批准
+审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
-来源 commit：`c1024c3` 至 `fb61fc6`
+本版修正：R1–R6 六项阻断问题 + 非阻断修订
 
 本契约定义 DAILY-0 至 DAILY-4 的合法顺序、进入/完成条件、系统动作、用户交互、固定产物和失败恢复。它是代码实现的唯一需求依据。
 
@@ -16,33 +16,34 @@
 ```
 DAILY-0 晨间准备
   → DAILY-1 盘前决策（若活动类型为 trading 或 observation）
-  → DAILY-2 开盘观察（若存在已批准计划）
-  → DAILY-3 盘中管理（若存在已批准计划）
-  → DAILY-4 盘后复盘（若当日为交易日且进入过 DAILY-1）
+  → DAILY-2 开盘观察（trading 需已批准计划；observation 只读事实路径）
+  → DAILY-3 盘中管理（trading 需已批准计划；observation 只读事实路径）
+  → DAILY-4 盘后复盘（若当日进入过 DAILY-1）
 ```
 
-observation 模式：DAILY-0 → DAILY-1（仅到市场环境证据包）→ 结束。不进入 DAILY-2/3。
+observation 模式完整路径：DAILY-0 → DAILY-1（到市场环境证据包）→ DAILY-2（只读）→ DAILY-3（只读）→ DAILY-4（复盘）。全程不授予交易权限、不生成或改写交易计划、不改写盘前锚点、不升级为 trading。
 
 research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作流，不进入 DAILY-1/2/3/4。
 
 ### 0.2 脑-肌边界硬约束
 
-以下边界在全部 DAILY 步骤中生效，不得在任何实现中违反：
+以下边界在全部 DAILY 步骤中生效：
 
-1. **`stock_team` 不得下单** — 协调器和 `stock_team` 的任何组件不得创建、修改或发送交易指令到 IBKR。`stock_team` 只读取 IBKR 事实。
-2. **IBKR 是持仓和交易事实的唯一正式来源** — 账户数值、持仓列表、成交记录必须以 IBKR 返回数据为准。yfinance/Polygon 只能是行情价格来源，不能替代 IBKR 的账户事实。
+1. **`stock_team` 不得下单** — 协调器和 `stock_team` 的任何组件不得创建、修改或发送交易指令到 IBKR。
+2. **IBKR 是持仓和交易事实的唯一正式来源** — 账户数值、持仓列表、成交记录必须以 IBKR 实时返回数据为准。缓存（`positions.json` 等）仅可作 `stale_unverified` 只读展示，帮助用户回忆和排查，不得用于完成正式账户确认、授予新风险权限、作为正式成交事实完成复盘或经验吸收。
 3. **权限变更必须经用户确认** — 任何 risk_mode、allowed_actions、forbidden_actions 的变更必须通过 investing-os 呈现并由用户显式批准。
 
-### 0.3 真实与模拟数据的区分
+### 0.3 真实与模拟数据的区分（待批准设计候选）
 
-- 所有产物必须声明 `data_source` 字段，取值为 `ibkr_live` / `polygon_live` / `yfinance_delayed` / `cached` / `simulated`。
-- 模拟数据产物必须在文件名或 front matter 中包含 `[SIMULATED]` 标记。
-- 使用模拟数据时，Dashboard 和 CLI 必须在可见位置显示 "模拟数据" 警告。
-- Schema 中 `data_source` 为必填字段。
+以下为 provenance 设计候选方案，尚未批准实施：
+
+- 候选方案：所有产物声明 `data_source` 字段，取值为 `ibkr_live` / `polygon_live` / `yfinance_delayed` / `cached` / `simulated`
+- 候选方案：模拟数据产物在文件名或 front matter 中包含 `[SIMULATED]` 标记
+- 候选方案：使用模拟数据时 Dashboard 和 CLI 在可见位置显示警告
+
+实施前需：盘点 DAILY 固定产物、决定统一 provenance envelope 或逐 schema 扩展、评估既有产物迁移成本。当前不作为生效要求。
 
 ### 0.4 证据等级约定
-
-本契约沿用审计报告的证据等级体系：
 
 - `code-only`：代码中存在，未在其他文档中描述
 - `documented`：文档或契约中有定义，代码未实现或未验证
@@ -75,10 +76,11 @@ research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作�
 
 ### 必须显示给用户
 
-1. 当前账户摘要：现金、净清算值、未实现盈亏、当日盈亏
-2. 当前持仓列表：代码、数量、成本、现价、盈亏%
-3. 前一日复盘状态：已完成 / 欠账（含欠账类型和日期）
-4. 今日可用活动类型：trading / observation / research / review / maintenance
+1. 当前账户摘要（若 IBKR 可连接）：现金、净清算值、未实现盈亏、当日盈亏
+2. 当前持仓列表（若 IBKR 可连接）：代码、数量、成本、现价、盈亏%
+3. 若 IBKR 不可达：显示最近一次缓存数据，显式标记 `stale_unverified` 和缓存时间，提示用户此为只读参考
+4. 前一日复盘状态：已完成 / 欠账（含欠账类型和日期）
+5. 今日可用活动类型：trading / observation / research / review / maintenance
 
 ### 必须由用户确认
 
@@ -94,15 +96,15 @@ research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作�
 **输入：** 日期、活动类型、IBKR 连接状态
 **输出：**
 - 会话状态 JSON（`{runtime_dir}/sessions/{session_id}.json`）
-- 账户快照（来自 IBKR 同步）
-- 持仓快照（来自 IBKR 同步）
+- 账户快照（来自 IBKR 同步，或标记 `stale_unverified` 的缓存）
+- 持仓快照（来自 IBKR 同步，或标记 `stale_unverified` 的缓存）
 - 前日复盘状态报告
 
 ### investing-os 输入与输出
 
 **输入：** stock_team 输出的所有事实
 **输出：**
-- 翻译后的活动类型确认
+- 活动类型确认
 - 前日欠账处理决定
 - 当日关注列表
 
@@ -111,19 +113,19 @@ research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作�
 - 会话状态为 `DAY_INITIALIZED`
 - 活动类型已确认
 - 前日欠账已处理或确认跳过
-- 持仓和观察对象已确认
+- 持仓和观察对象已确认（若 IBKR 不可达，以 `stale_unverified` 状态确认只读）
 
 ### 允许跳过或降级路径
 
-- 若 IBKR 不可达：使用最近一次缓存的 positions.json，显式标记 `data_source: cached` 和缓存时间
+- 若 IBKR 不可达：使用缓存以 `stale_unverified` 状态只读展示；用户可选择进入 observation、maintenance 或延后处理；不得授予新风险权限
 - 若无前日会话：跳过欠账处理，直接进入活动类型选择
 - research / review / maintenance 模式：跳过持仓确认，直接旁路到对应工作流
 
 ### 失败与恢复
 
-- IBKR 连接失败：降级到缓存 + 用户确认，标记数据源
+- IBKR 连接失败：降级到缓存（`stale_unverified`），用户决定是否继续 observation/maintenance 或等待恢复
 - 会话文件冲突：`SessionStore` 已有乐观锁保护，冲突时报告并让用户选择覆盖或恢复
-- 跨日恢复：若检测到前日会话未关闭（非 `DAY_ARCHIVED`、非 `IDLE`），必须在 Step 2 中让用户选择处理方式
+- 跨日恢复：若检测到前日会话未关闭（非 `DAY_ARCHIVED`、非 `IDLE`），在确认环节让用户选择处理方式
 
 ### 固定产物
 
@@ -145,7 +147,7 @@ research / review / maintenance 模式：DAILY-0 后直接旁路到对应工作�
 
 ### 目的
 
-从市场事实走到用户批准的当日交易计划。内部包含一条 6 步握手链，其中市场环境证据包和焦点标的证据包构成两个核心依赖。
+从市场事实走到用户批准的当日交易计划（trading 模式），或走到市场环境认知（observation 模式）。内部包含一条 6 步握手链。
 
 ### 进入条件
 
@@ -163,10 +165,12 @@ Step 3: 用户与 investing-os 解释环境、讨论权限和优先级
   → 用户确认焦点池
 Step 4: stock_team 仅为焦点池生成焦点标的证据包
 Step 5: investing-os 形成权限、风险、允许和禁止事项
-  → 生成交易计划 + 盘中指导
-Step 6: 用户批准具体计划版本
+  → 生成交易计划 + 盘中指导（仅 trading 模式）
+Step 6: 用户批准具体计划版本（仅 trading 模式）
   → 状态跃迁至 PLAN_APPROVED
 ```
+
+observation 模式：仅执行 Step 1–3，不生成交易计划和盘中指导，不进入 Step 4–6。状态停留在 `FOCUS_CONFIRMED` 或等价观察状态。
 
 ### 系统自动准备
 
@@ -181,14 +185,14 @@ Step 6: 用户批准具体计划版本
 
 1. 市场环境证据包：QQQ/SPY/IWM/VIXY 行情、板块热度、universe 相关性、催化剂、缺失数据
 2. 焦点池建议：基于持仓和观察列表的默认焦点符号
-3. 每个焦点标的的证据包：因子计算、规则碰撞、缺失/警告/禁止检查
-4. 交易计划草案：risk_mode、各符号允许/禁止动作、作废条件、盘中检查项
-5. 盘中指导：Green/Yellow/Red/No-Trade 状态及对应行为边界
+3. 每个焦点标的的证据包（仅 trading 模式 Step 4–6）：因子计算、规则碰撞、缺失/警告/禁止检查
+4. 交易计划草案（仅 trading 模式）：risk_mode、各符号允许/禁止动作、作废条件、盘中检查项
+5. 盘中指导（仅 trading 模式）：Green/Yellow/Red/No-Trade 状态及对应行为边界
 
 ### 必须由用户确认
 
 1. **焦点池确认**（`record_focus_confirmation`）— 确认、添加或排除标的
-2. **计划版本批准**（`record_plan_approval`）— 批准 risk_mode、allowed_actions、forbidden_actions、invalidation conditions
+2. **计划版本批准**（仅 trading 模式，`record_plan_approval`）— 批准 risk_mode、allowed_actions、forbidden_actions、invalidation conditions
 
 ### stock_team 输入与输出
 
@@ -200,35 +204,32 @@ Step 6: 用户批准具体计划版本
 **输出：**
 - Pre-Market Snapshot JSON
 - 市场环境证据包 Markdown（6 节：market context、sector heat、universe quality、universe relevance map、catalysts、missing data）
-- 焦点标的证据包 Markdown（7 节：input summary、market context echo、brain decision echo、factor calculations、formula outputs、rule collisions、missing/warnings/forbidden check）
+- 焦点标的证据包 Markdown（仅 trading 模式，7 节：input summary、market context echo、brain decision echo、factor calculations、formula outputs、rule collisions、missing/warnings/forbidden check）
 
 ### investing-os 输入与输出
 
-**输入：** stock_team 输出的市场环境证据包和焦点标的证据包
+**输入：** stock_team 输出的市场环境证据包（+ 焦点标的证据包，若 trading 模式）
 **输出：**
 - Stage 0 讨论笔记（`trading-YYYY-MM-DD-stage0-discussion-notes.md`）
 - Stage 1 决策单（`trading-YYYY-MM-DD-stage1-decision-sheet.json`）
-- 交易计划（`trading-YYYY-MM-DD-trading-plan.json`）
-- 盘中指导（`trading-YYYY-MM-DD-intraday-guidance.json`）
+- 交易计划（仅 trading 模式，`trading-YYYY-MM-DD-trading-plan.json`）
+- 盘中指导（仅 trading 模式，`trading-YYYY-MM-DD-intraday-guidance.json`）
 
 ### 完成条件
 
-- 状态为 `PLAN_APPROVED`
-- 焦点池已确认（`user_confirmed: true`）
-- 交易计划和盘中指导已生成且用户已批准
-- 所有证据包的数据源已声明
+- trading 模式：状态为 `PLAN_APPROVED`，焦点池已确认（`user_confirmed: true`），交易计划和盘中指导已生成且用户已批准
+- observation 模式：状态为 `FOCUS_CONFIRMED`，焦点池已确认
 
 ### 允许跳过或降级路径
 
-- observation 模式：仅执行 Step 1-3（市场环境证据包 + 焦点池确认），不进入 Step 4-6，不生成交易计划
-- 数据降级：若 Polygon 不可达 → yfinance；若全部行情源不可达 → 标记 `missing` 并阻止进入 DAILY-2
+- observation 模式：仅执行 Step 1–3，不进入 Step 4–6
+- 数据降级：若 Polygon 不可达 → yfinance；若全部行情源不可达 → 标记 `missing` 并阻止进入 DAILY-2/3 的 trading 路径
 - 焦点池为空：若用户确认无关注标的，DAILY-1 以 observation 模式完成
 
 ### 失败与恢复
 
-- `record_focus_confirmation` 和 `record_plan_approval` 当前为 pass-through intent（仅记录路径，不校验内容）。需实现内容校验。
-- `record_plan_approval` 在 `SUCCESS_TRANSITIONS` 中缺少映射（H4），导致状态不自动跃迁。需修复。
-- Stage 1 在 decision sheet 不存在时回退到 watchlist 全量（`handle_premarket()` L1159），存在绕过焦点池确认的风险。需增加闸门。
+- `record_focus_confirmation` 和 `record_plan_approval` 当前为 pass-through intent（仅记录路径，不校验内容）。候选修正：添加产物存在性和必填字段校验。
+- Stage 1 在 decision sheet 不存在时回退到 watchlist 全量（`handle_premarket()` L1159），存在绕过焦点池确认的风险。候选修正：增加闸门，decision sheet 缺失时阻止 Step 4 执行。
 
 ### 固定产物
 
@@ -244,9 +245,8 @@ Step 6: 用户批准具体计划版本
 
 ### 已知冲突
 
-1. **路径不一致** — 代理文档引用 `system/runtime/packets/` 和 `system/runtime/inputs/`，协议文档和代码使用 `investing-os/system/data/packets/` 和 `stock_team/findings/`。**决定：以代码实际路径为准，文档需统一。**
-2. **`record_plan_approval` 不自动跃迁** — `transitions.py` L44-50 的 `complete_transition` 对 `record_plan_approval` 落在 default 分支返回原状态。**决定：这是一个 bug，需在 `SUCCESS_TRANSITIONS` 中添加映射。**
-3. **IBKR 优先级未实现** — 协议文档声明 IBKR 为第二数据源优先级，但盘前路径中未见 IBKR 调用。**决定：IBKR 仅用于账户/持仓事实；行情数据沿用 Polygon → yfinance 降级链。协议文档需修正。**
+1. **路径不一致** — 代理文档引用 `system/runtime/packets/` 和 `system/runtime/inputs/`，协议文档和代码使用 `investing-os/system/data/packets/` 和 `stock_team/findings/`。候选修正：以代码实际路径为准统一文档，或由用户指定 canonical 路径。
+2. **IBKR 优先级未实现** — 协议文档声明 IBKR 为第二数据源优先级，但盘前行情路径中未见 IBKR 调用。候选修正：IBKR 用于账户/持仓事实；行情数据沿用 Polygon → yfinance 降级链。协议文档同步修正。
 
 ### 对应旧入口
 
@@ -261,13 +261,13 @@ Step 6: 用户批准具体计划版本
 
 ### 目的
 
-观察真实开盘如何验证或否定盘前假设。只更新事实，不做决策。
+观察真实开盘如何验证或否定盘前假设。trading 模式只更新事实；observation 模式只读观察，不授予任何交易权限。
 
 ### 进入条件
 
-- 状态为 `PLAN_APPROVED`
-- 当前时间在 9:30–10:00 ET 之间
-- 存在已批准的盘中指导
+- trading 模式：状态为 `PLAN_APPROVED`，存在已批准盘中指导
+- observation 模式：状态为 `FOCUS_CONFIRMED`（或等价观察状态）
+- 当前时间在开盘观察窗口内（9:30–10:00 ET 为原 Node 2 节奏）
 
 ### 系统自动准备
 
@@ -283,21 +283,19 @@ Step 6: 用户批准具体计划版本
 2. 距止损/入场位的距离
 3. 论点信号状态（intact / warning / breached）
 4. 入场条件状态（go / caution / no_go）
-5. 盘中指导的当前权限状态（Green/Yellow/Red/No-Trade）
-6. 数据源状态和新鲜度
+5. trading 模式：盘中指导的当前权限状态（Green/Yellow/Red/No-Trade）
+6. observation 模式：显式标注「观察模式 — 无交易权限」
+7. 数据源状态和新鲜度
 
 ### 必须由用户确认
 
-开盘观察阶段不要求用户确认。用户决定是否：
-- 维持观察
-- 启用已批准条件（若盘中指导允许）
-- 保持不行动
+开盘观察阶段不要求用户确认。用户决定是否维持观察或（仅 trading 模式）启用已批准条件。
 
-**若用户需要任何计划外行动，必须回到 DAILY-1 的 Step 5-6 重新批准。**
+**observation 模式下不得：授予交易权限、生成或改写交易计划、改写盘前锚点、升级为 trading。若用户需要交易，必须回到 DAILY-1 Step 5–6 重新批准。**
 
 ### stock_team 输入与输出
 
-**输入：** 焦点符号列表、premarket summary（止损/入场参考）、盘中指导
+**输入：** 焦点符号列表、premarket summary（止损/入场参考）、盘中指导（若 trading 模式）
 **输出：** runtime_monitor_packet（价格、VWAP 偏差、volume ratio、止损距离、cooldown 状态）
 
 ### investing-os 输入与输出
@@ -307,17 +305,17 @@ Step 6: 用户批准具体计划版本
 
 ### 完成条件
 
-- 开盘观察窗口结束（10:00 ET）或用户主动进入 DAILY-3
-- 状态跃迁至 `INTRADAY_ACTIVE`
+- 开盘观察窗口结束或用户主动进入 DAILY-3
+- trading 模式：状态跃迁至 `INTRADAY_ACTIVE`
+- observation 模式：状态跃迁至 `INTRADAY_ACTIVE` 的观察变体
 
 ### 允许跳过或降级路径
 
-- 若用户选择 observation 模式：DAILY-2 不可用（进入条件不满足）
-- 若无已批准计划：DAILY-2 不可用，状态机硬阻止（`TRANSITION_ERROR`）
+- 无已批准计划 + 非 observation 模式：DAILY-2 不可用，状态机阻止
+- 行情数据不可达：标记 missing，显示最后可用数据和时间戳
 
 ### 失败与恢复
 
-- 行情数据不可达：标记 missing，显示最后可用数据和时间戳
 - 焦点标的数据缺失：在 monitor packet 中标记，不阻塞其他标的
 
 ### 固定产物
@@ -328,9 +326,9 @@ Step 6: 用户批准具体计划版本
 
 ### 已知冲突
 
-1. **无独立状态** — DAILY-2 在 `transitions.py` 中被隐式合并进 `PLAN_APPROVED → INTRADAY_ACTIVE` 过渡。**决定：当前保持隐式过渡，不创建独立状态。DAILY-2 的业务语义由时间窗口和用户行为定义，不由状态机额外状态定义。**
-2. **无时间窗口 enforce** — `handle_intraday_snapshot()` 不检查 9:30-10:00 窗口。**决定：需添加时间窗口闸门。**
-3. **adapters.py 不支持 intraday-snapshot** — 仅支持 intraday-dashboard。**决定：需添加适配器映射。**
+1. **无独立状态** — DAILY-2 在 `transitions.py` 中被隐式合并进 `PLAN_APPROVED → INTRADAY_ACTIVE` 过渡。候选方案：保持隐式过渡，由时间窗口和用户行为定义 DAILY-2 语义；或创建独立 `OBSERVATION_ACTIVE` 状态。由用户决定。
+2. **无时间窗口 enforce** — `handle_intraday_snapshot()` 不检查时间窗口。候选修正：添加窗口闸门。需注意迟到恢复和非美东时区操作不能被无意阻断。
+3. **adapters.py 不支持 intraday-snapshot** — 仅支持 intraday-dashboard。候选修正：添加适配器映射。
 
 ### 对应旧入口
 
@@ -344,12 +342,12 @@ Step 6: 用户批准具体计划版本
 
 ### 目的
 
-按已批准计划管理注意力、风险和已有持仓。只刷新事实，不制造新观点。任何计划外扩张必须回到用户确认。
+按已批准计划管理注意力、风险和已有持仓（trading 模式），或持续观察市场状态（observation 模式）。trading 模式下任何计划外扩张必须回到用户确认。
 
 ### 进入条件
 
-- 状态为 `INTRADAY_ACTIVE`
-- 存在已批准的盘中指导和交易计划
+- trading 模式：状态为 `INTRADAY_ACTIVE`，存在已批准盘中指导和交易计划
+- observation 模式：状态为 `INTRADAY_ACTIVE` 的观察变体
 - 当前时间在市场交易时段内（09:30–16:00 ET）
 
 ### 系统自动准备
@@ -365,19 +363,23 @@ Step 6: 用户批准具体计划版本
 
 1. 焦点标的实时状态（价格、VWAP、距离、论点、入场条件）
 2. 账户暴露和风险摘要
-3. 当前权限状态（Green/Yellow/Red/No-Trade）及允许/禁止动作
-4. 触发警告的事件（止损逼近、论点破裂、异常成交量等）
-5. 计划锚点对照（当前状态 vs 盘前设定的 entry_base、hard_stop、target）
+3. trading 模式：当前权限状态（Green/Yellow/Red/No-Trade）及允许/禁止动作
+4. observation 模式：显式标注「观察模式 — 无交易权限」
+5. 触发警告的事件（止损逼近、论点破裂、异常成交量等）
+6. 计划锚点对照（当前状态 vs 盘前设定的 entry_base、hard_stop、target）
 
 ### 必须由用户确认
 
+仅 trading 模式：
 1. **任何计划外行动** — 包括但不限于：交易未在计划中的标的、超出计划允许的风险、改变 risk_mode
 2. **权限状态变更请求** — 从 Green→Yellow 或 Yellow→Red 等
 3. **例外处理** — 任何偏离盘中指导的操作
 
+observation 模式：不要求用户确认。若用户需要交易，必须回到 DAILY-1 完成计划批准。
+
 ### stock_team 输入与输出
 
-**输入：** 焦点符号列表、premarket summary、盘中指导、IBKR 流式数据（若可用）
+**输入：** 焦点符号列表、premarket summary、盘中指导（若 trading 模式）、IBKR 流式数据（若可用）
 **输出：**
 - 盘中快照（单次刷新）
 - 条件状态更新（poll_state JSON）
@@ -386,7 +388,7 @@ Step 6: 用户批准具体计划版本
 ### investing-os 输入与输出
 
 **输入：** 盘中快照和条件状态
-**输出：** 对用户的盘中摘要、警告、权限状态更新建议
+**输出：** 对用户的盘中摘要、警告；trading 模式下还包括权限状态更新建议
 
 ### 完成条件
 
@@ -395,29 +397,29 @@ Step 6: 用户批准具体计划版本
 
 ### 允许跳过或降级路径
 
-- 单次刷新模式（当前唯一实现）：用户手动触发快照
-- 循环模式（设计存在，未统一实现）：`poll.py` + `/loop 2m` 或 `dashboard_server.py /api/run?task=poll`
+- 单次刷新模式（当前唯一 CLI 实现）：用户手动触发快照
+- 循环模式（`poll.py` + `/loop 2m` 和 `dashboard_server.py /api/run?task=poll` 两套独立系统，待统一设计）
 - IBKR 流式数据不可达：降级到 yfinance 定时轮询
 
 ### 失败与恢复
 
 - 行情数据源全部不可达：标记 missing，保留最后快照时间和数据
-- 盘中指导文件丢失：回退到硬编码路径搜索，若全部缺失则标记并阻止盘中动作
+- 盘中指导文件丢失：回退到硬编码路径搜索，若全部缺失则标记并阻止 trading 模式下的盘中动作
 
 ### 固定产物
 
 | 产物 | 当前路径 | 状态 |
 |------|---------|------|
-| 盘中快照 JSON | `--out` 参数指定（不与 `intraday.md` schema 路径一致） | code-only |
+| 盘中快照 JSON | `--out` 参数指定 | code-only |
 | 盘中快照 Markdown | `--out` 参数指定 | code-only |
 | Dashboard JSON manifest | `--out` 参数指定 | code-only |
 | Dashboard HTML | `investing-os/dashboards/intraday-dashboard.html`（静态模板，前端轮询 JSON） | code-only |
 
 ### 已知冲突
 
-1. **IBKR streaming 路径缺失** — `intraday.md` 文档声明 IBKR 为 primary streaming source，但代码中 `handle_intraday_snapshot()` 仅使用 yfinance。**决定：文档需修正。IBKR 用于账户/持仓事实，行情价格走 Polygon → yfinance 链。**
-2. **`post_open_adj` 无文档无权限** — `get_effective_nodes()` 优先使用 `post_open_adj` 覆盖盘前锚点（entry_base/hard_stop/target），但无文档说明谁、何时、以何依据填充该字段。**决定：`post_open_adj` 只能由 investing-os 在用户确认后写入。需添加写入权限校验和审计日志。**
-3. **Dashboard 前端无后端生产者** — 静态 HTML 以 5 秒间隔 fetch `intraday_snapshot.json`，但无后端保证该文件存在或新鲜。**决定：`dashboard_server.py` 需在启动时确保 JSON 文件存在，并提供新鲜度时间戳。**
+1. **IBKR streaming 路径缺失** — `intraday.md` 文档声明 IBKR 为 primary streaming source，但 `handle_intraday_snapshot()` 仅使用 yfinance。候选修正：IBKR 用于账户/持仓事实，行情价格走 Polygon → yfinance 链；文档同步修正。
+2. **`post_open_adj` 无文档无权限** — `get_effective_nodes()` 优先使用 `post_open_adj` 覆盖盘前锚点，但无文档说明谁、何时、以何依据填充。候选修正：`post_open_adj` 只能由 investing-os 在用户确认后写入，需添加写入权限校验和审计日志；或移除该机制。
+3. **Dashboard 前端无后端生产者** — 静态 HTML 以 5 秒间隔 fetch `intraday_snapshot.json`，无后端保证文件存在或新鲜。候选修正：`dashboard_server.py` 在启动时确保 JSON 文件存在并提供新鲜度时间戳。
 
 ### 对应旧入口
 
@@ -439,32 +441,37 @@ Step 6: 用户批准具体计划版本
 - 状态为 `MARKET_CLOSED`
 - 当日进入过 DAILY-1（即使未交易）
 
+### 收尾链
+
+```
+Step 1: stock_team 获取成交、持仓和市场事实 → 交易复盘事实包
+Step 2: investing-os 呈现复盘事实给用户
+Step 3: 用户与 investing-os 区分判断/执行/仓位/情绪/数据因素
+Step 4: investing-os 基于事实和用户分类，生成经验候选草稿
+Step 5: 用户确认当日结论（噪声 vs 候选经验）及是否进入 LEARNING
+Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
+```
+
+脑-肌分工：
+- `stock_team`：复盘事实包（成交匹配、价格对比、执行偏差、信号准确性统计）
+- `investing-os`：解释、分类、经验候选草稿、偏差归因
+- 用户：确认结论与是否进入 LEARNING
+
 ### 系统自动准备
 
 | 项目 | 当前实现 | 证据等级 |
 |------|---------|----------|
-| 交易复盘证据包生成 | `postmarket_summary.py` build_per_stock_summary / write_per_stock_summary | test-covered (11/11) |
-| 经验候选生成 | `postmarket_data_collector.py` generate_suggestions() | test-covered |
+| 交易复盘事实包生成 | `postmarket_summary.py` build_per_stock_summary / write_per_stock_summary | test-covered (11/11) |
+| 复盘建议（事实层面） | `postmarket_data_collector.py` generate_suggestions() — 当前产出的 lesson_record / thesis_status 等类型实质是 investing-os 域，需重新划分 | test-covered |
 | 状态跃迁 | `transitions.py` `MARKET_CLOSED → archive_day → DAY_ARCHIVED` | code-only |
-
-### 收尾链
-
-```
-Step 1: stock_team 获取成交、持仓和市场事实 → 交易复盘证据包
-Step 2: investing-os 呈现复盘证据给用户
-Step 3: 用户与 investing-os 区分判断/执行/仓位/情绪/数据因素
-Step 4: 用户确认当日结论（噪声 vs 候选经验）
-Step 5: stock_team 生成经验候选（lesson_record / thesis_status 等）
-Step 6: 用户决定哪些进入 LEARNING → 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
-```
 
 ### 必须显示给用户
 
-1. 当日成交记录（来自 IBKR）
+1. 当日成交记录（来自 IBKR 实时数据；若 IBKR 不可达，以 `stale_unverified` 展示缓存，明确告知不可作正式复盘依据）
 2. 每个标的的执行质量对比（进场/离场 vs 计划）
 3. 信号准确性复盘（盘前论点 vs 实际走势）
-4. 偏差分类（判断偏差 / 执行偏差 / 仓位偏差 / 情绪偏差 / 数据问题）
-5. 经验候选建议（含建议类型：lesson_record / thesis_status / correlation_warning 等）
+4. investing-os 生成的偏差分类建议（判断偏差 / 执行偏差 / 仓位偏差 / 情绪偏差 / 数据问题）
+5. investing-os 生成的经验候选草稿
 6. 当日 P&L 和风险使用情况
 
 ### 必须由用户确认
@@ -477,14 +484,15 @@ Step 6: 用户决定哪些进入 LEARNING → 归档当日产物 → 状态跃�
 
 **输入：** 当日 premarket summary、intraday snapshots、positions.json、IBKR 成交记录
 **输出：**
-- per-stock postmarket summary JSON（执行、绩效、信号准确性、建议）
-- 经验候选建议
+- 复盘事实包：per-stock postmarket summary JSON（执行对比、价格偏差、信号准确性统计）
+- 注意：经验意义、心理归因、论点状态变更建议和教训候选属于 investing-os 域
 
 ### investing-os 输入与输出
 
-**输入：** stock_team 输出的复盘证据包和经验候选
+**输入：** stock_team 输出的复盘事实包
 **输出：**
-- 分类后的偏差记录
+- 偏差分类记录（判断/执行/仓位/情绪/数据）
+- 经验候选草稿
 - 用户确认的当日结论
 - LEARNING 候选清单
 
@@ -505,7 +513,7 @@ Step 6: 用户决定哪些进入 LEARNING → 归档当日产物 → 状态跃�
 
 ### 失败与恢复
 
-- IBKR 成交数据不可达：使用日末缓存，标记数据源和缓存时间
+- IBKR 成交数据不可达：以 `stale_unverified` 展示缓存，提示用户不可作正式复盘依据；用户可选择冻结收尾（创建欠账任务，待 IBKR 恢复后补做）或延后复盘
 - 复盘中断：会话状态保留在 `MARKET_CLOSED` 或 `REVIEW_REQUIRED`，次日 DAILY-0 检测到未完成状态时提示用户
 
 ### 固定产物
@@ -513,16 +521,17 @@ Step 6: 用户决定哪些进入 LEARNING → 归档当日产物 → 状态跃�
 | 产物 | 当前路径 | 状态 |
 |------|---------|------|
 | per-stock postmarket summary | 由 `postmarket_summary.py` 写入 | test-covered |
-| 交易复盘证据包 | 由 `export_trade_evidence.py` 写入 | code-only |
-| 经验候选 | 由 `generate_suggestions()` 输出 | test-covered |
+| 交易复盘事实包 | 由 `export_trade_evidence.py` 写入 | code-only |
+| 经验候选草稿 | 由 investing-os 生成（当前 `generate_suggestions()` 在 stock_team 中，待迁移） | code-only（归属待修正） |
 | 归档产物清单 | 未实现 | missing |
 
 ### 已知冲突
 
-1. **`REVIEW_REQUIRED` 状态游离** — 在 `models.py` 中定义但在 `transitions.py` 中不存在于任何 TRANSITIONS 字典。**决定：需添加到 `BEGIN_TRANSITIONS` 中，支持从 `REVIEW_REQUIRED` 进入复盘流程。**
-2. **`QUICK_REVIEWED` 和 `CLOSED_UNREVIEWED` 未注册** — Architecture spec 定义了这些状态但 `models.py` 的 `TRADING_STATES` 不包含它们。**决定：需添加到 `TRADING_STATES` 并在 `transitions.py` 中支持。**
-3. **`archive_day` 无实际归档逻辑** — 当前仅有状态名称转换，无文件归档、产物清单生成、索引更新。**决定：需实现最小归档逻辑（文件汇总 + 产物清单 JSON）。**
-4. **三种复盘选择被映射为同一个动作** — `dashboard_server.py` 将 freeze/quick_review/full_review 都映射到 `init-day`，未区分状态。**决定：需在状态机中创建不同的状态转换路径。**
+1. **`REVIEW_REQUIRED` 状态游离** — 在 `models.py` 中定义但在 `transitions.py` 中不存在于任何 TRANSITIONS 字典。候选修正：添加到 `BEGIN_TRANSITIONS`。
+2. **`QUICK_REVIEWED` 和 `CLOSED_UNREVIEWED` 未注册** — Architecture spec 定义但 `TRADING_STATES` 不包含。候选修正：添加到 `TRADING_STATES` 并在 `transitions.py` 中支持。
+3. **`archive_day` 无实际归档逻辑** — 当前仅有状态名称转换，无文件汇总、产物清单生成、索引更新。候选修正：实现最小归档逻辑。
+4. **三种复盘选择被映射为同一动作** — `dashboard_server.py` 将 freeze/quick_review/full_review 都映射到 `init-day`，未区分状态。候选修正：在状态机中创建不同路径。
+5. **经验候选归属** — `generate_suggestions()` 当前在 `stock_team` 中产出 lesson_record / thesis_status 等经验类型，越过脑-肌边界。候选修正：`stock_team` 只输出复盘事实；经验意义和候选建议由 investing-os 生成。
 
 ### 对应旧入口
 
@@ -532,44 +541,90 @@ Step 6: 用户决定哪些进入 LEARNING → 归档当日产物 → 状态跃�
 
 ---
 
-## 6. 状态机修正清单
+## 6. 候选修正清单
 
-以下是从五份审计报告中提取的、必须在代码实施前修正的状态机问题：
+以下条目来自五份审计报告，标注为 `verified_bug`（已核实缺陷）、`missing_capability`（缺失能力）或 `design_decision`（设计决策）。在用户批准前，不得作为低阶实现任务依据。
 
-| 序号 | 问题 | 所在文件 | 严重程度 | 修正方向 |
-|------|------|---------|---------|---------|
-| H1 | `init-day` 无活动类型参数，硬编码 `session_type="trading"` | `coordinator_cli.py`、`models.py` | P1 | 添加 `--session-type` 参数，支持全部 SESSION_TYPES |
-| H2 | 跨日恢复零实现 | `transitions.py`、`coordinator_cli.py`、`store.py` | P0 | 实现 Architecture spec Section 7 的三种恢复选项 |
-| H3 | `REVIEW_REQUIRED` 不在任何 TRANSITIONS 字典中 | `transitions.py` | P1 | 添加到 BEGIN_TRANSITIONS |
-| H4 | `record_plan_approval` 成功时不自动跃迁 | `transitions.py` L44-50 | P1 | 在 SUCCESS_TRANSITIONS 中添加映射 |
-| H5 | `QUICK_REVIEWED`、`CLOSED_UNREVIEWED` 未注册 | `models.py` | P1 | 添加到 TRADING_STATES |
-| H6 | DAILY-2 无独立状态 | `transitions.py` | P2 | 当前保持隐式过渡，由时间窗口 enforce |
-| H7 | `archive_day` 无实际归档写入 | `transitions.py`、缺失归档模块 | P1 | 实现最小归档逻辑 |
-| H8 | `record_focus_confirmation` 和 `record_plan_approval` 不校验产物内容 | `adapters.py` L141-144 | P1 | 添加产物存在性和必填字段校验 |
+| 序号 | 问题 | 所在文件 | 分类 | 候选修正方向 |
+|------|------|---------|------|------------|
+| C1 | `init-day` 无活动类型参数，硬编码 `session_type="trading"` | `coordinator_cli.py`、`models.py` | `verified_bug` | 添加 `--session-type` 参数，支持全部 SESSION_TYPES |
+| C2 | 跨日恢复零实现 | `transitions.py`、`coordinator_cli.py`、`store.py` | `missing_capability` | 实现 Architecture spec Section 7 的三种恢复选项 |
+| C3 | `REVIEW_REQUIRED` 不在任何 TRANSITIONS 字典中 | `transitions.py` | `verified_bug` | 添加到 BEGIN_TRANSITIONS |
+| C4 | `QUICK_REVIEWED`、`CLOSED_UNREVIEWED` 未注册 | `models.py` | `missing_capability` | 添加到 TRADING_STATES |
+| C5 | DAILY-2 无独立状态 | `transitions.py` | `design_decision` | 保持隐式过渡 / 创建 `OBSERVATION_ACTIVE` 状态，由用户决定 |
+| C6 | `archive_day` 无实际归档写入 | `transitions.py`、缺失归档模块 | `missing_capability` | 实现最小归档逻辑（文件汇总 + 产物清单 JSON） |
+| C7 | `record_focus_confirmation` 和 `record_plan_approval` 不校验产物内容 | `adapters.py` L141-144 | `missing_capability` | 添加产物存在性和必填字段校验 |
+| C8 | Stage 1 在 decision sheet 不存在时回退到 watchlist 全量 | `cli.py handle_premarket()` L1159 | `verified_bug` | decision sheet 缺失时阻止 Step 4，不静默回退 |
+| C9 | `post_open_adj` 无文档无权限控制 | `intraday_snapshot.py` get_effective_nodes() | `design_decision` | 移除 / 或添加 investing-os 写入闸门 + 审计日志，由用户决定 |
+| C10 | 盘中用户例外确认流程零实现 | coordinator、dashboard_server | `missing_capability` | 在 INTRADAY_ACTIVE 状态中添加例外确认流程 |
+| C11 | 单次刷新和循环模式是两套独立系统 | `cli.py` vs `poll.py` + `dashboard_server.py` | `design_decision` | 统一设计盘中刷新生命周期 |
+| C12 | Dashboard HTML 是纯消费者无后端生产者 | `dashboard_server.py`、`intraday-dashboard.html` | `missing_capability` | 在 dashboard_server 中确保 JSON 新鲜度 |
+| C13 | `generate_suggestions()` 在 stock_team 中产出经验类型 | `postmarket_data_collector.py` | `design_decision` | stock_team 只输出复盘事实；经验候选移至 investing-os |
+| C14 | 多种路径约定并存 | agent docs vs protocol doc vs code | `design_decision` | 由用户指定 canonical runtime 路径 |
 
 ---
 
-## 7. 未解决的高阶决策
+## 7. 需要用户决定的关键问题
 
-以下问题需用户与高阶模型决定，不得由低阶模型在实现时自行判断：
+以下问题需用户逐项决定。每项列出选项和影响范围，不预设答案。
 
-1. **跨日恢复实现优先级** — 三种选项（快速复盘/冻结欠账/完整复盘）的实现顺序。
-2. **非交易模式入口** — observation/research/review/maintenance 是否需要独立 CLI 入口，还是仅通过 Dashboard 触发。
-3. **账户/持仓确认闸门位置** — 放在 `DAY_INITIALIZED → start_stage0` 之前还是作为独立的 `confirm_account` 动作。
-4. **IBKR monitor 集成方式** — coordinator 触发同步 vs monitor 独立运行 + coordinator 读取产物。
-5. **confirm 类 intent 的产物生成** — 由 CLI 命令自动化还是保持 investing-os 手动写入模式。
-6. **焦点池最大数量** — 是否需要显式约束。
-7. **`post_open_adj` 机制的去留** — 保留并加权限控制，还是移除。
-8. **步骤 3（区分判断/执行/仓位/情绪）的交互形式** — 纯对话还是结构化表单/CLI。
+### Q1: 跨日恢复的三种选项，先实现哪一个？
+
+- A) 快速复盘（最少检查 → QUICK_REVIEWED）
+- B) 冻结收尾（创建欠账 → CLOSED_UNREVIEWED）
+- C) 完整复盘（先完成 DAILY-4 再开始今天）
+
+影响：DAILY-0 用户确认流程、transitions.py 状态注册
+
+### Q2: observation 模式的 DAILY-2/3 是否需要独立状态（如 `OBSERVATION_ACTIVE`），还是复用现有状态 + 模式标记？
+
+- A) 创建独立 `OBSERVATION_ACTIVE` 状态
+- B) 复用 `INTRADAY_ACTIVE` + session 中 `session_type=observation` 标记
+
+影响：transitions.py、coordinator、Dashboard 显示
+
+### Q3: `post_open_adj` 机制保留还是移除？
+
+- A) 保留，但添加 investing-os 写入闸门 + 审计日志
+- B) 移除，所有锚点调整必须通过 DAILY-1 重新批准
+
+影响：`intraday_snapshot.py`、盘中权限模型
+
+### Q4: 非交易模式（research/review/maintenance）是否需要独立 CLI 入口？
+
+- A) 独立 CLI 入口（如 `cli.py init-day --session-type research`）
+- B) 仅通过 Dashboard 触发
+
+影响：`coordinator_cli.py`、用户交互设计
+
+### Q5: confirm 类 intent（`record_focus_confirmation`、`record_plan_approval`）的产物生成方式？
+
+- A) CLI 命令自动化生成 + schema 校验
+- B) 保持 investing-os 手动写入，CLI 只校验存在性和必填字段
+
+影响：`adapters.py`、`cli.py`、investing-os 工作流
+
+### Q6: 复盘偏差分类（Step 3）的交互形式？
+
+- A) 纯对话（investing-os 提问 → 用户回答）
+- B) 结构化 CLI 表单
+- C) Dashboard 表单
+
+影响：DAILY-4 实现方式、用户交互设计
+
+### Q7: 盘前窗口 9:30 截止和开盘观察 9:30–10:00 是否需要硬代码 enforce？
+
+- A) 硬 enforce（代码拒绝窗口外操作）
+- B) 软提示（警告但允许，支持迟到恢复和非美东时区）
+
+影响：`cli.py` 时间窗口闸门设计
 
 ---
 
 ## 8. 契约生效条件
 
-本契约在以下条件全部满足后生效：
-
-1. 用户逐段批准 DAILY-0 至 DAILY-4 的交互和完成条件
-2. 用户对第 7 节的高阶决策给出明确指示
-3. 状态机修正清单（第 6 节）的修正方向获用户确认
-4. `WORKFLOW-STATUS.zh.md` 已更新
-5. 本文件作为独立 commit 提交
+1. 用户逐段批准 DAILY-0 至 DAILY-4 的修订内容
+2. 用户对第 7 节逐项给出决定
+3. `WORKFLOW-STATUS.zh.md` 已同步更新
+4. 本文件作为独立 commit 提交
+5. 此后方可拆分代码实现任务

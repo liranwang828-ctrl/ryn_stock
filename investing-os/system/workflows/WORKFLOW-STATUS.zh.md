@@ -14,7 +14,7 @@
 
 | 工作流 | 当前状态 | 最近核验 | 当前判断 |
 |---|---|---:|---|
-| `DAILY` 每日交易 | `partial` | 2026-06-30 | DAILY-0 至 4 已完成事实审计（报告记录 89 tests passed, 0 failed）；DAILY-CONTRACT 高阶审核未通过，见审核记录；代码实施不得开始 |
+| `DAILY` 每日交易 | `partial` | 2026-06-30 | DAILY-0 至 4 已完成事实审计（89 tests passed）；DAILY-CONTRACT 修订版待用户逐段批准；代码实施不得开始 |
 | `RESEARCH` 投资研究 | `documented` | 2026-06-30 | 公司、行业等流程与 Packet 文档存在；当前端到端运行状态未核验 |
 | `REVIEW` 周期复盘 | `documented` | 2026-06-30 | 周末、交易和论点复盘资料存在；统一周期复盘入口未核验 |
 | `LEARNING` 经验进化 | `documented` | 2026-06-30 | Packet absorption、journal promotion 和 approval 流程存在；运行闭环未核验 |
@@ -26,15 +26,15 @@
 当前行动计划：[`../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md`](../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md)
 
 当前审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
-DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（待主脑批准）
+DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（修订版 v2，待用户逐段批准）
 
 | 步骤 | 状态 | 已知证据 | 已知缺口 | 下一验收动作 |
 |---|---|---|---|---|
-| `DAILY-0 晨间准备` | `partial` | SESSION_TYPES 常量完整；init-day→DAY_INITIALIZED→STAGE0 正向链完好；IBKR 同步函数测试通过 (11/11)；会话持久化+乐观锁 test-covered | 会话路由器无实现（仅 trading 可运行）；跨日恢复零实现；coordinator 工作流无用户确认闸门；非交易模式无状态转换定义 | 主脑批准契约后：添加 --session-type 参数；实现跨日恢复三种选项；集成 IBKR 事实确认闸门 |
-| `DAILY-1 盘前决策` | `partial` | 状态机与盘前 CLI 相关审计测试通过；as-of 校验、时区和盘前窗口 test-covered；adapters 已映射现有盘前 intent | confirm intent 只记录路径、不校验内容；decision sheet 缺失时回退到 watchlist 全量可绕过焦点池确认；无端到端握手链集成测试；审计所报 `record_plan_approval` 跃迁 bug 经高阶复核不存在 | 修订契约后再决定 confirm 校验、焦点池闸门和 canonical 产物路径 |
-| `DAILY-2 开盘观察` | `partial` | intraday_snapshot.py 库函数完整且 test-covered (21/21)；transitions.py 硬阻止未批准计划时的 start_intraday；python 循环刷新不改写 Stage 0/1 锚点 test-covered | 无独立状态（隐式合并在 PLAN_APPROVED→INTRADAY_ACTIVE 过渡中）；handle_intraday_snapshot 无时间窗口 enforce (9:30-10:00)；无批准计划拒绝闸门未在 CLI 中 enforce；adapters.py 不支持 intraday-snapshot intent | 主脑批准契约后：在 CLI 添加入口时间窗口闸门；在 adapters 添加 intraday-snapshot 映射 |
-| `DAILY-3 盘中管理` | `partial` | 条件计算函数全覆盖 test-covered (30/30)；handle_intraday_snapshot 单次快照可用；dashboard_server price sync test-covered | IBKR streaming 路径在代码中不存在（文档声称 primary 但实际用 yfinance）；post_open_adj 无文档无权限控制可改写盘前锚点；盘中用户例外确认流程零实现；Dashboard HTML 是纯消费者无后端生产者；单次刷新和循环模式是两个独立系统 | 主脑批准契约后：决定 post_open_adj 去留；统一单次刷新+循环模式；添加盘中例外确认流程 |
-| `DAILY-4 盘后复盘` | `partial` | per-stock summary 和 generate_suggestions test-covered (11/11)；transitions.py 定义了 MARKET_CLOSED→archive_day→DAY_ARCHIVED；收尾链 Step 1-2 代码可用 | Step 3-6 零代码实现（纯 investing-os+human 对话任务但无入口）；REVIEW_REQUIRED 在 models.py 中定义但不在 transitions.py 的 TRANSITIONS 字典中；QUICK_REVIEWED / CLOSED_UNREVIEWED 未在 TRADING_STATES 中注册；archive_day 无实际归档写入逻辑；三种复盘选择在 dashboard_server 中映射为同一动作 | 主脑批准契约后：注册缺失状态；实现 archive_day 最小归档逻辑；创建三种复盘选择的不同状态路径；确定 Step 3-4 交互形式 |
+| `DAILY-0 晨间准备` | `partial` | SESSION_TYPES 常量完整；init-day→DAY_INITIALIZED→STAGE0 正向链完好；IBKR 同步函数测试通过 (11/11)；会话持久化+乐观锁 test-covered | 会话路由器无实现（仅 trading 可运行）；跨日恢复零实现；coordinator 工作流无用户确认闸门；非交易模式无状态转换定义；缓存不可替代 IBKR 正式事实（R2） | 用户批准契约 + Q1、Q4 后：添加 --session-type 参数；实现跨日恢复；集成 IBKR 事实确认闸门；缓存路径仅作 stale_unverified 只读展示 |
+| `DAILY-1 盘前决策` | `partial` | 状态机与盘前 CLI 相关审计测试通过 (16/16)；as-of 校验、时区和盘前窗口 test-covered；adapters 已映射现有盘前 intent；`record_plan_approval` 跃迁经高阶复核正常（审核 R1：初版 H4 不成立） | confirm intent 只记录路径、不校验内容；decision sheet 缺失时回退到 watchlist 全量可绕过焦点池确认；无端到端握手链集成测试；observation 模式在初版契约中被截断（R3 已修正） | 用户批准契约 + Q5 后：确定 confirm 校验策略；修复焦点池回退闸门；统一产物路径 |
+| `DAILY-2 开盘观察` | `partial` | intraday_snapshot.py 库函数完整且 test-covered (21/21)；transitions.py 硬阻止未批准计划时的 start_intraday；循环刷新不改写 Stage 0/1 锚点 test-covered；observation 只读路径已纳入契约（R3 修正） | 无独立状态；handle_intraday_snapshot 无时间窗口闸门；adapters.py 不支持 intraday-snapshot intent | 用户批准契约 + Q2、Q7 后：决定是否创建独立观察状态；决定时间窗口 enforce 方式；添加 adapters 映射 |
+| `DAILY-3 盘中管理` | `partial` | 条件计算函数全覆盖 test-covered (30/30)；handle_intraday_snapshot 单次快照可用；dashboard_server price sync test-covered；observation 只读路径已纳入契约（R3 修正） | IBKR streaming 路径在代码中不存在（文档声称 primary 但实际用 yfinance）；post_open_adj 无文档无权限控制；盘中用户例外确认流程零实现；Dashboard HTML 是纯消费者无后端生产者；单次刷新和循环模式是两个独立系统 | 用户批准契约 + Q3 后：决定 post_open_adj 去留；统一刷新模式；添加盘中例外确认流程 |
+| `DAILY-4 盘后复盘` | `partial` | per-stock summary 和复盘事实包 test-covered (11/11)；transitions.py 定义了 MARKET_CLOSED→archive_day→DAY_ARCHIVED；收尾链 Step 1-2 代码可用 | Step 3-6 零代码实现；REVIEW_REQUIRED 不在 transitions.py 的 TRANSITIONS 字典中；QUICK_REVIEWED / CLOSED_UNREVIEWED 未注册；archive_day 无实际归档逻辑；三种复盘选择在 dashboard_server 中映射为同一动作；经验候选归属越过脑-肌边界（R5 已修正） | 用户批准契约 + Q6 后：注册缺失状态；实现 archive_day 最小归档；创建三种复盘不同路径；确定 Step 3-4 交互形式；将经验生成移至 investing-os |
 
 ### DAILY 审计证据汇总 (2026-06-30)
 
@@ -49,16 +49,17 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（待主脑批准�
 
 ### DAILY 当前共同阻塞
 
-- DAILY-CONTRACT.zh.md 待主脑批准；
-- 8 个高阶决策需要重整（见契约第 7 节与审核记录）；
-- 原“8 个状态机修正”包含至少一项错误结论和多项未经批准的设计决定，不能用于派发代码任务；
+- DAILY-CONTRACT.zh.md 修订版 v2 待用户逐段批准；
+- 7 个关键决策待用户逐项决定（见契约第 7 节 Q1–Q7）；
+- 14 项候选修正（C1–C14）已分类为 `verified_bug` / `missing_capability` / `design_decision`，未经批准不得派发；
+- 初版 H4（`record_plan_approval` 跃迁 bug）经高阶复核不成立，已从所有文件删除；
 - 批准前不得修改任何代码。
 
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |
 |---|---|---|---|
-| `RESEARCH-COMPANY` | `documented` | company research 与 dossier lifecycle 文档 | DAILY 稳定后再验证一次问题 → 证据 → 用户判断 → dossier 候选 |
+| `RESEARCH-COMPANY` | `documented` | company research 与 dossier lifecycle 文档 | DAILY 稳定后再验证 |
 | `RESEARCH-INDUSTRY` | `documented` | industry research 与 dossier lifecycle 文档 | 同上 |
 | `RESEARCH-THEME` | `unknown` | 尚未做针对性审计 | 保持登记，不提前实现 |
 | `RESEARCH-MACRO` | `unknown` | 尚未做针对性审计 | 保持登记，不提前实现 |
@@ -84,4 +85,6 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（待主脑批准�
 | 日期 | 变更 | Commit |
 |---|---|---|
 | 2026-06-30 | 建立统一工作流台账；以 `DAILY` 为第一实施重点 | — |
-| 2026-06-30 | 完成 DAILY-0 至 DAILY-4 事实审计 (89 tests passed)；编写 DAILY-CONTRACT.zh.md 待主脑批准 | — |
+| 2026-06-30 | 完成 DAILY-0 至 DAILY-4 事实审计 (89 tests passed)；编写 DAILY-CONTRACT v1 | `93306e2` |
+| 2026-06-30 | 高阶审核：v1 六项阻断 + 非阻断修订；编写审核记录 | `d0933dc` |
+| 2026-06-30 | DAILY-CONTRACT v2 修订：修正 R1–R6、observation 只读路径、脑-肌边界、候选修正分类、7 项用户决策 | — |
