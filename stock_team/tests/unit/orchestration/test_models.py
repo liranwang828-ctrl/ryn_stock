@@ -186,6 +186,20 @@ def test_validate_action_rejects_empty_idempotency_key():
         })
 
 
+def test_new_session_supports_all_session_types():
+    from stock_team.orchestration.models import SESSION_TYPES
+
+    for stype in sorted(SESSION_TYPES):
+        session = new_trading_session(
+            session_id=f"{stype}-2026-06-15",
+            market_date="2026-06-15",
+            now="2026-06-15T12:00:00+00:00",
+            session_type=stype,
+        )
+        assert session["session_type"] == stype
+        assert session["state"] == "DAY_INITIALIZED"
+
+
 def test_new_trading_session_builds_valid_initial_state():
     session = new_trading_session(
         session_id="trading-2026-06-15",

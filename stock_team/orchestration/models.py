@@ -152,10 +152,10 @@ def validate_action(data: dict) -> dict:
     return data
 
 
-def new_trading_session(session_id: str, market_date: str, now: str) -> dict:
+def new_trading_session(session_id: str, market_date: str, now: str, session_type: str = "trading") -> dict:
     session = {
         "session_id": session_id,
-        "session_type": "trading",
+        "session_type": session_type,
         "market_date": market_date,
         "state": "DAY_INITIALIZED",
         "state_version": 1,

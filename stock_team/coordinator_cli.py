@@ -9,6 +9,7 @@ from pathlib import Path
 
 from stock_team.orchestration.adapters import ExistingCliAdapter
 from stock_team.orchestration.coordinator import WorkflowCoordinator
+from stock_team.orchestration.models import SESSION_TYPES
 from stock_team.orchestration.store import SessionStore
 from stock_team.utils.workspace_paths import investing_os_home
 
@@ -23,6 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     init_day = sub.add_parser("init-day")
     init_day.add_argument("--date", required=True)
+    init_day.add_argument("--session-type", choices=sorted(SESSION_TYPES), default="trading")
     init_day.add_argument("--runtime-dir", default=str(default_runtime_dir()))
 
     show = sub.add_parser("show")
@@ -54,10 +56,10 @@ def main(argv: list[str] | None = None) -> int:
             state = coordinator.execute(
                 {
                     "intent": "initialize_day",
-                    "session_id": f"trading-{args.date}",
+                    "session_id": f"{args.session_type}-{args.date}",
                     "expected_state": "IDLE",
                     "user_confirmation": False,
-                    "parameters": {"market_date": args.date},
+                    "parameters": {"market_date": args.date, "session_type": args.session_type},
                     "idempotency_key": str(uuid.uuid4()),
                 }
             )

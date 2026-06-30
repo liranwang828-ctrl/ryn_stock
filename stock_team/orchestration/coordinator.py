@@ -22,6 +22,7 @@ class WorkflowCoordinator:
                 session_id=action["session_id"],
                 market_date=action["parameters"]["market_date"],
                 now=now,
+                session_type=action["parameters"].get("session_type", "trading"),
             )
             processed = {
                 "idempotency_key": action["idempotency_key"],
