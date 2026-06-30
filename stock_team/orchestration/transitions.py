@@ -5,10 +5,13 @@ BEGIN_TRANSITIONS = {
     ("DAY_INITIALIZED", "start_stage0"): "STAGE0_RUNNING",
     ("STAGE0_READY", "record_focus_confirmation"): "FOCUS_CONFIRMED",
     ("FOCUS_CONFIRMED", "start_stage1"): "STAGE1_RUNNING",
+    ("FOCUS_CONFIRMED", "start_observation"): "OBSERVATION_ACTIVE",
     ("STAGE1_READY", "record_plan_approval"): "PLAN_APPROVED",
     ("PLAN_APPROVED", "start_intraday"): "INTRADAY_ACTIVE",
     ("INTRADAY_ACTIVE", "close_market"): "MARKET_CLOSED",
+    ("OBSERVATION_ACTIVE", "close_market"): "MARKET_CLOSED",
     ("MARKET_CLOSED", "archive_day"): "DAY_ARCHIVED",
+    ("OBSERVATION_ACTIVE", "archive_day"): "DAY_ARCHIVED",
 }
 
 SUCCESS_TRANSITIONS = {
@@ -19,10 +22,11 @@ SUCCESS_TRANSITIONS = {
 ALLOWED_ACTIONS = {
     "DAY_INITIALIZED": ["start_stage0"],
     "STAGE0_READY": ["record_focus_confirmation"],
-    "FOCUS_CONFIRMED": ["start_stage1"],
+    "FOCUS_CONFIRMED": ["start_stage1", "start_observation"],
     "STAGE1_READY": ["record_plan_approval"],
     "PLAN_APPROVED": ["start_intraday"],
     "INTRADAY_ACTIVE": ["close_market"],
+    "OBSERVATION_ACTIVE": ["intraday-snapshot", "close_market", "archive_day"],
     "MARKET_CLOSED": ["archive_day"],
     "FAILED_TOOL": ["retry_last_action"],
 }

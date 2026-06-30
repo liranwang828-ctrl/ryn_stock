@@ -18,11 +18,14 @@ TRADING_STATES = {
     "INTRADAY_ACTIVE",
     "MARKET_CLOSED",
     "REVIEW_REQUIRED",
+    "QUICK_REVIEWED",
+    "CLOSED_UNREVIEWED",
     "DAY_ARCHIVED",
     "BLOCKED_DATA",
     "WAITING_USER",
     "DEGRADED_OBSERVE",
     "FAILED_TOOL",
+    "OBSERVATION_ACTIVE",
 }
 ACTION_INTENTS = {
     "initialize_day",
@@ -32,8 +35,12 @@ ACTION_INTENTS = {
     "record_plan_approval",
     "start_intraday",
     "close_market",
+    "review_day",
+    "quick_review",
+    "freeze",
     "archive_day",
     "retry_last_action",
+    "start_observation",
 }
 SESSION_REQUIRED = {
     "session_id",

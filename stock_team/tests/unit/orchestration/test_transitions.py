@@ -21,3 +21,38 @@ def test_failed_tool_preserves_resume_state():
 
 def test_allowed_actions_for_stage0_ready_requires_discussion_confirmation():
     assert allowed_actions("STAGE0_READY") == ["record_focus_confirmation"]
+
+
+def test_focus_confirmed_to_observation_active():
+    result = begin_transition("FOCUS_CONFIRMED", "start_observation")
+    assert result == "OBSERVATION_ACTIVE"
+
+
+def test_observation_active_rejects_trading_intents():
+    for trading_intent in ("start_intraday", "record_plan_approval"):
+        with pytest.raises(TransitionError, match=trading_intent):
+            begin_transition("OBSERVATION_ACTIVE", trading_intent)
+
+
+def test_market_closed_to_review_required():
+    result = begin_transition("MARKET_CLOSED", "review_day")
+    assert result == "REVIEW_REQUIRED"
+
+
+def test_review_required_to_day_archived():
+    result = begin_transition("REVIEW_REQUIRED", "archive_day")
+    assert result == "DAY_ARCHIVED"
+
+
+def test_quick_reviewed_transition():
+    result = begin_transition("MARKET_CLOSED", "quick_review")
+    assert result == "QUICK_REVIEWED"
+
+
+def test_closed_unreviewed_transition():
+    result = begin_transition("MARKET_CLOSED", "freeze")
+    assert result == "CLOSED_UNREVIEWED"
+
+
+def test_archive_day_action_exists():
+    assert "archive_day" in allowed_actions("REVIEW_REQUIRED")

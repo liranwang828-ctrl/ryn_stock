@@ -208,3 +208,43 @@ def test_new_trading_session_builds_valid_initial_state():
     )
     assert session["state"] == "DAY_INITIALIZED"
     assert session["allowed_actions"] == ["start_stage0"]
+
+
+def test_observation_active_state_exists():
+    from stock_team.orchestration.models import TRADING_STATES
+
+    assert "OBSERVATION_ACTIVE" in TRADING_STATES
+
+
+def test_observation_active_forbids_trading_actions():
+    from stock_team.orchestration.transitions import allowed_actions
+
+    actions = allowed_actions("OBSERVATION_ACTIVE")
+    for trading_intent in ("start_stage0", "start_stage1", "record_plan_approval", "start_intraday"):
+        assert trading_intent not in actions, f"OBSERVATION_ACTIVE must not allow {trading_intent}"
+
+
+def test_observation_active_allows_readonly_actions():
+    from stock_team.orchestration.transitions import allowed_actions
+
+    actions = allowed_actions("OBSERVATION_ACTIVE")
+    for readonly in ("intraday-snapshot", "close_market", "archive_day"):
+        assert readonly in actions, f"OBSERVATION_ACTIVE must allow {readonly}"
+
+
+def test_review_required_in_trading_states():
+    from stock_team.orchestration.models import TRADING_STATES
+
+    assert "REVIEW_REQUIRED" in TRADING_STATES
+
+
+def test_quick_reviewed_in_trading_states():
+    from stock_team.orchestration.models import TRADING_STATES
+
+    assert "QUICK_REVIEWED" in TRADING_STATES
+
+
+def test_closed_unreviewed_in_trading_states():
+    from stock_team.orchestration.models import TRADING_STATES
+
+    assert "CLOSED_UNREVIEWED" in TRADING_STATES
