@@ -23,6 +23,8 @@
 
 ## DAILY 每日交易
 
+当前行动计划：[`../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md`](../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md)
+
 | 步骤 | 状态 | 已知证据 | 已知缺口 | 下一验收动作 |
 |---|---|---|---|---|
 | `DAILY-0 晨间准备` | `partial` | 会话初始化、IBKR 获取和跨日恢复设计存在 | 用户活动选择、前日处理和账户事实是否在同一入口闭环，未验证 | 从干净模拟会话启动，记录所有输入、确认点和产物 |
