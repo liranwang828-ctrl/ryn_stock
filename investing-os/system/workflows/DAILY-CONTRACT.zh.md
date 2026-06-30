@@ -1,6 +1,7 @@
 # DAILY 每日交易工作流契约
 
-状态：待用户批准
+状态：高阶审核未通过，待按审核记录修订
+审核记录：`investing-os/handoff/reviews/2026-06-30-daily-contract-review.md`
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
 来源 commit：`c1024c3` 至 `fb61fc6`
 
