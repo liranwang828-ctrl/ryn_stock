@@ -1,11 +1,11 @@
 # DAILY 每日交易工作流契约
 
-状态：v3 高阶审核通过，等待用户批准 Q1–Q3
+状态：approved — 可据此编写代码实施计划
 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-review.md`](../../handoff/reviews/2026-06-30-daily-contract-review.md)
 v2 审核：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md`](../../handoff/reviews/2026-06-30-daily-contract-v2-review.md)
 v3 审核：[`../../handoff/reviews/2026-07-01-daily-contract-v3-review.md`](../../handoff/reviews/2026-07-01-daily-contract-v3-review.md)
 基于审计：DAILY-AUDIT-0 至 DAILY-AUDIT-4（2026-06-30）
-v2 修正：R1–R6 六项阻断问题 + 非阻断修订；v3 修正：V2-1 至 V2-4（分类调整、时间窗口软化、H4 措辞修正、高阶推荐重构）
+v2 修正：R1–R6 + 非阻断修订；v3 修正：V2-1 至 V2-4；v4 终版：高阶收口决策 + Q1–Q3 全部批准（选项 A）
 
 本契约定义 DAILY-0 至 DAILY-4 的合法顺序、进入/完成条件、系统动作、用户交互、固定产物和失败恢复。它是代码实现的唯一需求依据。
 
@@ -566,91 +566,56 @@ Step 6: 归档当日产物 → 状态跃迁至 DAY_ARCHIVED
 
 ---
 
-## 7. 高阶推荐与用户决策
+## 7. 已批准的高阶决策
 
-以下架构与状态机事项由高阶模型提出方案，用户整体批准，不要求用户逐项设计技术细节。三项真正涉及意义、权限与体验的问题保留为 Q1–Q3。
+以下决策已于 2026-07-01 经高阶模型收口 + 用户批准，作为代码实施的强制约束。
 
-### 高阶模型推荐方案
+### 7.1 跨日恢复
 
-**跨日恢复（原 Q1）**
+三种选项都是必须支持的用户路径。实施顺序：冻结收尾 → 快速复盘 → 完整复盘（复用 DAILY-4）。界面最终必须同时提供三种选择。
 
-三种选项都是必须支持的用户路径，不是三选一。
+### 7.2 Observation 状态
 
-推荐实施顺序：
-1. 冻结收尾：最小解除昨日阻塞并创建欠账；
-2. 快速复盘：完成最低风险检查；
-3. 完整复盘：复用 DAILY-4。
+创建独立 `OBSERVATION_ACTIVE` 状态，不与 `INTRADAY_ACTIVE` 复用。独立状态更容易实施权限拒绝、Dashboard 标识和恢复测试。
 
-界面最终必须同时提供三种选择。
+### 7.3 非交易模式入口
 
-**observation 状态（原 Q2）**
+协调器支持统一 session/action contract；CLI 和 Dashboard 都是该契约的入口。第一阶段先提供 CLI，Dashboard 随后接入。
 
-推荐创建独立 `OBSERVATION_ACTIVE` 状态。
+### 7.4 Confirm 产物
 
-理由：复用 `INTRADAY_ACTIVE` 容易把"正在交易"和"只读观察"混淆；独立状态更容易实施权限拒绝、Dashboard 标识和恢复测试。
+investing-os skill/对话生成认知与计划产物 → 用户确认 → coordinator 只做 schema、引用、版本和内容一致性校验。CLI 不得自动编造焦点判断、风险计划或用户结论。
 
-**非交易模式入口（原 Q4）**
-
-推荐协调器支持统一 session/action contract；CLI 和 Dashboard 都只是该契约的入口。
-
-第一阶段先提供 CLI 以便测试和恢复，Dashboard 随后接入同一动作。不是二选一。
-
-**confirm 产物（原 Q5）**
-
-推荐采用以下流程：
-
-```text
-investing-os skill / 对话生成认知与计划产物
-→ 用户确认
-→ coordinator 只做 schema、引用、版本和内容一致性校验
-```
-
-CLI 不得自动编造焦点判断、风险计划或用户结论。
-
-**盘中事实刷新**
+### 7.5 盘中事实刷新
 
 `intraday-snapshot` 是唯一事实生产动作；持续循环只负责重复调度同一幂等动作，不建立第二套盘中业务逻辑。
 
-**DAILY runtime 路径**
+### 7.6 DAILY Runtime 路径
 
 统一使用 `investing-os/system/runtime/{sessions,inputs,packets}`。旧 `findings/`、`reports/` 和 `system/data/packets/` 路径保留为历史或工具工作区，不作为新 DAILY canonical 产物路径。
 
----
+### 7.7 `post_open_adj` — 移除
 
-### Q1: `post_open_adj` 机制（原 U1 / 原 Q3）
+**决定：选项 A — 移除。** `get_effective_nodes()` 中移除 `post_open_adj` 优先逻辑。盘中若需调整锚点，回到计划变更与用户确认流程，保留版本和审计记录。
 
-**高阶推荐：** 移除其覆盖盘前锚点的能力。盘中若需调整锚点，回到计划变更与用户确认流程，保留版本和审计记录。
+### 7.8 复盘交互 — 纯对话
 
-- A) 批准推荐 — 移除 `post_open_adj`
-- B) 否决推荐 — 保留 `post_open_adj`，但添加 investing-os 写入闸门 + 审计日志
+**决定：选项 A — 纯对话。** 用户通过对话完成判断，investing-os 把结果写入固定 schema；Dashboard 后续只展示和辅助确认。
 
-影响：`intraday_snapshot.py`、盘中权限模型
+### 7.9 时间窗口 — 软提示
 
-### Q2: 复盘交互形式（原 U2 / 原 Q6）
+**决定：选项 A — 软提示。** 系统记录目标窗口和迟到状态，允许跨时区、迟到恢复、观察和补做。数据真实性仍由 as-of、市场窗口和 freshness 单独严格校验。
 
-**高阶推荐：** 对话为主、结构化产物为结果。用户通过对话完成判断，investing-os 把结果写入固定 schema；Dashboard 后续只展示和辅助确认，不要求用户在 CLI 表单中重复填写。
+### 7.10 `generate_suggestions()` 归属
 
-- A) 批准推荐 — 纯对话（investing-os 提问 → 用户回答 → investing-os 写入结构化产物）
-- B) CLI 表单辅助 — 对话 + CLI 结构化表单
-- C) Dashboard 表单辅助 — 对话 + Dashboard 表单
+`generate_suggestions()` 当前在 `stock_team` 中产出 lesson/thesis 类型属于脑-肌边界冲突。实现时 `stock_team` 只保留事实输出，认知候选移至 `investing-os`。
 
-影响：DAILY-4 实现方式、用户交互设计
+### 7.11 Dashboard 数据契约
 
-### Q3: 时间窗口（原 U3 / 原 Q7）
-
-**高阶推荐：** 软提示而非硬拒绝。系统记录目标窗口和迟到状态，但允许跨时区、迟到恢复、观察和补做；数据真实性仍由 as-of、市场窗口和 freshness 单独严格校验。
-
-- A) 批准推荐 — 软提示（警告但允许）
-- B) 否决推荐 — 硬 enforce（代码拒绝窗口外操作）
-
-影响：`cli.py` 时间窗口闸门设计
+Dashboard 消费者路径与 CLI 生产路径统一到 coordinator 登记的 runtime manifest，不只是在启动时创建可能陈旧的文件。
 
 ---
 
-## 8. 契约生效条件
+## 8. 契约生效
 
-1. 用户批准第 7 节的高阶推荐方案
-2. 用户对第 7 节三项决策（Q1/Q2/Q3）逐项给出决定
-3. `WORKFLOW-STATUS.zh.md` 已同步更新
-4. 本文件作为独立 commit 提交
-5. 此后方可拆分代码实现任务
+本契约自 2026-07-01 起生效，作为 DAILY 工作流代码实现的唯一需求依据。所有实现任务必须引用本契约的具体条款。
