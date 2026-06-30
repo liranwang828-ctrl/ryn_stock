@@ -6,6 +6,7 @@ Handoffs should make context transferable without turning the project into a loo
 
 ## Files
 
+- `CURRENT-CONTEXT.zh.md`: the only default entry point for new threads and low-tier implementation agents; older handoffs are historical references.
 - `agent-responsibility-split.md`: non-overlapping responsibilities for Codex and the peer agent.
 - `codex-antigravity-collaboration-protocol.md`: explicit protocol for independent work and artifact-only coordination.
 - `phase-tracker.md`: current phase map separating the Phase 4 runtime mainline from the stock_team output-intake branch.

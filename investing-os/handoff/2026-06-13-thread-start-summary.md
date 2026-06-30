@@ -1,5 +1,7 @@
 # 2026-06-13 Thread Start Summary
 
+> 已归档：当前有效入口是 `CURRENT-CONTEXT.zh.md`。除非任务明确需要历史背景，否则不要从本文件启动。
+
 This file is the short handoff for a fresh thread.
 Keep the next session centered on the live operating loop, not the full conversation history.
 
