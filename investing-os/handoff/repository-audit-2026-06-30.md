@@ -105,28 +105,25 @@ layout and should not be committed without revision.
 ## Generated Artifact
 
 `stock_team/reports/dashboard.html` is a generated snapshot containing dated
-portfolio values, focus symbols, and the local server port. Its current diff
-must not be committed as source.
-
-The file is already tracked in repository history, so adding an ignore rule
-alone cannot hide its changes. A later scoped task should separate the
-dashboard template/source from generated output, then stop tracking the
-generated copy.
+portfolio values, focus symbols, and the local server port. It has been removed
+from the Git index and added to `.gitignore`. The existing local file was
+preserved so the current dashboard can continue to run.
 
 ## Local Configuration That Needs Separation
 
 ### `stock_team/config/server_port.json`
 
-The port changed from `8080` to `58862`. This is machine-local runtime
-configuration. The repository should eventually track an example/default and
-ignore the active local file.
+The port changed from `8080` to `58862`. The server writes this file whenever
+it binds a port, so the file has been removed from the Git index and added to
+`.gitignore`. The local file was preserved.
 
 ### `stock_team/config/poll_config.json`
 
-This file mixes durable polling configuration with current portfolio symbols
-and daily focus symbols. The current portfolio/focus edits should not be
-committed as durable source. A later task should split static polling defaults
-from local runtime symbol state.
+This file mixes durable polling configuration with portfolio and daily focus
+fallbacks. It remains tracked because many tools require the static polling,
+watchlist, threshold, and sector-map fields. `portfolio_symbols` and
+`default_symbols` were reset to empty arrays so Git does not preserve stale
+holdings or a dated focus list. Live holdings remain IBKR-owned.
 
 ## Coordinator Conflict
 
@@ -178,16 +175,17 @@ split into an archive.
 4. Stage 0 true pre-market acquisition:
    - `stock_team/cli.py`
    - focused CLI tests
-5. Dashboard runtime refresh:
-   - dashboard server changes that are independent of coordinator
+5. Dashboard and operating console integration:
+   - coordinator-facing dashboard server
+   - operating console
    - focused dashboard tests
-6. Coordinator integration:
+6. Coordinator comparison:
    - preserve the committed coordinator foundation
    - review newer main-worktree schemas, orchestration, agents, server, and
      console as one contract-aware integration
 
-Groups 5 and 6 overlap in `stock_team/server/dashboard_server.py`; they must
-be separated carefully or combined only after full coordinator review.
+The current coordinator and UI changes were preserved as separate commits.
+The older coordinator worktree remains available for contract comparison.
 
 ## Do Not Do
 
@@ -197,4 +195,3 @@ be separated carefully or combined only after full coordinator review.
 - Do not let a low-tier model resolve the coordinator conflict.
 - Do not merge the dirty coordinator worktree wholesale.
 - Do not claim push/upload until a Git remote is configured.
-
