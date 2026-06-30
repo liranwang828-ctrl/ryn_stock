@@ -661,7 +661,7 @@
       const statusBadge = document.getElementById('status-badge');
       const statusText = document.getElementById('status-text');
       const lastUpdate = document.getElementById('last-update');
-      
+
       if (data.source === 'ibkr_stream') {
         statusBadge.className = 'badge active';
         statusText.textContent = 'GATEWAY STREAMING';
@@ -669,11 +669,21 @@
         statusBadge.className = 'badge warning';
         statusText.textContent = 'OFFLINE FALLBACK';
       }
-      
-      // Parse timestamp
+
+      // Parse timestamp and compute freshness
       try {
         const timeObj = new Date(data.timestamp);
-        lastUpdate.textContent = 'Sync: ' + timeObj.toLocaleTimeString('zh-CN', { hour12: false });
+        const ageMs = Date.now() - timeObj.getTime();
+        const ageMin = Math.round(ageMs / 60000);
+        let freshnessTag = '';
+        if (ageMin < 5) {
+          freshnessTag = ' (fresh)';
+        } else if (ageMin < 30) {
+          freshnessTag = ' (aging)';
+        } else {
+          freshnessTag = ' (stale)';
+        }
+        lastUpdate.textContent = 'Sync: ' + timeObj.toLocaleTimeString('zh-CN', { hour12: false }) + freshnessTag;
       } catch (e) {
         lastUpdate.textContent = 'Sync: ' + data.timestamp;
       }

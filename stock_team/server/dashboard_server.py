@@ -22,7 +22,7 @@ import time
 import uuid
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as HTTPServer
-from datetime import datetime, date as _date
+from datetime import datetime, date as _date, timedelta, timezone
 from stock_team.utils.workspace_paths import investing_os_home
 from stock_team.utils.capsule_utils import get_current_nodes_path, get_latest_premarket_plan_path
 from stock_team.orchestration.adapters import ExistingCliAdapter
@@ -426,6 +426,33 @@ def _load_stage0_snapshot_form(base_dir: str, session: dict | None) -> dict:
     market_date = (session or {}).get("market_date") or _date.today().strftime("%Y-%m-%d")
     session_id = (session or {}).get("session_id") or f"trading-{market_date}"
     snapshot_path, default_payload = _default_stage0_snapshot_payload(base_dir, market_date, session_id)
+
+    latest_manifest = _get_latest_manifest(base_dir)
+    manifest_freshness = latest_manifest.get("freshness")
+    manifest_path = latest_manifest.get("manifest_path")
+
+    # Try to find a registered snapshot path from the manifest
+    if latest_manifest["status"] == "ok" and latest_manifest["manifest"]:
+        for artifact in latest_manifest["manifest"].get("artifacts", []):
+            artifact_path = artifact.get("path", "")
+            artifact_name = artifact.get("name", "")
+            if "snapshot" in artifact_name.lower() and os.path.exists(artifact_path):
+                existing = _load_json_any(artifact_path, None)
+                if isinstance(existing, dict):
+                    source_kind = _stage0_snapshot_source_kind(existing)
+                    return {
+                        "status": "ok",
+                        "session_id": session_id,
+                        "market_date": market_date,
+                        "path": artifact_path,
+                        "exists": True,
+                        "formal_ready": source_kind == "formal_provider_snapshot",
+                        "source_kind": source_kind,
+                        "payload": existing,
+                        "manifest_freshness": manifest_freshness,
+                        "source": "coordinator_manifest",
+                    }
+
     existing = _load_json_any(snapshot_path, None)
     payload = existing if isinstance(existing, dict) else default_payload
     source_kind = _stage0_snapshot_source_kind(existing)
@@ -438,6 +465,8 @@ def _load_stage0_snapshot_form(base_dir: str, session: dict | None) -> dict:
         "formal_ready": source_kind == "formal_provider_snapshot",
         "source_kind": source_kind,
         "payload": payload,
+        "manifest_freshness": manifest_freshness,
+        "source": "constructed_path",
     }
 
 
@@ -825,6 +854,86 @@ def _load_coordinator_manifest(base_dir: str) -> dict:
     decision_path = os.path.join(decisions_dir, f"{session_id}.json") if session_id else ""
     decision = _load_json_any(decision_path, None) if decision_path else None
     return _coordinator_summary_payload(session, decision)
+
+
+def _get_latest_manifest(base_dir: str) -> dict:
+    """Find the most recent coordinator archive manifest and validate freshness.
+
+    Searches {SESSIONS_DIR}/archive/ and {SESSIONS_DIR}/ for *_manifest.json
+    files, returns the newest manifest with a freshness assessment.
+
+    Returns:
+        dict with keys: status, manifest, freshness, manifest_path
+        freshness values: "fresh", "aging" (>6h), "stale" (>24h), "no_manifest", "corrupt"
+    """
+    archive_dir = os.path.join(_coordinator_sessions_dir(base_dir), "archive")
+    sessions_dir = _coordinator_sessions_dir(base_dir)
+
+    candidates = []
+
+    if os.path.isdir(archive_dir):
+        candidates.extend(
+            os.path.join(archive_dir, name)
+            for name in os.listdir(archive_dir)
+            if name.endswith("_manifest.json")
+        )
+
+    if os.path.isdir(sessions_dir):
+        candidates.extend(
+            os.path.join(sessions_dir, name)
+            for name in os.listdir(sessions_dir)
+            if name.endswith("_manifest.json")
+        )
+
+    if not candidates:
+        return {
+            "status": "missing",
+            "manifest": None,
+            "freshness": "no_manifest",
+            "manifest_path": None,
+        }
+
+    candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    manifest_path = candidates[0]
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except Exception:
+        return {
+            "status": "corrupt",
+            "manifest": None,
+            "freshness": "corrupt",
+            "manifest_path": manifest_path,
+        }
+
+    if not isinstance(manifest, dict):
+        return {
+            "status": "corrupt",
+            "manifest": None,
+            "freshness": "corrupt",
+            "manifest_path": manifest_path,
+        }
+
+    archived_at = manifest.get("archived_at", "")
+    freshness = "fresh"
+    if archived_at:
+        try:
+            archived_dt = datetime.fromisoformat(archived_at)
+            age = datetime.now(timezone.utc) - archived_dt
+            if age > timedelta(hours=24):
+                freshness = "stale"
+            elif age > timedelta(hours=6):
+                freshness = "aging"
+        except (ValueError, TypeError):
+            freshness = "unknown"
+
+    return {
+        "status": "ok",
+        "manifest": manifest,
+        "freshness": freshness,
+        "manifest_path": manifest_path,
+    }
 
 
 def _extract_live_price_payload(live_status: dict) -> dict[str, dict]:

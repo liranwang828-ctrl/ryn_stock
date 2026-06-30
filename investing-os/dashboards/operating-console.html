@@ -655,9 +655,12 @@
           <td><input data-key="note" value="${html(row.note || "")}"></td>
         </tr>
       `).join("");
+      const freshnessLabel = snapshot.manifest_freshness || "unknown";
+      const freshnessClass = freshnessLabel === "fresh" ? "green" : freshnessLabel === "aging" ? "amber" : "red";
       document.getElementById("snapshotMeta").innerHTML = [
         `<span class="badge ${snapshot.formal_ready ? "green" : "amber"}">${snapshot.formal_ready ? "verified premarket feed" : (snapshot.exists ? "manual draft only" : "no snapshot yet")}</span>`,
         `<span class="badge blue">${html(snapshot.market_date || "--")}</span>`,
+        `<span class="badge ${freshnessClass}">manifest: ${freshnessLabel}${snapshot.source === "coordinator_manifest" ? " (from archive)" : " (constructed)"}</span>`,
         `<span class="badge">${html(snapshot.path || "")}</span>`,
       ].join("");
       document.getElementById("snapshotStatus").textContent = snapshot.formal_ready

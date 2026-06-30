@@ -296,3 +296,135 @@ def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path
     intraday_guidance = json.loads(open(result["created_paths"][1], encoding="utf-8").read())
     assert trading_plan["risk_mode"] == "observe_only"
     assert intraday_guidance["default_action"] == "observe_only"
+
+
+def test_dashboard_reads_from_runtime_manifest(tmp_path, monkeypatch):
+    """Dashboard reads snapshot paths from a coordinator manifest instead of constructing its own path."""
+    from stock_team.server.dashboard_server import _get_latest_manifest
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    archive_dir = investing_os_home / "system" / "runtime" / "sessions" / "archive"
+    archive_dir.mkdir(parents=True)
+
+    manifest = {
+        "date": "2026-07-01",
+        "session_id": "trading-2026-07-01",
+        "archived_at": "2026-07-01T09:30:00+00:00",
+        "artifacts": [
+            {
+                "name": "pre-market-snapshot.json",
+                "path": str(archive_dir / "trading-2026-07-01" / "pre-market-snapshot.json"),
+                "hash": "abc123",
+            },
+            {
+                "name": "stage0-market-context.md",
+                "path": str(archive_dir / "trading-2026-07-01" / "stage0-market-context.md"),
+                "hash": "def456",
+            },
+        ],
+    }
+
+    manifest_file = archive_dir / "trading-2026-07-01_manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = _get_latest_manifest(str(stock_team_home))
+
+    assert result["status"] == "ok"
+    assert result["manifest"]["session_id"] == "trading-2026-07-01"
+    assert len(result["manifest"]["artifacts"]) == 2
+    assert result["manifest"]["artifacts"][0]["name"] == "pre-market-snapshot.json"
+    assert result["freshness"] == "fresh"
+    assert result["manifest_path"] is not None
+
+
+def test_dashboard_rejects_stale_manifest(tmp_path, monkeypatch):
+    """Dashboard validates freshness timestamps and rejects stale data."""
+    from datetime import datetime, timezone, timedelta
+    from stock_team.server.dashboard_server import _get_latest_manifest
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    archive_dir = investing_os_home / "system" / "runtime" / "sessions" / "archive"
+    archive_dir.mkdir(parents=True)
+
+    old_timestamp = (datetime.now(timezone.utc) - timedelta(hours=30)).isoformat()
+    manifest = {
+        "date": "2026-06-29",
+        "session_id": "trading-2026-06-29",
+        "archived_at": old_timestamp,
+        "artifacts": [
+            {
+                "name": "pre-market-snapshot.json",
+                "path": str(archive_dir / "trading-2026-06-29" / "pre-market-snapshot.json"),
+                "hash": "abc123",
+            },
+        ],
+    }
+
+    manifest_file = archive_dir / "trading-2026-06-29_manifest.json"
+    manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = _get_latest_manifest(str(stock_team_home))
+
+    assert result["status"] == "ok"
+    assert result["freshness"] == "stale"
+    assert "manifest" in result
+
+
+def test_get_latest_manifest_returns_missing_when_no_manifests(tmp_path, monkeypatch):
+    """Dashboard handles missing manifests gracefully."""
+    from stock_team.server.dashboard_server import _get_latest_manifest
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (investing_os_home / "system" / "runtime").mkdir(parents=True)
+
+    result = _get_latest_manifest(str(stock_team_home))
+
+    assert result["status"] == "missing"
+    assert result["manifest"] is None
+    assert result["freshness"] == "no_manifest"
+
+
+def test_get_latest_manifest_picks_newest_by_mtime(tmp_path, monkeypatch):
+    """When multiple manifests exist, the newest (by file mtime) is returned."""
+    import time as _time
+    from stock_team.server.dashboard_server import _get_latest_manifest
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    archive_dir = investing_os_home / "system" / "runtime" / "sessions" / "archive"
+    archive_dir.mkdir(parents=True)
+
+    older = {
+        "date": "2026-06-28",
+        "session_id": "trading-2026-06-28",
+        "archived_at": "2026-06-28T16:00:00+00:00",
+        "artifacts": [],
+    }
+    newer = {
+        "date": "2026-07-01",
+        "session_id": "trading-2026-07-01",
+        "archived_at": "2026-07-01T09:30:00+00:00",
+        "artifacts": [{"name": "snapshot.json", "path": "/tmp/snapshot.json", "hash": "xyz"}],
+    }
+
+    older_file = archive_dir / "trading-2026-06-28_manifest.json"
+    newer_file = archive_dir / "trading-2026-07-01_manifest.json"
+    older_file.write_text(json.dumps(older), encoding="utf-8")
+    _time.sleep(0.05)
+    newer_file.write_text(json.dumps(newer), encoding="utf-8")
+
+    result = _get_latest_manifest(str(stock_team_home))
+
+    assert result["manifest"]["session_id"] == "trading-2026-07-01"
+    assert len(result["manifest"]["artifacts"]) == 1
