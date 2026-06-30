@@ -14,7 +14,7 @@
 
 | 工作流 | 当前状态 | 最近核验 | 当前判断 |
 |---|---|---:|---|
-| `DAILY` 每日交易 | `partial` | 2026-06-30 | 协调器、部分证据命令和界面已有实现；完整 DAILY-0 至 DAILY-4 尚未按统一名称和用户交互验收 |
+| `DAILY` 每日交易 | `partial` | 2026-06-30 | DAILY-0 至 4 已完成事实审计（89 tests passed, 0 failed）；DAILY-CONTRACT 已编写待主脑批准；代码实施须在批准后方可开始 |
 | `RESEARCH` 投资研究 | `documented` | 2026-06-30 | 公司、行业等流程与 Packet 文档存在；当前端到端运行状态未核验 |
 | `REVIEW` 周期复盘 | `documented` | 2026-06-30 | 周末、交易和论点复盘资料存在；统一周期复盘入口未核验 |
 | `LEARNING` 经验进化 | `documented` | 2026-06-30 | Packet absorption、journal promotion 和 approval 流程存在；运行闭环未核验 |
@@ -24,22 +24,33 @@
 ## DAILY 每日交易
 
 当前行动计划：[`../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md`](../../../docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md)
+DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（待主脑批准）
 
 | 步骤 | 状态 | 已知证据 | 已知缺口 | 下一验收动作 |
 |---|---|---|---|---|
-| `DAILY-0 晨间准备` | `partial` | 会话初始化、IBKR 获取和跨日恢复设计存在 | 用户活动选择、前日处理和账户事实是否在同一入口闭环，未验证 | 从干净模拟会话启动，记录所有输入、确认点和产物 |
-| `DAILY-1 盘前决策` | `partial` | 市场环境与焦点标的证据命令、讨论和计划 Agent 已有实现或设计 | 从事实请求到用户批准计划的完整握手未验证 | 运行市场环境包 → 用户确认焦点池 → 焦点证据包 → 计划批准 |
-| `DAILY-2 开盘观察` | `unknown` | 旧 Node 2 和现行 intraday 设计存在 | 当前入口、产物、用户动作及与批准计划的关系未审计 | 仅审计相关入口和契约，形成最小验收场景 |
-| `DAILY-3 盘中管理` | `partial` | intraday snapshot/dashboard 和旧盘中监控能力存在 | 是否严格只更新事实、是否保持计划锚点、用户如何处理例外，未验证 | 用非交易模拟运行一次单次刷新并核对状态不越权 |
-| `DAILY-4 盘后复盘` | `documented` | trade evidence、post-market 和 lesson workflow 文档存在 | 真实交易事实、用户意义判断、候选经验和日终归档未串联验证 | 使用无交易或模拟交易日完成收尾并验证次日可恢复 |
+| `DAILY-0 晨间准备` | `partial` | SESSION_TYPES 常量完整；init-day→DAY_INITIALIZED→STAGE0 正向链完好；IBKR 同步函数测试通过 (11/11)；会话持久化+乐观锁 test-covered | 会话路由器无实现（仅 trading 可运行）；跨日恢复零实现；coordinator 工作流无用户确认闸门；非交易模式无状态转换定义 | 主脑批准契约后：添加 --session-type 参数；实现跨日恢复三种选项；集成 IBKR 事实确认闸门 |
+| `DAILY-1 盘前决策` | `partial` | 状态机 7 状态+4 可执行 intent 定义完整 (16/16 tests passed)；as-of 校验+时区+盘前窗口 test-covered；数据降级链 Polygon→yfinance→stale cache 已实现；adapters 支持 5 intent→CLI 映射 | record_focus_confirmation 和 record_plan_approval 仅记录路径不校验内容；record_plan_approval 成功时不自动跃迁 (transitions.py L44-50 bug)；IBKR 声明的优先级在盘前路径中未调用；decision sheet 缺失时回退到 watchlist 全量可绕过焦点池确认；无端到端握手链集成测试 | 主脑批准契约后：修复 SUCCESS_TRANSITIONS 映射；为 confirm intent 添加产物校验；修复焦点池回退闸门；统一产物路径 |
+| `DAILY-2 开盘观察` | `partial` | intraday_snapshot.py 库函数完整且 test-covered (21/21)；transitions.py 硬阻止未批准计划时的 start_intraday；python 循环刷新不改写 Stage 0/1 锚点 test-covered | 无独立状态（隐式合并在 PLAN_APPROVED→INTRADAY_ACTIVE 过渡中）；handle_intraday_snapshot 无时间窗口 enforce (9:30-10:00)；无批准计划拒绝闸门未在 CLI 中 enforce；adapters.py 不支持 intraday-snapshot intent | 主脑批准契约后：在 CLI 添加入口时间窗口闸门；在 adapters 添加 intraday-snapshot 映射 |
+| `DAILY-3 盘中管理` | `partial` | 条件计算函数全覆盖 test-covered (30/30)；handle_intraday_snapshot 单次快照可用；dashboard_server price sync test-covered | IBKR streaming 路径在代码中不存在（文档声称 primary 但实际用 yfinance）；post_open_adj 无文档无权限控制可改写盘前锚点；盘中用户例外确认流程零实现；Dashboard HTML 是纯消费者无后端生产者；单次刷新和循环模式是两个独立系统 | 主脑批准契约后：决定 post_open_adj 去留；统一单次刷新+循环模式；添加盘中例外确认流程 |
+| `DAILY-4 盘后复盘` | `partial` | per-stock summary 和 generate_suggestions test-covered (11/11)；transitions.py 定义了 MARKET_CLOSED→archive_day→DAY_ARCHIVED；收尾链 Step 1-2 代码可用 | Step 3-6 零代码实现（纯 investing-os+human 对话任务但无入口）；REVIEW_REQUIRED 在 models.py 中定义但不在 transitions.py 的 TRANSITIONS 字典中；QUICK_REVIEWED / CLOSED_UNREVIEWED 未在 TRADING_STATES 中注册；archive_day 无实际归档写入逻辑；三种复盘选择在 dashboard_server 中映射为同一动作 | 主脑批准契约后：注册缺失状态；实现 archive_day 最小归档逻辑；创建三种复盘选择的不同状态路径；确定 Step 3-4 交互形式 |
+
+### DAILY 审计证据汇总 (2026-06-30)
+
+| 审计报告 | Commit | Tests |
+|---------|--------|-------|
+| DAILY-AUDIT-0 晨间准备 | `643df03` | 11 passed |
+| DAILY-AUDIT-1 盘前决策 | `fb61fc6` | 16 passed |
+| DAILY-AUDIT-2 开盘观察 | `fdf9241` | 21 passed |
+| DAILY-AUDIT-3 盘中管理 | `26a070e` | 30 passed |
+| DAILY-AUDIT-4 盘后复盘 | `b31b3fe` | 11 passed |
+| **合计** | — | **89 passed, 0 failed** |
 
 ### DAILY 当前共同阻塞
 
-- 统一名称尚未进入现有协调器和界面；
-- 用户交互点没有一份经过运行验证的操作清单；
-- 旧 Node 体系、Evidence Stage 0/1 和新协调器状态需要建立映射；
-- 完整的非交易模拟记录尚未生成；
-- 当前只记录已知状态，不据此修改业务逻辑。
+- DAILY-CONTRACT.zh.md 待主脑批准；
+- 8 个高阶决策待定（见契约第 7 节）；
+- 8 个状态机修正待批准（见契约第 6 节）；
+- 批准前不得修改任何代码。
 
 ## RESEARCH 投资研究
 
@@ -70,4 +81,5 @@
 
 | 日期 | 变更 | Commit |
 |---|---|---|
-| 2026-06-30 | 建立统一工作流台账；以 `DAILY` 为第一实施重点 | 以本行首次进入 Git 的提交为准 |
+| 2026-06-30 | 建立统一工作流台账；以 `DAILY` 为第一实施重点 | — |
+| 2026-06-30 | 完成 DAILY-0 至 DAILY-4 事实审计 (89 tests passed)；编写 DAILY-CONTRACT.zh.md 待主脑批准 | — |
