@@ -4,5 +4,9 @@
   "SNDK": {"sym": "SNXX", "leverage": 2, "direction": "long"},
   "NBIS": {"sym": "NBIL", "leverage": 2, "direction": "long"},
   "MRVL": {"sym": "MRVU", "leverage": 2, "direction": "long"},
-  "LITE": {"sym": "LITX", "leverage": 2, "direction": "long"}
+  "LITE": {"sym": "LITX", "leverage": 2, "direction": "long"},
+  "MU": {"sym": "MUU", "leverage": 2, "direction": "long"},
+  "COHR": {"sym": "COHX", "leverage": 2, "direction": "long"},
+  "ORCL": {"sym": "ORCX", "leverage": 2, "direction": "long"},
+  "INTC": {"sym": "INTW", "leverage": 2, "direction": "long"}
 }

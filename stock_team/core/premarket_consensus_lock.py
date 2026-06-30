@@ -12,6 +12,7 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from stock_team.utils.capsule_utils import get_capsule_dir, get_current_nodes_path, get_latest_premarket_plan_path
 
 
 def _load(path: str) -> dict[str, Any]:
@@ -299,20 +300,17 @@ def lock_consensus(
         flat_pm_path = os.path.join(base_dir, "findings", f"premarket_summary_{date}_{sym}.json")
         written.append(_save(flat_pm_path, pm))
 
-        capsule_pm_path = os.path.join(base_dir, "findings", "symbols", sym, "plans", f"premarket_summary_{date}.json")
+        capsule_pm_path = os.path.join(get_capsule_dir(sym, base_dir), "plans", f"premarket_summary_{date}.json")
         written.append(_save(capsule_pm_path, pm))
         latest_pm = dict(pm)
         latest_pm["source_archive"] = f"plans/premarket_summary_{date}.json"
-        written.append(_save(os.path.join(base_dir, "findings", "symbols", sym, "latest_premarket_plan.json"), latest_pm))
+        written.append(_save(get_latest_premarket_plan_path(sym, base_dir), latest_pm))
 
         macro = _build_macro_strategy(sym, date, decision, generated_at)
         written.append(_save(os.path.join(base_dir, f"macro_strategy_{sym}.json"), macro))
-        written.append(_save(
-            os.path.join(base_dir, "findings", "symbols", sym, "current_nodes.json"),
-            _build_current_nodes(sym, date, macro, generated_at),
-        ))
+        written.append(_save(get_current_nodes_path(sym, base_dir), _build_current_nodes(sym, date, macro, generated_at)))
 
-        capsule_strategy_path = os.path.join(base_dir, "findings", "symbols", sym, "strategy.json")
+        capsule_strategy_path = os.path.join(get_capsule_dir(sym, base_dir), "strategy.json")
         capsule_strategy = _load(capsule_strategy_path)
         capsule_strategy.update({
             "symbol": sym,
