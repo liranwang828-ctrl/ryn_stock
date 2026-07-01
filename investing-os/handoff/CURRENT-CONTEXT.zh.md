@@ -141,6 +141,8 @@ Git push：
 6. 当前修复归档、完整复盘、observation 动作、异常跨日恢复、DAILY-4 交互和公开入口 E2E。
 7. DAILY 完整生产链验收前保持 `partial`，不得推进其他工作流或旧代码整理。
 
+剩余工作分工见 `handoff/DAILY-REMAINING-WORK-ALLOCATION.zh.md`。高阶模型先定义跨日恢复、归档和 observation 动作契约；低阶模型按任务单实现；最终 E2E 和完成状态由高阶模型裁定。
+
 ## 默认启动方式
 
 新线程只需说：
