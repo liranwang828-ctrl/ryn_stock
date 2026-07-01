@@ -282,3 +282,117 @@ def test_archive_day_success_with_empty_artifacts(tmp_path):
     assert state["state"] == "DAY_ARCHIVED"
     assert "archive_manifest_path" in state
     assert "2026-06-15" in state["archive_manifest_path"]
+
+
+# ---------------------------------------------------------------------------
+# H4-L2: freeze / quick_review daily4 review file generation
+# ---------------------------------------------------------------------------
+
+
+def test_freeze_generates_debt_record_review_file(tmp_path):
+    """freeze writes a debt-record review file (empty judgments, empty lessons)."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "MARKET_CLOSED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["freeze"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "freeze",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "MARKET_CLOSED",
+        "user_confirmation": False,
+        "parameters": {"ibkr_fact_status": "missing"},
+        "idempotency_key": "freeze-1",
+    })
+    assert state["state"] == "CLOSED_UNREVIEWED"
+
+    import json
+    from stock_team.orchestration.protocol import daily4_review_path
+
+    review_path = daily4_review_path("trading-2026-06-15")
+    assert review_path.exists()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["review_mode"] == "freeze"
+    assert review["ibkr_fact_status"] == "missing"
+    assert review["review_judgments"] == []
+    assert review["candidate_lessons"] == []
+
+
+def test_quick_review_generates_minimal_review_file(tmp_path):
+    """quick_review writes a review file with risk check judgments from parameters."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "MARKET_CLOSED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["quick_review"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "quick_review",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "MARKET_CLOSED",
+        "user_confirmation": False,
+        "parameters": {
+            "position_anomalies": ["position XYZ overweight"],
+            "risk_deviations": ["risk limit exceeded by 2%"],
+            "pending_warnings": ["IBKR fact status unverified"],
+            "user_accepted": True,
+        },
+        "idempotency_key": "qr-1",
+    })
+    assert state["state"] == "QUICK_REVIEWED"
+
+    import json
+    from stock_team.orchestration.protocol import daily4_review_path
+
+    review_path = daily4_review_path("trading-2026-06-15")
+    assert review_path.exists()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["review_mode"] == "quick_review"
+    assert review["candidate_lessons"] == []
+    assert len(review["review_judgments"]) == 3
+    assert review["review_judgments"][0]["judgment_type"] == "execution"
+    assert review["review_judgments"][0]["summary"] == "position XYZ overweight"
+    assert review["review_judgments"][1]["judgment_type"] == "sizing"
+    assert review["review_judgments"][2]["judgment_type"] == "data_quality"
+    assert review["user_confirmations"]["bias_classification_confirmed"] is True
+    assert review["archive_closure"]["user_confirmed_at"] == "2026-06-15T16:00:00+00:00"
+
+
+def test_quick_review_without_user_acceptance_still_writes_file(tmp_path):
+    """quick_review generates a review file even without user_accepted flag."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "MARKET_CLOSED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["quick_review"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "quick_review",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "MARKET_CLOSED",
+        "user_confirmation": False,
+        "parameters": {"position_anomalies": ["unexpected position"]},
+        "idempotency_key": "qr-2",
+    })
+    assert state["state"] == "QUICK_REVIEWED"
+
+    import json
+    from stock_team.orchestration.protocol import daily4_review_path
+
+    review = json.loads(daily4_review_path("trading-2026-06-15").read_text(encoding="utf-8"))
+    assert review["review_mode"] == "quick_review"
+    assert review["user_confirmations"]["bias_classification_confirmed"] is False
+    assert review["archive_closure"]["user_confirmed_at"] == ""

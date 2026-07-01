@@ -161,6 +161,51 @@ class WorkflowCoordinator:
                     "confirmed_at": now,
                 }
             )
+        if action["intent"] in ("freeze", "quick_review"):
+            import json as _json
+
+            from .models import new_daily4_review
+            from .protocol import daily4_review_path
+
+            review_mode = "freeze" if action["intent"] == "freeze" else "quick_review"
+            review = new_daily4_review(
+                completed["session_id"],
+                completed.get("market_date", ""),
+                review_mode,
+                ibkr_fact_status=action["parameters"].get("ibkr_fact_status", "stale_unverified"),
+            )
+            if action["intent"] == "quick_review":
+                for anomaly in action["parameters"].get("position_anomalies", []):
+                    review["review_judgments"].append({
+                        "judgment_type": "execution",
+                        "summary": anomaly,
+                        "evidence_refs": [],
+                        "confidence": "low",
+                        "source": "assistant_inferred",
+                    })
+                for deviation in action["parameters"].get("risk_deviations", []):
+                    review["review_judgments"].append({
+                        "judgment_type": "sizing",
+                        "summary": deviation,
+                        "evidence_refs": [],
+                        "confidence": "low",
+                        "source": "assistant_inferred",
+                    })
+                for warning in action["parameters"].get("pending_warnings", []):
+                    review["review_judgments"].append({
+                        "judgment_type": "data_quality",
+                        "summary": warning,
+                        "evidence_refs": [],
+                        "confidence": "low",
+                        "source": "assistant_inferred",
+                    })
+                if action["parameters"].get("user_accepted"):
+                    review["user_confirmations"]["bias_classification_confirmed"] = True
+                    review["archive_closure"]["user_confirmed_at"] = now
+            review_path = daily4_review_path(completed["session_id"])
+            review_path.parent.mkdir(parents=True, exist_ok=True)
+            review_path.write_text(_json.dumps(review, ensure_ascii=False, indent=2), encoding="utf-8")
+            completed["daily4_review_path"] = str(review_path)
         for artifact_path in result.artifact_paths:
             path = Path(artifact_path)
             completed["artifacts"].append(

@@ -58,7 +58,7 @@ SESSION_REQUIRED = {
     "processed_actions",
     "updated_at",
 }
-SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path"}
+SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path", "daily4_review_path"}
 REVIEW_MODES = {"full_review", "quick_review", "freeze"}
 JUDGMENT_TYPES = {"thesis", "execution", "sizing", "emotion", "data_quality"}
 CONFIDENCE_LEVELS = {"low", "medium", "high"}
