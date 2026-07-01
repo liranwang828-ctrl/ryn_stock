@@ -56,6 +56,45 @@ class WorkflowCoordinator:
         if requires_confirmation(action["intent"]) and not action["user_confirmation"]:
             raise ValueError(f"{action['intent']} requires user_confirmation")
 
+        if action["intent"] == "archive_day":
+            from .archiver import archive_session
+
+            try:
+                _, manifest_path = archive_session(
+                    session_id=state["session_id"],
+                    trading_date=state["market_date"],
+                    session_file=str(self.store._session_path(state["session_id"])),
+                    artifact_ledger=state["artifacts"],
+                    archive_root=str(Path(self.store.root).parent / "archive"),
+                )
+            except RuntimeError as err:
+                failed = self.store.load(action["session_id"])
+                prev = failed["state_version"]
+                failed["state"] = "FAILED_TOOL"
+                failed["state_version"] = prev + 1
+                failed["last_error"] = {
+                    "error_class": err.__class__.__name__,
+                    "message": str(err),
+                    "retryable": False,
+                    "intent": action["intent"],
+                    "parameters": action["parameters"],
+                    "resume_from_state": state["state"],
+                    "occurred_at": now,
+                }
+                failed["processed_actions"].append(
+                    {
+                        "idempotency_key": original_action["idempotency_key"],
+                        "intent": original_action["intent"],
+                        "result_state": "FAILED_TOOL",
+                        "processed_at": now,
+                    }
+                )
+                failed["allowed_actions"] = allowed_actions("FAILED_TOOL")
+                failed["updated_at"] = now
+                self.store.save(failed, expected_version=prev)
+                return failed
+            state["archive_manifest_path"] = manifest_path
+
         previous_version = state["state_version"]
         source_state = state["state"]
         running_state = begin_transition(state["state"], action["intent"])
@@ -122,16 +161,6 @@ class WorkflowCoordinator:
                     "confirmed_at": now,
                 }
             )
-        if action["intent"] == "archive_day":
-            from .archiver import archive_session
-
-            _, manifest_path = archive_session(
-                session_id=completed["session_id"],
-                session_file=str(self.store._session_path(completed["session_id"])),
-                artifact_ledger=completed["artifacts"],
-                archive_root=str(Path(self.store.root).parent / "archive"),
-            )
-            completed["archive_manifest_path"] = manifest_path
         for artifact_path in result.artifact_paths:
             path = Path(artifact_path)
             completed["artifacts"].append(

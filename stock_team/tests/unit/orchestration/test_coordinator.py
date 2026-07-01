@@ -228,3 +228,57 @@ def test_intraday_exception_requires_user_confirmation(tmp_path):
     assert len(state["intraday_exceptions"]) == 1
     assert state["intraday_exceptions"][0]["reason"] == "unexpected volatility"
     assert state["intraday_exceptions"][0]["confirmed_at"] == "2026-06-15T14:30:00+00:00"
+
+
+def test_archive_day_failure_does_not_leave_day_archived(tmp_path):
+    """archive failure must keep the session in its previous state, not DAY_ARCHIVED."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    session["artifacts"] = [{"logical_name": "missing", "path": str(tmp_path / "nonexistent.json")}]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-fail",
+    })
+    assert state["state"] == "FAILED_TOOL"
+    assert state["last_error"]["intent"] == "archive_day"
+
+    loaded = store.load("trading-2026-06-15")
+    assert loaded["state"] == "FAILED_TOOL"
+    assert loaded["state"] != "DAY_ARCHIVED"
+
+
+def test_archive_day_success_with_empty_artifacts(tmp_path):
+    """Successful archive with no artifacts produces manifest."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-ok",
+    })
+    assert state["state"] == "DAY_ARCHIVED"
+    assert "archive_manifest_path" in state
+    assert "2026-06-15" in state["archive_manifest_path"]

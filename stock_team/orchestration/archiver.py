@@ -7,11 +7,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-def archive_session(*, session_id: str, session_file: str, artifact_ledger: list[dict], archive_root: str) -> dict:
-    archive_base = Path(archive_root) / session_id
+def archive_session(*, session_id: str, trading_date: str, session_file: str, artifact_ledger: list[dict], archive_root: str) -> dict:
+    archive_base = Path(archive_root) / trading_date / session_id
     archive_base.mkdir(parents=True, exist_ok=True)
 
     session_path = Path(session_file)
+    runtime_root = session_path.parent.parent
+
     files = []
     missing_files = []
     rejected_files = []
@@ -33,7 +35,7 @@ def archive_session(*, session_id: str, session_file: str, artifact_ledger: list
             continue
 
         try:
-            source.resolve().relative_to(session_path.parent.resolve())
+            source.resolve().relative_to(runtime_root.resolve())
         except ValueError:
             rejected_files.append(str(source))
             files.append({
@@ -50,7 +52,7 @@ def archive_session(*, session_id: str, session_file: str, artifact_ledger: list
         sha256 = hashlib.sha256(content).hexdigest()
         size_bytes = len(content)
 
-        rel = source.resolve().relative_to(session_path.parent.resolve())
+        rel = source.resolve().relative_to(runtime_root.resolve())
         dest = archive_base / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -72,6 +74,7 @@ def archive_session(*, session_id: str, session_file: str, artifact_ledger: list
 
     manifest = {
         "session_id": session_id,
+        "trading_date": trading_date,
         "archived_at": datetime.now(timezone.utc).isoformat(),
         "source_session_path": str(session_path),
         "files": files,

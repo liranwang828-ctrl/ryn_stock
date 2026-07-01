@@ -385,16 +385,18 @@ def test_new_trading_session_observation_type():
 # ---------------------------------------------------------------------------
 
 def _verify_archive_manifest(tmp_path, session_id, market_date, artifact_specs):
-    """Create artifacts, call archiver with new L2 API, verify manifest."""
+    """Create artifacts, call archiver with L2 API, verify manifest."""
+    sessions_dir = tmp_path / "sessions"
+    sessions_dir.mkdir(parents=True)
     artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
+    artifacts_dir.mkdir(parents=True)
     artifact_ledger = []
     for name, content in artifact_specs:
         path = artifacts_dir / name
         path.write_text(content, encoding="utf-8")
         artifact_ledger.append({"logical_name": name, "path": str(path)})
 
-    session_file = tmp_path / f"{session_id}.json"
+    session_file = sessions_dir / f"{session_id}.json"
     session_data = {
         "session_id": session_id,
         "session_type": "trading",
@@ -413,6 +415,7 @@ def _verify_archive_manifest(tmp_path, session_id, market_date, artifact_specs):
     archive_root = tmp_path / "archive"
     manifest, manifest_path = archive_session(
         session_id=session_id,
+        trading_date=market_date,
         session_file=str(session_file),
         artifact_ledger=artifact_ledger,
         archive_root=str(archive_root),
@@ -420,6 +423,7 @@ def _verify_archive_manifest(tmp_path, session_id, market_date, artifact_specs):
 
     assert Path(manifest_path).exists()
     assert manifest["session_id"] == session_id
+    assert manifest["trading_date"] == market_date
     assert "archived_at" in manifest
     assert manifest["status"] == "complete"
     assert isinstance(manifest["files"], list)
