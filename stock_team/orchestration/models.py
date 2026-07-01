@@ -58,7 +58,7 @@ SESSION_REQUIRED = {
     "processed_actions",
     "updated_at",
 }
-SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions"}
+SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path"}
 ACTION_REQUIRED = {
     "intent",
     "session_id",

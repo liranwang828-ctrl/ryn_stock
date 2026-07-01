@@ -65,7 +65,7 @@ class WorkflowCoordinator:
         self.store.save(state, expected_version=previous_version)
 
         try:
-            _meta_intents = {"request_exception", "close_market", "close_observation_day", "freeze", "quick_review", "review_day", "archive_day", "record_observation_exception"}
+            _meta_intents = {"request_exception", "close_market", "close_observation_day", "freeze", "quick_review", "review_day", "record_observation_exception"}
             if action["intent"] in _meta_intents:
                 result = AdapterResult(command=[], stdout="", stderr="", artifact_paths=[])
             else:
@@ -122,6 +122,16 @@ class WorkflowCoordinator:
                     "confirmed_at": now,
                 }
             )
+        if action["intent"] == "archive_day":
+            from .archiver import archive_session
+
+            _, manifest_path = archive_session(
+                session_id=completed["session_id"],
+                session_file=str(self.store._session_path(completed["session_id"])),
+                artifact_ledger=completed["artifacts"],
+                archive_root=str(Path(self.store.root).parent / "archive"),
+            )
+            completed["archive_manifest_path"] = manifest_path
         for artifact_path in result.artifact_paths:
             path = Path(artifact_path)
             completed["artifacts"].append(

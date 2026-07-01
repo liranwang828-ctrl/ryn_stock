@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -117,23 +118,8 @@ def test_trading_full_path(tmp_path):
     state = begin_transition(state, "archive_day")
     assert state == "DAY_ARCHIVED"
 
-    # Verify archive manifest
-    session = new_trading_session("s1", "2026-07-01", "2026-07-01T09:00:00+00:00")
-    session["state"] = "DAY_ARCHIVED"
-    artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
-    (artifacts_dir / "report.json").write_text('{"status":"done"}', encoding="utf-8")
-
-    archive_dir = tmp_path / "archive"
-    manifest_path = archive_session(session, str(artifacts_dir), archive_dir=str(archive_dir))
-
-    manifest = json.loads(open(manifest_path, encoding="utf-8").read())
-    assert manifest["session_id"] == "s1"
-    assert manifest["date"] == "2026-07-01"
-    assert "archived_at" in manifest
-    assert isinstance(manifest["artifacts"], list)
-    assert len(manifest["artifacts"]) == 1
-    assert manifest["artifacts"][0]["name"] == "report.json"
+    # Verify archive via new API (L2: artifact_ledger whitelist)
+    _verify_archive_manifest(tmp_path, "s1", "2026-07-01", [("report.json", '{"status":"done"}')])
 
 
 def test_trading_quick_review_path(tmp_path):
@@ -149,21 +135,7 @@ def test_trading_quick_review_path(tmp_path):
     state = begin_transition(state, "archive_day")
     assert state == "DAY_ARCHIVED"
 
-    # Verify archive manifest
-    session = new_trading_session("s2", "2026-07-01", "2026-07-01T09:00:00+00:00")
-    session["state"] = "DAY_ARCHIVED"
-    artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
-    (artifacts_dir / "quick_report.json").write_text('{"status":"done"}', encoding="utf-8")
-
-    archive_dir = tmp_path / "archive"
-    manifest_path = archive_session(session, str(artifacts_dir), archive_dir=str(archive_dir))
-
-    manifest = json.loads(open(manifest_path, encoding="utf-8").read())
-    assert manifest["session_id"] == "s2"
-    assert "archived_at" in manifest
-    assert len(manifest["artifacts"]) == 1
-    assert manifest["artifacts"][0]["name"] == "quick_report.json"
+    _verify_archive_manifest(tmp_path, "s2", "2026-07-01", [("quick_report.json", '{"status":"done"}')])
 
 
 def test_trading_freeze_path():
@@ -217,20 +189,7 @@ def test_observation_path(tmp_path):
     assert "archive_day" in obs_actions
     assert "refresh_market_observation" in obs_actions
 
-    # Verify archive manifest
-    session = new_trading_session("obs1", "2026-07-01", "2026-07-01T09:00:00+00:00", session_type="observation")
-    session["state"] = "DAY_ARCHIVED"
-    artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
-    (artifacts_dir / "obs_report.json").write_text('{"status":"observed"}', encoding="utf-8")
-
-    archive_dir = tmp_path / "archive"
-    manifest_path = archive_session(session, str(artifacts_dir), archive_dir=str(archive_dir))
-
-    manifest = json.loads(open(manifest_path, encoding="utf-8").read())
-    assert manifest["session_id"] == "obs1"
-    assert manifest["date"] == "2026-07-01"
-    assert "archived_at" in manifest
+    _verify_archive_manifest(tmp_path, "obs1", "2026-07-01", [("obs_report.json", '{"status":"observed"}')])
 
 
 def test_observation_direct_archive(tmp_path):
@@ -242,20 +201,7 @@ def test_observation_direct_archive(tmp_path):
     state = begin_transition(state, "archive_day")
     assert state == "DAY_ARCHIVED"
 
-    # Verify archive manifest
-    session = new_trading_session("obs2", "2026-07-01", "2026-07-01T09:00:00+00:00", session_type="observation")
-    session["state"] = "DAY_ARCHIVED"
-    artifacts_dir = tmp_path / "artifacts"
-    artifacts_dir.mkdir()
-    (artifacts_dir / "direct_obs.json").write_text('{"status":"observed_direct"}', encoding="utf-8")
-
-    archive_dir = tmp_path / "archive"
-    manifest_path = archive_session(session, str(artifacts_dir), archive_dir=str(archive_dir))
-
-    manifest = json.loads(open(manifest_path, encoding="utf-8").read())
-    assert manifest["session_id"] == "obs2"
-    assert len(manifest["artifacts"]) == 1
-    assert manifest["artifacts"][0]["name"] == "direct_obs.json"
+    _verify_archive_manifest(tmp_path, "obs2", "2026-07-01", [("direct_obs.json", '{"status":"observed_direct"}')])
 
 
 # ---------------------------------------------------------------------------
@@ -428,3 +374,53 @@ def test_new_trading_session_observation_type():
                                   session_type="observation")
     assert session["session_type"] == "observation"
     assert session["state"] == "DAY_INITIALIZED"
+
+
+# ---------------------------------------------------------------------------
+# Archive helper (L2: artifact_ledger whitelist API)
+# ---------------------------------------------------------------------------
+
+def _verify_archive_manifest(tmp_path, session_id, market_date, artifact_specs):
+    """Create artifacts, call archiver with new L2 API, verify manifest."""
+    artifacts_dir = tmp_path / "artifacts"
+    artifacts_dir.mkdir()
+    artifact_ledger = []
+    for name, content in artifact_specs:
+        path = artifacts_dir / name
+        path.write_text(content, encoding="utf-8")
+        artifact_ledger.append({"logical_name": name, "path": str(path)})
+
+    session_file = tmp_path / f"{session_id}.json"
+    session_data = {
+        "session_id": session_id,
+        "session_type": "trading",
+        "state": "DAY_ARCHIVED",
+        "state_version": 10,
+        "market_date": market_date,
+        "artifacts": artifact_ledger,
+        "data_quality": {"status": "unknown", "warnings": []},
+        "pending_confirmations": [],
+        "allowed_actions": [],
+        "processed_actions": [],
+        "updated_at": "2026-07-01T16:00:00+00:00",
+    }
+    session_file.write_text(json.dumps(session_data), encoding="utf-8")
+
+    archive_root = tmp_path / "archive"
+    manifest, manifest_path = archive_session(
+        session_id=session_id,
+        session_file=str(session_file),
+        artifact_ledger=artifact_ledger,
+        archive_root=str(archive_root),
+    )
+
+    assert Path(manifest_path).exists()
+    assert manifest["session_id"] == session_id
+    assert "archived_at" in manifest
+    assert manifest["status"] == "complete"
+    assert isinstance(manifest["files"], list)
+    assert len(manifest["files"]) == len(artifact_specs)
+    for f in manifest["files"]:
+        assert f["status"] == "archived"
+        assert f["sha256"]
+        assert f["size_bytes"] > 0
