@@ -146,6 +146,7 @@ Git push：
 9. 2026-07-01 已新增 `handoff/2026-07-01-daily-l1-l3-task-packets.zh.md`，作为目前唯一可直接发给低阶模型的任务包；没有包内授权，不得自行扩大修改范围。
 10. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-review-contract.zh.md`，作为 DAILY-4 对话问题、确认点和结构化产物边界的唯一高阶契约。
 11. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-task-packets.zh.md`，作为 H4 实现阶段可派发给低阶模型的唯一任务包。
+12. 2026-07-01 已新增 `handoff/LOW-TOKEN-REVIEW-TEMPLATE.zh.md`，作为以后高阶模型审查低阶交付时的默认低 token 交接格式。
 
 ## 默认启动方式
 
