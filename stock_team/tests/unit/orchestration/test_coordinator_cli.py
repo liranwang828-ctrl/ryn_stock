@@ -399,7 +399,8 @@ def test_init_day_recovery_quick_review_from_intraday_active(tmp_path):
     from stock_team.orchestration.models import new_trading_session
     from stock_team.orchestration.store import SessionStore
 
-    store = SessionStore(tmp_path)
+    sessions_dir = tmp_path / "sessions"
+    store = SessionStore(sessions_dir)
     s = new_trading_session("trading-2026-06-14", "2026-06-14", "2026-06-14T12:00:00+00:00")
     s["state"] = "INTRADAY_ACTIVE"
     store.create(s)
@@ -408,7 +409,7 @@ def test_init_day_recovery_quick_review_from_intraday_active(tmp_path):
         [
             sys.executable, "-m", "stock_team.coordinator_cli", "init-day",
             "--date", "2026-06-15", "--recovery", "quick_review",
-            "--runtime-dir", str(tmp_path),
+            "--runtime-dir", str(sessions_dir),
         ],
         capture_output=True,
     )
@@ -424,7 +425,8 @@ def test_init_day_recovery_freeze_from_observation_active(tmp_path):
     from stock_team.orchestration.models import new_trading_session
     from stock_team.orchestration.store import SessionStore
 
-    store = SessionStore(tmp_path)
+    sessions_dir = tmp_path / "sessions"
+    store = SessionStore(sessions_dir)
     s = new_trading_session("observation-2026-06-14", "2026-06-14", "2026-06-14T12:00:00+00:00",
                             session_type="observation")
     s["state"] = "OBSERVATION_ACTIVE"
@@ -434,7 +436,7 @@ def test_init_day_recovery_freeze_from_observation_active(tmp_path):
         [
             sys.executable, "-m", "stock_team.coordinator_cli", "init-day",
             "--date", "2026-06-15", "--recovery", "freeze",
-            "--runtime-dir", str(tmp_path),
+            "--runtime-dir", str(sessions_dir),
         ],
         capture_output=True,
     )
@@ -450,7 +452,8 @@ def test_init_day_recovery_freeze_from_market_closed_skips_close(tmp_path):
     from stock_team.orchestration.models import new_trading_session
     from stock_team.orchestration.store import SessionStore
 
-    store = SessionStore(tmp_path)
+    sessions_dir = tmp_path / "sessions"
+    store = SessionStore(sessions_dir)
     s = new_trading_session("trading-2026-06-14", "2026-06-14", "2026-06-14T12:00:00+00:00")
     s["state"] = "MARKET_CLOSED"
     store.create(s)
@@ -459,7 +462,7 @@ def test_init_day_recovery_freeze_from_market_closed_skips_close(tmp_path):
         [
             sys.executable, "-m", "stock_team.coordinator_cli", "init-day",
             "--date", "2026-06-15", "--recovery", "freeze",
-            "--runtime-dir", str(tmp_path),
+            "--runtime-dir", str(sessions_dir),
         ],
         capture_output=True,
     )
@@ -473,7 +476,8 @@ def test_init_day_quick_review_from_market_closed(tmp_path):
     from stock_team.orchestration.models import new_trading_session
     from stock_team.orchestration.store import SessionStore
 
-    store = SessionStore(tmp_path)
+    sessions_dir = tmp_path / "sessions"
+    store = SessionStore(sessions_dir)
     s = new_trading_session("trading-2026-06-14", "2026-06-14", "2026-06-14T12:00:00+00:00")
     s["state"] = "MARKET_CLOSED"
     store.create(s)
@@ -482,7 +486,7 @@ def test_init_day_quick_review_from_market_closed(tmp_path):
         [
             sys.executable, "-m", "stock_team.coordinator_cli", "init-day",
             "--date", "2026-06-15", "--recovery", "quick_review",
-            "--runtime-dir", str(tmp_path),
+            "--runtime-dir", str(sessions_dir),
         ],
         capture_output=True,
     )

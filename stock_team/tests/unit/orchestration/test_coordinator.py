@@ -234,7 +234,7 @@ def test_archive_day_failure_does_not_leave_day_archived(tmp_path):
     """archive failure must keep the session in its previous state, not DAY_ARCHIVED."""
     store = SessionStore(tmp_path)
     session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
-    session["state"] = "REVIEW_REQUIRED"
+    session["state"] = "CLOSED_UNREVIEWED"
     session["state_version"] = 5
     session["allowed_actions"] = ["archive_day"]
     session["artifacts"] = [{"logical_name": "missing", "path": str(tmp_path / "nonexistent.json")}]
@@ -246,7 +246,7 @@ def test_archive_day_failure_does_not_leave_day_archived(tmp_path):
     state = coordinator.execute({
         "intent": "archive_day",
         "session_id": "trading-2026-06-15",
-        "expected_state": "REVIEW_REQUIRED",
+        "expected_state": "CLOSED_UNREVIEWED",
         "user_confirmation": False,
         "parameters": {},
         "idempotency_key": "archive-fail",
@@ -263,7 +263,7 @@ def test_archive_day_success_with_empty_artifacts(tmp_path):
     """Successful archive with no artifacts produces manifest."""
     store = SessionStore(tmp_path)
     session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
-    session["state"] = "REVIEW_REQUIRED"
+    session["state"] = "CLOSED_UNREVIEWED"
     session["state_version"] = 5
     session["allowed_actions"] = ["archive_day"]
     store.create(session)
@@ -274,7 +274,7 @@ def test_archive_day_success_with_empty_artifacts(tmp_path):
     state = coordinator.execute({
         "intent": "archive_day",
         "session_id": "trading-2026-06-15",
-        "expected_state": "REVIEW_REQUIRED",
+        "expected_state": "CLOSED_UNREVIEWED",
         "user_confirmation": False,
         "parameters": {},
         "idempotency_key": "archive-ok",
@@ -312,15 +312,18 @@ def test_freeze_generates_debt_record_review_file(tmp_path):
     assert state["state"] == "CLOSED_UNREVIEWED"
 
     import json
-    from stock_team.orchestration.protocol import daily4_review_path
 
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     assert review_path.exists()
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_mode"] == "freeze"
     assert review["ibkr_fact_status"] == "missing"
     assert review["review_judgments"] == []
     assert review["candidate_lessons"] == []
+
+    artifact = next(a for a in state["artifacts"] if a.get("logical_name") == "daily4_review")
+    assert artifact["role"] == "freeze"
+    assert artifact["path"] == str(review_path)
 
 
 def test_quick_review_generates_minimal_review_file(tmp_path):
@@ -351,9 +354,8 @@ def test_quick_review_generates_minimal_review_file(tmp_path):
     assert state["state"] == "QUICK_REVIEWED"
 
     import json
-    from stock_team.orchestration.protocol import daily4_review_path
 
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     assert review_path.exists()
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_mode"] == "quick_review"
@@ -365,6 +367,9 @@ def test_quick_review_generates_minimal_review_file(tmp_path):
     assert review["review_judgments"][2]["judgment_type"] == "data_quality"
     assert review["user_confirmations"]["bias_classification_confirmed"] is True
     assert review["archive_closure"]["user_confirmed_at"] == "2026-06-15T16:00:00+00:00"
+
+    artifact = next(a for a in state["artifacts"] if a.get("logical_name") == "daily4_review")
+    assert artifact["role"] == "quick_review"
 
 
 def test_quick_review_without_user_acceptance_still_writes_file(tmp_path):
@@ -390,9 +395,8 @@ def test_quick_review_without_user_acceptance_still_writes_file(tmp_path):
     assert state["state"] == "QUICK_REVIEWED"
 
     import json
-    from stock_team.orchestration.protocol import daily4_review_path
 
-    review = json.loads(daily4_review_path("trading-2026-06-15").read_text(encoding="utf-8"))
+    review = json.loads((tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json").read_text(encoding="utf-8"))
     assert review["review_mode"] == "quick_review"
     assert review["user_confirmations"]["bias_classification_confirmed"] is False
     assert review["archive_closure"]["user_confirmed_at"] == ""
@@ -426,15 +430,17 @@ def test_review_day_generates_full_review_skeleton(tmp_path):
     assert state["state"] == "REVIEW_REQUIRED"
 
     import json
-    from stock_team.orchestration.protocol import daily4_review_path
 
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     assert review_path.exists()
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_mode"] == "full_review"
     assert review["review_judgments"] == []
     assert review["candidate_lessons"] == []
     assert review["user_confirmations"]["bias_classification_confirmed"] is False
+
+    artifact = next(a for a in state["artifacts"] if a.get("logical_name") == "daily4_review")
+    assert artifact["role"] == "review_day"
 
 
 def test_archive_day_blocks_full_review_with_unconfirmed_gates(tmp_path):
@@ -454,8 +460,7 @@ def test_archive_day_blocks_full_review_with_unconfirmed_gates(tmp_path):
     review["user_confirmations"]["emotion_notes_confirmed"] = True
     review["user_confirmations"]["noise_vs_candidate_confirmed"] = False
     review["user_confirmations"]["learning_candidates_confirmed"] = False
-    from stock_team.orchestration.protocol import daily4_review_path
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     review_path.parent.mkdir(parents=True, exist_ok=True)
     review_path.write_text(_json.dumps(review), encoding="utf-8")
 
@@ -496,8 +501,7 @@ def test_archive_day_blocks_full_review_with_unverified_ibkr(tmp_path):
         "noise_vs_candidate_confirmed": True,
         "learning_candidates_confirmed": True,
     }
-    from stock_team.orchestration.protocol import daily4_review_path
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     review_path.parent.mkdir(parents=True, exist_ok=True)
     review_path.write_text(_json.dumps(review), encoding="utf-8")
 
@@ -535,8 +539,7 @@ def test_archive_day_allows_full_review_with_all_gates_passed(tmp_path):
         "noise_vs_candidate_confirmed": True,
         "learning_candidates_confirmed": True,
     }
-    from stock_team.orchestration.protocol import daily4_review_path
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     review_path.parent.mkdir(parents=True, exist_ok=True)
     review_path.write_text(_json.dumps(review), encoding="utf-8")
 
@@ -568,8 +571,7 @@ def test_archive_day_allows_freeze_without_gates(tmp_path):
     from stock_team.orchestration.models import new_daily4_review
 
     review = new_daily4_review("trading-2026-06-15", "2026-06-15", "freeze", ibkr_fact_status="missing")
-    from stock_team.orchestration.protocol import daily4_review_path
-    review_path = daily4_review_path("trading-2026-06-15")
+    review_path = tmp_path.parent / "inputs" / "trading-2026-06-15-daily4-review.json"
     review_path.parent.mkdir(parents=True, exist_ok=True)
     review_path.write_text(_json.dumps(review), encoding="utf-8")
 
@@ -585,3 +587,30 @@ def test_archive_day_allows_freeze_without_gates(tmp_path):
         "idempotency_key": "archive-freeze-ok",
     })
     assert state["state"] == "DAY_ARCHIVED"
+
+
+def test_archive_day_blocks_when_review_file_missing_for_full_review(tmp_path):
+    """archive_day from REVIEW_REQUIRED must block if daily4 review file does not exist."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-16", "2026-06-16", "2026-06-16T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-16T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-16",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-no-file",
+    })
+    assert state["state"] == "FAILED_TOOL"
+    assert "daily4 review file not found" in state["last_error"]["message"]
+
+    loaded = store.load("trading-2026-06-16")
+    assert loaded["state"] == "FAILED_TOOL"
