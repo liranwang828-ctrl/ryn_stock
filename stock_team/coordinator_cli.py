@@ -10,7 +10,7 @@ from pathlib import Path
 from stock_team.orchestration.adapters import ExistingCliAdapter
 from stock_team.orchestration.coordinator import WorkflowCoordinator
 from stock_team.orchestration.models import SESSION_TYPES
-from stock_team.orchestration.store import SessionStore
+from stock_team.orchestration.store import SessionConflictError, SessionStore
 from stock_team.utils.workspace_paths import investing_os_home
 
 
@@ -54,38 +54,71 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "init-day":
             store = SessionStore(args.runtime_dir)
-            open_sessions = store.list_sessions(only_open=True)
+
+            # H1 §3.2: check for damaged sessions first
+            try:
+                open_sessions = store.list_sessions(only_open=True, raise_on_damaged=True)
+            except SessionConflictError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
 
             previous_open = [
                 s for s in open_sessions
                 if s["market_date"] < args.date
             ]
 
-            if previous_open and not args.recovery:
-                prev = previous_open[0]
+            # H1 §3.3: block on multiple old sessions
+            if len(previous_open) > 1:
+                ids = ", ".join(s["session_id"] for s in previous_open)
+                print(
+                    f"存在多个未关闭旧会话: {ids}。请先手动处理多余旧会话后再重试。",
+                    file=sys.stderr,
+                )
+                return 1
+
+            prev = previous_open[0] if previous_open else None
+
+            # H1 §3.3: FAILED_TOOL requires investigation
+            if prev and prev["state"] == "FAILED_TOOL":
+                print(
+                    f"旧会话 {prev['session_id']} 处于 FAILED_TOOL 状态，"
+                    "需要手动判断是否为损坏会话后再重试。",
+                    file=sys.stderr,
+                )
+                return 1
+
+            # H1 §3.3: REVIEW_REQUIRED only allows full_review
+            if prev and prev["state"] == "REVIEW_REQUIRED":
+                if args.recovery != "full_review":
+                    print(
+                        f"旧会话 {prev['session_id']} 处于 REVIEW_REQUIRED 状态，"
+                        "只能使用 --recovery full_review 继续完整复盘。",
+                        file=sys.stderr,
+                    )
+                    return 1
+
+            if prev and not args.recovery:
                 print(
                     f"发现未关闭会话: {prev['session_id']} (状态: {prev['state']}, "
                     f"日期: {prev['market_date']})",
                     file=sys.stderr,
                 )
-                print(
-                    "请使用 --recovery {freeze|quick_review|full_review} 选择恢复路径后重试。",
-                    file=sys.stderr,
-                )
+                if prev["state"] == "REVIEW_REQUIRED":
+                    print(
+                        "请使用 --recovery full_review 继续完整复盘。",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        "请使用 --recovery {freeze|quick_review|full_review} 选择恢复路径后重试。",
+                        file=sys.stderr,
+                    )
                 return 1
 
             coordinator = _coordinator(args.runtime_dir)
 
-            if previous_open and args.recovery:
-                prev = previous_open[0]
-                recovery_map = {
-                    "freeze": "freeze",
-                    "quick_review": "quick_review",
-                    "full_review": "review_day",
-                }
-                recovery_intent = recovery_map[args.recovery]
-
-                # If old session is in an active state, close market first
+            if prev and args.recovery:
+                # H1 §3.5: close market for active states first
                 if prev["state"] in ("INTRADAY_ACTIVE", "OBSERVATION_ACTIVE"):
                     close_action = {
                         "intent": "close_market",
@@ -98,22 +131,42 @@ def main(argv: list[str] | None = None) -> int:
                     coordinator.execute(close_action)
                     prev = store.load(prev["session_id"])
 
-                recovery_action = {
-                    "intent": recovery_intent,
-                    "session_id": prev["session_id"],
-                    "expected_state": prev["state"],
-                    "user_confirmation": False,
-                    "parameters": {},
-                    "idempotency_key": str(uuid.uuid4()),
-                }
-                recovered = coordinator.execute(recovery_action)
-                print(
-                    f"已恢复: {prev['session_id']} -> {recovered['state']}",
-                    file=sys.stderr,
-                )
+                if args.recovery == "freeze":
+                    freeze_action = {
+                        "intent": "freeze",
+                        "session_id": prev["session_id"],
+                        "expected_state": prev["state"],
+                        "user_confirmation": False,
+                        "parameters": {},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                    coordinator.execute(freeze_action)
 
-                # If quick_review, also archive
-                if args.recovery == "quick_review":
+                    archive_action = {
+                        "intent": "archive_day",
+                        "session_id": prev["session_id"],
+                        "expected_state": "CLOSED_UNREVIEWED",
+                        "user_confirmation": False,
+                        "parameters": {},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                    coordinator.execute(archive_action)
+                    print(
+                        f"已冻结并归档: {prev['session_id']} (欠账记录已保留)",
+                        file=sys.stderr,
+                    )
+
+                elif args.recovery == "quick_review":
+                    qr_action = {
+                        "intent": "quick_review",
+                        "session_id": prev["session_id"],
+                        "expected_state": prev["state"],
+                        "user_confirmation": False,
+                        "parameters": {},
+                        "idempotency_key": str(uuid.uuid4()),
+                    }
+                    coordinator.execute(qr_action)
+
                     archive_action = {
                         "intent": "archive_day",
                         "session_id": prev["session_id"],
@@ -123,6 +176,29 @@ def main(argv: list[str] | None = None) -> int:
                         "idempotency_key": str(uuid.uuid4()),
                     }
                     coordinator.execute(archive_action)
+                    print(
+                        f"已快速复盘并归档: {prev['session_id']}",
+                        file=sys.stderr,
+                    )
+
+                elif args.recovery == "full_review":
+                    if prev["state"] != "REVIEW_REQUIRED":
+                        review_action = {
+                            "intent": "review_day",
+                            "session_id": prev["session_id"],
+                            "expected_state": prev["state"],
+                            "user_confirmation": False,
+                            "parameters": {},
+                            "idempotency_key": str(uuid.uuid4()),
+                        }
+                        coordinator.execute(review_action)
+                    print(
+                        f"已进入完整复盘: {prev['session_id']}。"
+                        "请在完成 DAILY-4 归档后重新 init-day。",
+                        file=sys.stderr,
+                    )
+                    # H1 §3.4: full_review does NOT create today's session
+                    return 0
 
             state = coordinator.execute(
                 {

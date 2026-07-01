@@ -82,20 +82,29 @@ class SessionStore:
 
     TERMINAL_STATES = {"DAY_ARCHIVED", "CLOSED_UNREVIEWED"}
 
-    def list_sessions(self, *, market_date: str | None = None, only_open: bool = False) -> list[dict]:
+    def list_sessions(self, *, market_date: str | None = None, only_open: bool = False,
+                      raise_on_damaged: bool = False) -> list[dict]:
         sessions = []
+        damaged = []
         for path in sorted(self.root.glob("*.json")):
             try:
                 with path.open("r", encoding="utf-8") as fh:
                     state = json.load(fh)
                 state = validate_session(state)
-            except Exception:
+            except Exception as exc:
+                if raise_on_damaged:
+                    damaged.append((path.name, str(exc)))
                 continue
             if market_date is not None and state.get("market_date") != market_date:
                 continue
             if only_open and state.get("state") in self.TERMINAL_STATES:
                 continue
             sessions.append(state)
+        if damaged:
+            raise SessionConflictError(
+                f"damaged session files detected: {len(damaged)} — "
+                + "; ".join(f"{n}: {e}" for n, e in damaged)
+            )
         return sessions
 
     def _validate_session_id(self, session_id: str) -> str:

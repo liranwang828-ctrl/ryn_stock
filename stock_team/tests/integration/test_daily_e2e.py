@@ -139,21 +139,21 @@ def test_trading_quick_review_path(tmp_path):
 
 
 def test_trading_freeze_path():
-    """Trading path ending with freeze — session stays CLOSED_UNREVIEWED, never archived."""
+    """Trading path ending with freeze — session goes to CLOSED_UNREVIEWED, can be archived later."""
     state = _walk_to_market_closed()
 
-    # MARKET_CLOSED -> CLOSED_UNREVIEWED (no archive)
+    # MARKET_CLOSED -> CLOSED_UNREVIEWED
     assert "freeze" in allowed_actions(state)
     state = begin_transition(state, "freeze")
     assert state == "CLOSED_UNREVIEWED"
 
-    # Verify CLOSED_UNREVIEWED has no further transitions
-    assert allowed_actions("CLOSED_UNREVIEWED") == []
-    assert "archive_day" not in allowed_actions("CLOSED_UNREVIEWED")
+    # CLOSED_UNREVIEWED can be archived (L3: enables freeze+archive recovery)
+    assert allowed_actions("CLOSED_UNREVIEWED") == ["archive_day"]
+    assert "archive_day" in allowed_actions("CLOSED_UNREVIEWED")
 
-    # Verify archive_day is NOT legal from CLOSED_UNREVIEWED
-    with pytest.raises(TransitionError, match="archive_day"):
-        begin_transition("CLOSED_UNREVIEWED", "archive_day")
+    # archive_day from CLOSED_UNREVIEWED -> DAY_ARCHIVED
+    state = begin_transition("CLOSED_UNREVIEWED", "archive_day")
+    assert state == "DAY_ARCHIVED"
 
 
 # ---------------------------------------------------------------------------
@@ -303,10 +303,14 @@ def test_invalid_transitions_rejected():
         begin_transition("PLAN_APPROVED", "archive_day")
 
     # Verify all expected terminal states do not accept random intents
-    for terminal in ("DAY_ARCHIVED", "CLOSED_UNREVIEWED"):
+    for terminal in ("DAY_ARCHIVED",):
         assert allowed_actions(terminal) == []
         with pytest.raises(TransitionError):
             begin_transition(terminal, "start_stage0")
+    # CLOSED_UNREVIEWED is not fully terminal in L3: allows archive_day
+    assert allowed_actions("CLOSED_UNREVIEWED") == ["archive_day"]
+    with pytest.raises(TransitionError):
+        begin_transition("CLOSED_UNREVIEWED", "start_stage0")
 
 
 # ---------------------------------------------------------------------------

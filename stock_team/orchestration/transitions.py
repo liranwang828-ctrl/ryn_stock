@@ -19,6 +19,7 @@ BEGIN_TRANSITIONS = {
     ("MARKET_CLOSED", "quick_review"): "QUICK_REVIEWED",
     ("MARKET_CLOSED", "freeze"): "CLOSED_UNREVIEWED",
     ("QUICK_REVIEWED", "archive_day"): "DAY_ARCHIVED",
+    ("CLOSED_UNREVIEWED", "archive_day"): "DAY_ARCHIVED",
     ("OBSERVATION_ACTIVE", "archive_day"): "DAY_ARCHIVED",
 }
 
@@ -38,6 +39,7 @@ ALLOWED_ACTIONS = {
     "MARKET_CLOSED": ["review_day", "quick_review", "freeze"],
     "REVIEW_REQUIRED": ["archive_day"],
     "QUICK_REVIEWED": ["archive_day"],
+    "CLOSED_UNREVIEWED": ["archive_day"],
     "FAILED_TOOL": ["retry_last_action"],
 }
 
