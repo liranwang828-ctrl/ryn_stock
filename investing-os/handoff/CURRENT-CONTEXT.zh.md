@@ -142,6 +142,8 @@ Git push：
 7. DAILY 完整生产链验收前保持 `partial`，不得推进其他工作流或旧代码整理。
 
 剩余工作分工见 `handoff/DAILY-REMAINING-WORK-ALLOCATION.zh.md`。高阶模型先定义跨日恢复、归档和 observation 动作契约；低阶模型按任务单实现；最终 E2E 和完成状态由高阶模型裁定。
+8. 2026-07-01 已新增 `handoff/2026-07-01-daily-h1-h3-repair-charter.zh.md`，作为 H1/H2/H3 的唯一高阶契约。
+9. 2026-07-01 已新增 `handoff/2026-07-01-daily-l1-l3-task-packets.zh.md`，作为目前唯一可直接发给低阶模型的任务包；没有包内授权，不得自行扩大修改范围。
 
 ## 默认启动方式
 
