@@ -11,6 +11,9 @@ BEGIN_TRANSITIONS = {
     ("INTRADAY_ACTIVE", "close_market"): "MARKET_CLOSED",
     ("INTRADAY_ACTIVE", "request_exception"): "INTRADAY_ACTIVE",
     ("OBSERVATION_ACTIVE", "close_market"): "MARKET_CLOSED",
+    ("OBSERVATION_ACTIVE", "close_observation_day"): "MARKET_CLOSED",
+    ("OBSERVATION_ACTIVE", "refresh_market_observation"): "OBSERVATION_ACTIVE",
+    ("OBSERVATION_ACTIVE", "record_observation_exception"): "OBSERVATION_ACTIVE",
     ("MARKET_CLOSED", "review_day"): "REVIEW_REQUIRED",
     ("REVIEW_REQUIRED", "archive_day"): "DAY_ARCHIVED",
     ("MARKET_CLOSED", "quick_review"): "QUICK_REVIEWED",
@@ -31,14 +34,14 @@ ALLOWED_ACTIONS = {
     "STAGE1_READY": ["record_plan_approval"],
     "PLAN_APPROVED": ["start_intraday"],
     "INTRADAY_ACTIVE": ["close_market", "request_exception"],
-    "OBSERVATION_ACTIVE": ["intraday-snapshot", "close_market", "archive_day"],
+    "OBSERVATION_ACTIVE": ["refresh_market_observation", "record_observation_exception", "close_observation_day", "close_market", "archive_day"],
     "MARKET_CLOSED": ["review_day", "quick_review", "freeze"],
     "REVIEW_REQUIRED": ["archive_day"],
     "QUICK_REVIEWED": ["archive_day"],
     "FAILED_TOOL": ["retry_last_action"],
 }
 
-CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval", "request_exception"}
+CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval", "request_exception", "record_observation_exception"}
 
 
 class TransitionError(RuntimeError):

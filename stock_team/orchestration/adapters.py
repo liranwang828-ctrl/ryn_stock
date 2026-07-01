@@ -216,7 +216,7 @@ class ExistingCliAdapter:
                 out,
             ]
             return [(command, 30)], [out]
-        if intent == "intraday-snapshot":
+        if intent == "refresh_market_observation":
             out = str(parameters["out"])
             command = [
                 self.python_executable,

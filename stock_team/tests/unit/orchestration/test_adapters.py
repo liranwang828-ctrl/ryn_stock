@@ -197,7 +197,7 @@ def test_adapter_supports_intraday_snapshot(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
     result = adapter.run(
-        "intraday-snapshot",
+        "refresh_market_observation",
         {"symbols": "MSFT,NVDA", "out": str(snapshot_out)},
     )
     assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "intraday-snapshot"]
@@ -219,7 +219,7 @@ def test_adapter_supports_intraday_snapshot_with_refresh(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
     adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
     adapter.run(
-        "intraday-snapshot",
+        "refresh_market_observation",
         {"symbols": "MSFT,NVDA", "refresh": True, "out": str(snapshot_out)},
     )
     assert "--refresh" in calls[0][0]

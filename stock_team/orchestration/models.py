@@ -42,6 +42,9 @@ ACTION_INTENTS = {
     "retry_last_action",
     "start_observation",
     "request_exception",
+    "refresh_market_observation",
+    "record_observation_exception",
+    "close_observation_day",
 }
 SESSION_REQUIRED = {
     "session_id",
@@ -55,7 +58,7 @@ SESSION_REQUIRED = {
     "processed_actions",
     "updated_at",
 }
-SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions"}
+SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions"}
 ACTION_REQUIRED = {
     "intent",
     "session_id",
@@ -141,6 +144,8 @@ def validate_session(data: dict) -> dict:
         raise ValidationError("last_error must be an object or null")
     if data.get("intraday_exceptions") is not None and not isinstance(data["intraday_exceptions"], list):
         raise ValidationError("intraday_exceptions must be a list")
+    if data.get("observation_exceptions") is not None and not isinstance(data["observation_exceptions"], list):
+        raise ValidationError("observation_exceptions must be a list")
     _require_iso_datetime(data["updated_at"], "updated_at")
     return data
 
@@ -176,6 +181,7 @@ def new_trading_session(session_id: str, market_date: str, now: str, session_typ
         "processed_actions": [],
         "backlog_links": [],
         "intraday_exceptions": [],
+        "observation_exceptions": [],
         "last_error": None,
         "updated_at": now,
     }

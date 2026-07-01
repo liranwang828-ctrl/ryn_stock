@@ -215,7 +215,7 @@ def test_observation_path(tmp_path):
         assert trading_intent not in obs_actions
     assert "close_market" in obs_actions
     assert "archive_day" in obs_actions
-    assert "intraday-snapshot" in obs_actions
+    assert "refresh_market_observation" in obs_actions
 
     # Verify archive manifest
     session = new_trading_session("obs1", "2026-07-01", "2026-07-01T09:00:00+00:00", session_type="observation")

@@ -237,7 +237,7 @@ def test_observation_active_allows_readonly_actions():
     from stock_team.orchestration.transitions import allowed_actions
 
     actions = allowed_actions("OBSERVATION_ACTIVE")
-    for readonly in ("intraday-snapshot", "close_market", "archive_day"):
+    for readonly in ("refresh_market_observation", "close_market", "close_observation_day", "archive_day"):
         assert readonly in actions, f"OBSERVATION_ACTIVE must allow {readonly}"
 
 
