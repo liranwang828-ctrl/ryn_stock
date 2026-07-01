@@ -136,9 +136,9 @@ Git push：
 1. 将 `DAILY-AUDIT-0` 至 `DAILY-AUDIT-4` 分发给低阶模型，在独立分支或 worktree 中完成。
 2. 每个低阶任务只生成自己的事实审计报告，不修改业务代码、schema 或共享状态台账。
 3. 五份审计报告已经完成；`DAILY-CONTRACT.zh.md` v2 已修复首次审核的 R1–R6。
-4. Q1–Q3 尚无用户明确批准，但低阶模型擅自批准并完成一批候选代码；不得把该记录当作有效用户决定。
+4. 用户已于 2026-07-01 明确批准 Q1–Q3，全部选择 A；批准记录为 `handoff/decisions/2026-07-01-daily-q1-q3-approval.md`。
 5. 候选实现 171 tests passed，但高阶审核未通过；见 `handoff/reviews/2026-07-01-daily-implementation-review.md`。
-6. 当前先等待用户确认 Q1–Q3，再修复归档、完整复盘、observation 动作和公开入口 E2E。
+6. 当前修复归档、完整复盘、observation 动作、异常跨日恢复、DAILY-4 交互和公开入口 E2E。
 7. DAILY 完整生产链验收前保持 `partial`，不得推进其他工作流或旧代码整理。
 
 ## 默认启动方式

@@ -15,7 +15,7 @@
 
 | 工作流 | 当前状态 | 最近核验 | 当前判断 |
 |---|---|---:|---|
-| `DAILY` 每日交易 | `partial` | 2026-07-01 | 171 tests passed；候选实现存在，但契约批准无有效用户确认，且生产链审核发现归档、完整复盘、observation 动作和 E2E 缺口 |
+| `DAILY` 每日交易 | `partial` | 2026-07-01 | Q1–Q3 已获用户明确批准，171 tests passed；候选实现仍有归档、完整复盘、observation 动作和公开入口 E2E 阻断 |
 | `RESEARCH` 投资研究 | `documented` | 2026-06-30 | 公司、行业等流程与 Packet 文档存在；当前端到端运行状态未核验 |
 | `REVIEW` 周期复盘 | `documented` | 2026-06-30 | 周末、交易和论点复盘资料存在；统一周期复盘入口未核验 |
 | `LEARNING` 经验进化 | `documented` | 2026-06-30 | Packet absorption、journal promotion 和 approval 流程存在；运行闭环未核验 |
@@ -32,7 +32,9 @@ v2 审核记录：[`../../handoff/reviews/2026-06-30-daily-contract-v2-review.md
 
 v3 审核记录：[`../../handoff/reviews/2026-07-01-daily-contract-v3-review.md`](../../handoff/reviews/2026-07-01-daily-contract-v3-review.md)
 
-DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 候选，Q1–Q3 等待用户明确确认）
+DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 已获用户批准）
+
+用户批准记录：[`../../handoff/decisions/2026-07-01-daily-q1-q3-approval.md`](../../handoff/decisions/2026-07-01-daily-q1-q3-approval.md)
 
 候选实现审核：[`../../handoff/reviews/2026-07-01-daily-implementation-review.md`](../../handoff/reviews/2026-07-01-daily-implementation-review.md)
 
@@ -81,7 +83,7 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 候选，Q1�
 
 - ~~DAILY-CONTRACT 待批准~~ → 已批准（2026-07-01）；
 - C1–C14 存在候选实现，但高阶审核发现未接线和语义缺口，不能声明全部完成；
-- Q1–Q3 仍需用户明确确认；commit `e0d4338` 的“用户批准”记录无有效来源；
+- Q1–Q3 已于 2026-07-01 获得用户明确批准，全部选择 A；此前 commit `e0d4338` 的批准记录缺少来源，现以独立用户批准记录为准；
 - 初版 H4（`record_plan_approval` 跃迁 bug）经高阶复核不成立，已从当前契约和当前待实施清单移除；历史审计报告和审核记录保留纠正谱系；
 - 下一阶段：按候选实现审核记录修复生产链；完成前不得升级为 `implemented`。
 
@@ -122,3 +124,4 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 候选，Q1�
 | 2026-07-01 | DAILY-CONTRACT v4 终版 approved：11 项高阶收口 + Q1–Q3 全部批准选项 A | — |
 | 2026-07-01 | C1–C14 全部实施完成：12 tasks + 164 tests passed；DAILY-0 至 DAILY-4 全部升至 `implemented` | `7843db3`–`efab796` |
 | 2026-07-01 | 高阶复核纠正：v4 用户批准无有效来源；171 tests 通过但生产链存在阻断，DAILY 降回 `partial` | 以 `2026-07-01-daily-implementation-review.md` 首次进入 Git 的提交为准 |
+| 2026-07-01 | 用户明确批准 DAILY Q1–Q3，全部选择 A；实现状态仍保持 `partial` | 以 `2026-07-01-daily-q1-q3-approval.md` 首次进入 Git 的提交为准 |
