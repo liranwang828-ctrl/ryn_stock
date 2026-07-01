@@ -59,6 +59,18 @@ SESSION_REQUIRED = {
     "updated_at",
 }
 SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path"}
+REVIEW_MODES = {"full_review", "quick_review", "freeze"}
+JUDGMENT_TYPES = {"thesis", "execution", "sizing", "emotion", "data_quality"}
+CONFIDENCE_LEVELS = {"low", "medium", "high"}
+SOURCE_TYPES = {"user_confirmed", "assistant_inferred"}
+USER_DECISIONS = {"noise", "observe", "learning_candidate"}
+IBKR_FACT_STATUSES = {"verified", "stale_unverified", "missing"}
+REVIEW_JUDGMENT_REQUIRED = {"judgment_type", "summary", "evidence_refs", "confidence", "source"}
+CANDIDATE_LESSON_REQUIRED = {"candidate_id", "theme", "statement", "supporting_evidence_refs", "requires_followup", "user_decision"}
+USER_CONFIRMATIONS_REQUIRED = {"bias_classification_confirmed", "emotion_notes_confirmed", "noise_vs_candidate_confirmed", "learning_candidates_confirmed"}
+ARCHIVE_CLOSURE_REQUIRED = {"archive_manifest_path", "user_confirmed_at"}
+DAILY4_REVIEW_REQUIRED = {"session_id", "trading_date", "review_mode", "ibkr_fact_status", "fact_packet_refs", "review_judgments", "candidate_lessons", "user_confirmations", "archive_closure"}
+DAILY4_REVIEW_OPTIONAL = set()
 ACTION_REQUIRED = {
     "intent",
     "session_id",
@@ -186,3 +198,78 @@ def new_trading_session(session_id: str, market_date: str, now: str, session_typ
         "updated_at": now,
     }
     return validate_session(session)
+
+
+def validate_daily4_review(data: dict) -> dict:
+    if not isinstance(data, dict):
+        raise ValidationError("daily4 review must be an object")
+    _require_keys(data, DAILY4_REVIEW_REQUIRED, DAILY4_REVIEW_OPTIONAL, "daily4 review")
+    _require_non_empty_string(data["session_id"], "session_id")
+    _require_iso_date(data["trading_date"], "trading_date")
+    if data["review_mode"] not in REVIEW_MODES:
+        raise ValidationError(f"review_mode must be one of {sorted(REVIEW_MODES)}")
+    if data["ibkr_fact_status"] not in IBKR_FACT_STATUSES:
+        raise ValidationError(f"ibkr_fact_status must be one of {sorted(IBKR_FACT_STATUSES)}")
+    if not isinstance(data["fact_packet_refs"], list):
+        raise ValidationError("fact_packet_refs must be a list")
+    if not isinstance(data["review_judgments"], list):
+        raise ValidationError("review_judgments must be a list")
+    for j in data["review_judgments"]:
+        _require_keys(j, REVIEW_JUDGMENT_REQUIRED, set(), "review_judgment")
+        if j["judgment_type"] not in JUDGMENT_TYPES:
+            raise ValidationError(f"judgment_type must be one of {sorted(JUDGMENT_TYPES)}")
+        if j["confidence"] not in CONFIDENCE_LEVELS:
+            raise ValidationError(f"confidence must be one of {sorted(CONFIDENCE_LEVELS)}")
+        if j["source"] not in SOURCE_TYPES:
+            raise ValidationError(f"source must be one of {sorted(SOURCE_TYPES)}")
+        if not isinstance(j["evidence_refs"], list):
+            raise ValidationError("evidence_refs must be a list")
+    if not isinstance(data["candidate_lessons"], list):
+        raise ValidationError("candidate_lessons must be a list")
+    for c in data["candidate_lessons"]:
+        _require_keys(c, CANDIDATE_LESSON_REQUIRED, set(), "candidate_lesson")
+        if c["user_decision"] not in USER_DECISIONS:
+            raise ValidationError(f"user_decision must be one of {sorted(USER_DECISIONS)}")
+        if not isinstance(c["requires_followup"], bool):
+            raise ValidationError("requires_followup must be a boolean")
+        if not isinstance(c["supporting_evidence_refs"], list):
+            raise ValidationError("supporting_evidence_refs must be a list")
+    uq = data["user_confirmations"]
+    if not isinstance(uq, dict):
+        raise ValidationError("user_confirmations must be an object")
+    _require_keys(uq, USER_CONFIRMATIONS_REQUIRED, set(), "user_confirmations")
+    for k in USER_CONFIRMATIONS_REQUIRED:
+        if not isinstance(uq[k], bool):
+            raise ValidationError(f"user_confirmations.{k} must be a boolean")
+    ac = data["archive_closure"]
+    if not isinstance(ac, dict):
+        raise ValidationError("archive_closure must be an object")
+    _require_keys(ac, ARCHIVE_CLOSURE_REQUIRED, set(), "archive_closure")
+    if not isinstance(ac["archive_manifest_path"], str):
+        raise ValidationError("archive_manifest_path must be a string")
+    if ac["user_confirmed_at"]:
+        _require_iso_datetime(ac["user_confirmed_at"], "user_confirmed_at")
+    return data
+
+
+def new_daily4_review(session_id: str, trading_date: str, review_mode: str, ibkr_fact_status: str = "stale_unverified") -> dict:
+    review = {
+        "session_id": session_id,
+        "trading_date": trading_date,
+        "review_mode": review_mode,
+        "ibkr_fact_status": ibkr_fact_status,
+        "fact_packet_refs": [],
+        "review_judgments": [],
+        "candidate_lessons": [],
+        "user_confirmations": {
+            "bias_classification_confirmed": False,
+            "emotion_notes_confirmed": False,
+            "noise_vs_candidate_confirmed": False,
+            "learning_candidates_confirmed": False,
+        },
+        "archive_closure": {
+            "archive_manifest_path": "",
+            "user_confirmed_at": "",
+        },
+    }
+    return validate_daily4_review(review)

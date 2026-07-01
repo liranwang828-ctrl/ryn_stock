@@ -257,3 +257,176 @@ def test_closed_unreviewed_in_trading_states():
     from stock_team.orchestration.models import TRADING_STATES
 
     assert "CLOSED_UNREVIEWED" in TRADING_STATES
+
+
+# ---------------------------------------------------------------------------
+# H4-L1: daily4 review schema validation
+# ---------------------------------------------------------------------------
+
+
+def _valid_review(**overrides):
+    review = {
+        "session_id": "trading-2026-07-01",
+        "trading_date": "2026-07-01",
+        "review_mode": "full_review",
+        "ibkr_fact_status": "verified",
+        "fact_packet_refs": [],
+        "review_judgments": [],
+        "candidate_lessons": [],
+        "user_confirmations": {
+            "bias_classification_confirmed": True,
+            "emotion_notes_confirmed": True,
+            "noise_vs_candidate_confirmed": True,
+            "learning_candidates_confirmed": True,
+        },
+        "archive_closure": {
+            "archive_manifest_path": "/path/to/manifest.json",
+            "user_confirmed_at": "2026-07-01T16:00:00+00:00",
+        },
+    }
+    review.update(overrides)
+    return review
+
+
+def test_validate_daily4_review_accepts_full_review():
+    from stock_team.orchestration.models import validate_daily4_review
+
+    result = validate_daily4_review(_valid_review())
+    assert result["session_id"] == "trading-2026-07-01"
+    assert result["review_mode"] == "full_review"
+
+
+def test_validate_daily4_review_rejects_invalid_review_mode():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    with pytest.raises(ValidationError, match="review_mode"):
+        validate_daily4_review(_valid_review(review_mode="made_up_mode"))
+
+
+def test_validate_daily4_review_rejects_invalid_ibkr_fact_status():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    with pytest.raises(ValidationError, match="ibkr_fact_status"):
+        validate_daily4_review(_valid_review(ibkr_fact_status="garbage"))
+
+
+def test_validate_daily4_review_rejects_invalid_judgment_type():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review(review_judgments=[{
+        "judgment_type": "invalid_type",
+        "summary": "test",
+        "evidence_refs": [],
+        "confidence": "low",
+        "source": "assistant_inferred",
+    }])
+    with pytest.raises(ValidationError, match="judgment_type"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_rejects_invalid_confidence():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review(review_judgments=[{
+        "judgment_type": "execution",
+        "summary": "test",
+        "evidence_refs": [],
+        "confidence": "extreme",
+        "source": "user_confirmed",
+    }])
+    with pytest.raises(ValidationError, match="confidence"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_rejects_invalid_source():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review(review_judgments=[{
+        "judgment_type": "thesis",
+        "summary": "test",
+        "evidence_refs": [],
+        "confidence": "medium",
+        "source": "made_up_source",
+    }])
+    with pytest.raises(ValidationError, match="source"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_rejects_invalid_user_decision():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review(candidate_lessons=[{
+        "candidate_id": "c1",
+        "theme": "test",
+        "statement": "test",
+        "supporting_evidence_refs": [],
+        "requires_followup": False,
+        "user_decision": "definitely_adopt",
+    }])
+    with pytest.raises(ValidationError, match="user_decision"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_rejects_non_bool_confirmation():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review()
+    review["user_confirmations"]["bias_classification_confirmed"] = "yes"
+    with pytest.raises(ValidationError, match="must be a boolean"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_rejects_missing_archive_closure_field():
+    from stock_team.orchestration.models import ValidationError, validate_daily4_review
+
+    review = _valid_review()
+    review["archive_closure"] = {"archive_manifest_path": "/p"}
+    with pytest.raises(ValidationError, match="user_confirmed_at"):
+        validate_daily4_review(review)
+
+
+def test_validate_daily4_review_accepts_all_review_modes():
+    from stock_team.orchestration.models import validate_daily4_review
+
+    for mode in ("full_review", "quick_review", "freeze"):
+        result = validate_daily4_review(_valid_review(review_mode=mode))
+        assert result["review_mode"] == mode
+
+
+def test_validate_daily4_review_accepts_all_ibkr_statuses():
+    from stock_team.orchestration.models import validate_daily4_review
+
+    for status in ("verified", "stale_unverified", "missing"):
+        result = validate_daily4_review(_valid_review(ibkr_fact_status=status))
+        assert result["ibkr_fact_status"] == status
+
+
+def test_new_daily4_review_creates_valid_full_review():
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-07-01", "2026-07-01", "full_review")
+    assert review["session_id"] == "trading-2026-07-01"
+    assert review["trading_date"] == "2026-07-01"
+    assert review["review_mode"] == "full_review"
+    assert review["ibkr_fact_status"] == "stale_unverified"
+    assert review["fact_packet_refs"] == []
+    assert review["review_judgments"] == []
+    assert review["candidate_lessons"] == []
+    assert review["user_confirmations"]["bias_classification_confirmed"] is False
+    assert review["archive_closure"]["archive_manifest_path"] == ""
+
+
+def test_new_daily4_review_supports_explicit_ibkr_status():
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-07-01", "2026-07-01", "freeze", ibkr_fact_status="missing")
+    assert review["review_mode"] == "freeze"
+    assert review["ibkr_fact_status"] == "missing"
+
+
+def test_daily4_review_path_returns_inputs_dir():
+    from stock_team.orchestration.protocol import daily4_review_path
+
+    path = daily4_review_path("trading-2026-07-01")
+    assert path.name == "trading-2026-07-01-daily4-review.json"
+    assert "inputs" in str(path).lower()
