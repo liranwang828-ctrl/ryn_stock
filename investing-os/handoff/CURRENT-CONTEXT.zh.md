@@ -144,6 +144,8 @@ Git push：
 剩余工作分工见 `handoff/DAILY-REMAINING-WORK-ALLOCATION.zh.md`。高阶模型先定义跨日恢复、归档和 observation 动作契约；低阶模型按任务单实现；最终 E2E 和完成状态由高阶模型裁定。
 8. 2026-07-01 已新增 `handoff/2026-07-01-daily-h1-h3-repair-charter.zh.md`，作为 H1/H2/H3 的唯一高阶契约。
 9. 2026-07-01 已新增 `handoff/2026-07-01-daily-l1-l3-task-packets.zh.md`，作为目前唯一可直接发给低阶模型的任务包；没有包内授权，不得自行扩大修改范围。
+10. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-review-contract.zh.md`，作为 DAILY-4 对话问题、确认点和结构化产物边界的唯一高阶契约。
+11. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-task-packets.zh.md`，作为 H4 实现阶段可派发给低阶模型的唯一任务包。
 
 ## 默认启动方式
 

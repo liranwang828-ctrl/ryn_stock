@@ -39,6 +39,8 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 已获用户�
 候选实现审核：[`../../handoff/reviews/2026-07-01-daily-implementation-review.md`](../../handoff/reviews/2026-07-01-daily-implementation-review.md)
 高阶修复纲领：[`../../handoff/2026-07-01-daily-h1-h3-repair-charter.zh.md`](../../handoff/2026-07-01-daily-h1-h3-repair-charter.zh.md)
 低阶任务包：[`../../handoff/2026-07-01-daily-l1-l3-task-packets.zh.md`](../../handoff/2026-07-01-daily-l1-l3-task-packets.zh.md)
+H4 高阶契约：[`../../handoff/2026-07-01-daily-h4-review-contract.zh.md`](../../handoff/2026-07-01-daily-h4-review-contract.zh.md)
+H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](../../handoff/2026-07-01-daily-h4-task-packets.zh.md)
 
 ### DAILY C1–C14 实施结果 (2026-07-01)
 
@@ -87,7 +89,7 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 已获用户�
 - C1–C14 存在候选实现，但高阶审核发现未接线和语义缺口，不能声明全部完成；
 - Q1–Q3 已于 2026-07-01 获得用户明确批准，全部选择 A；此前 commit `e0d4338` 的批准记录缺少来源，现以独立用户批准记录为准；
 - 初版 H4（`record_plan_approval` 跃迁 bug）经高阶复核不成立，已从当前契约和当前待实施清单移除；历史审计报告和审核记录保留纠正谱系；
-- 下一阶段：先按 `2026-07-01-daily-h1-h3-repair-charter.zh.md` 固化 H1/H2/H3，再按 `2026-07-01-daily-l1-l3-task-packets.zh.md` 依次实施 L1/L2/L3；完成前不得升级为 `implemented`。
+- 下一阶段：L1/L2/L3 已通过高阶复核后，按 `2026-07-01-daily-h4-review-contract.zh.md` 固化 DAILY-4 契约，再按 `2026-07-01-daily-h4-task-packets.zh.md` 依次实施 H4-L1/H4-L2/H4-L3；完成前不得升级为 `implemented`。
 
 ## RESEARCH 投资研究
 
@@ -128,3 +130,4 @@ DAILY 契约：[`DAILY-CONTRACT.zh.md`](DAILY-CONTRACT.zh.md)（v4 已获用户�
 | 2026-07-01 | 高阶复核纠正：v4 用户批准无有效来源；171 tests 通过但生产链存在阻断，DAILY 降回 `partial` | 以 `2026-07-01-daily-implementation-review.md` 首次进入 Git 的提交为准 |
 | 2026-07-01 | 用户明确批准 DAILY Q1–Q3，全部选择 A；实现状态仍保持 `partial` | 以 `2026-07-01-daily-q1-q3-approval.md` 首次进入 Git 的提交为准 |
 | 2026-07-01 | 固化 H1/H2/H3 高阶修复纲领；生成 L1/L2/L3 低阶任务包，作为下一轮唯一实施入口 | 待本次提交 |
+| 2026-07-01 | 固化 DAILY-4 H4 高阶契约；生成 H4 低阶任务包，作为下一轮复盘实现入口 | 待本次提交 |
