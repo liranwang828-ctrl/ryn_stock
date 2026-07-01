@@ -396,3 +396,192 @@ def test_quick_review_without_user_acceptance_still_writes_file(tmp_path):
     assert review["review_mode"] == "quick_review"
     assert review["user_confirmations"]["bias_classification_confirmed"] is False
     assert review["archive_closure"]["user_confirmed_at"] == ""
+
+
+# ---------------------------------------------------------------------------
+# H4-L3: full_review wiring and archive gates
+# ---------------------------------------------------------------------------
+
+
+def test_review_day_generates_full_review_skeleton(tmp_path):
+    """review_day writes a full_review skeleton to the daily4 review file."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "MARKET_CLOSED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["review_day"]
+    store.create(session)
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "review_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "MARKET_CLOSED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "review-1",
+    })
+    assert state["state"] == "REVIEW_REQUIRED"
+
+    import json
+    from stock_team.orchestration.protocol import daily4_review_path
+
+    review_path = daily4_review_path("trading-2026-06-15")
+    assert review_path.exists()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["review_mode"] == "full_review"
+    assert review["review_judgments"] == []
+    assert review["candidate_lessons"] == []
+    assert review["user_confirmations"]["bias_classification_confirmed"] is False
+
+
+def test_archive_day_blocks_full_review_with_unconfirmed_gates(tmp_path):
+    """archive_day from REVIEW_REQUIRED blocks if user_confirmations are not all True."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    import json as _json
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-06-15", "2026-06-15", "full_review", ibkr_fact_status="verified")
+    review["user_confirmations"]["bias_classification_confirmed"] = True
+    review["user_confirmations"]["emotion_notes_confirmed"] = True
+    review["user_confirmations"]["noise_vs_candidate_confirmed"] = False
+    review["user_confirmations"]["learning_candidates_confirmed"] = False
+    from stock_team.orchestration.protocol import daily4_review_path
+    review_path = daily4_review_path("trading-2026-06-15")
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    review_path.write_text(_json.dumps(review), encoding="utf-8")
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-blocked",
+    })
+    assert state["state"] == "FAILED_TOOL"
+    assert "unconfirmed gates" in state["last_error"]["message"]
+
+    loaded = store.load("trading-2026-06-15")
+    assert loaded["state"] == "FAILED_TOOL"
+
+
+def test_archive_day_blocks_full_review_with_unverified_ibkr(tmp_path):
+    """archive_day blocks full_review if ibkr_fact_status is not verified."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    import json as _json
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-06-15", "2026-06-15", "full_review", ibkr_fact_status="stale_unverified")
+    review["user_confirmations"] = {
+        "bias_classification_confirmed": True,
+        "emotion_notes_confirmed": True,
+        "noise_vs_candidate_confirmed": True,
+        "learning_candidates_confirmed": True,
+    }
+    from stock_team.orchestration.protocol import daily4_review_path
+    review_path = daily4_review_path("trading-2026-06-15")
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    review_path.write_text(_json.dumps(review), encoding="utf-8")
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-no-ibkr",
+    })
+    assert state["state"] == "FAILED_TOOL"
+    assert "ibkr_fact_status not verified" in state["last_error"]["message"]
+
+
+def test_archive_day_allows_full_review_with_all_gates_passed(tmp_path):
+    """archive_day succeeds for full_review when all confirmations are True and ibkr is verified."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "REVIEW_REQUIRED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    import json as _json
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-06-15", "2026-06-15", "full_review", ibkr_fact_status="verified")
+    review["user_confirmations"] = {
+        "bias_classification_confirmed": True,
+        "emotion_notes_confirmed": True,
+        "noise_vs_candidate_confirmed": True,
+        "learning_candidates_confirmed": True,
+    }
+    from stock_team.orchestration.protocol import daily4_review_path
+    review_path = daily4_review_path("trading-2026-06-15")
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    review_path.write_text(_json.dumps(review), encoding="utf-8")
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "REVIEW_REQUIRED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-ok-full",
+    })
+    assert state["state"] == "DAY_ARCHIVED"
+    assert "archive_manifest_path" in state
+
+
+def test_archive_day_allows_freeze_without_gates(tmp_path):
+    """archive_day does NOT block freeze mode — gates only apply to full_review."""
+    store = SessionStore(tmp_path)
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "CLOSED_UNREVIEWED"
+    session["state_version"] = 5
+    session["allowed_actions"] = ["archive_day"]
+    store.create(session)
+
+    import json as _json
+    from stock_team.orchestration.models import new_daily4_review
+
+    review = new_daily4_review("trading-2026-06-15", "2026-06-15", "freeze", ibkr_fact_status="missing")
+    from stock_team.orchestration.protocol import daily4_review_path
+    review_path = daily4_review_path("trading-2026-06-15")
+    review_path.parent.mkdir(parents=True, exist_ok=True)
+    review_path.write_text(_json.dumps(review), encoding="utf-8")
+
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-06-15T16:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "CLOSED_UNREVIEWED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-freeze-ok",
+    })
+    assert state["state"] == "DAY_ARCHIVED"

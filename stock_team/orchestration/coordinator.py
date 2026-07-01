@@ -58,6 +58,63 @@ class WorkflowCoordinator:
 
         if action["intent"] == "archive_day":
             from .archiver import archive_session
+            from .protocol import daily4_review_path
+
+            review_path = daily4_review_path(state["session_id"])
+            if review_path.exists():
+                import json as _json
+                review = _json.loads(review_path.read_text(encoding="utf-8"))
+                if review.get("review_mode") == "full_review":
+                    confirmations = review.get("user_confirmations", {})
+                    missing = [k for k, v in confirmations.items() if not v]
+                    if missing:
+                        failed = self.store.load(action["session_id"])
+                        prev = failed["state_version"]
+                        failed["state"] = "FAILED_TOOL"
+                        failed["state_version"] = prev + 1
+                        failed["last_error"] = {
+                            "error_class": "RuntimeError",
+                            "message": f"full_review blocked: unconfirmed gates — {', '.join(missing)}",
+                            "retryable": False,
+                            "intent": action["intent"],
+                            "parameters": action["parameters"],
+                            "resume_from_state": state["state"],
+                            "occurred_at": now,
+                        }
+                        failed["processed_actions"].append({
+                            "idempotency_key": original_action["idempotency_key"],
+                            "intent": original_action["intent"],
+                            "result_state": "FAILED_TOOL",
+                            "processed_at": now,
+                        })
+                        failed["allowed_actions"] = allowed_actions("FAILED_TOOL")
+                        failed["updated_at"] = now
+                        self.store.save(failed, expected_version=prev)
+                        return failed
+                    if review.get("ibkr_fact_status") != "verified":
+                        failed = self.store.load(action["session_id"])
+                        prev = failed["state_version"]
+                        failed["state"] = "FAILED_TOOL"
+                        failed["state_version"] = prev + 1
+                        failed["last_error"] = {
+                            "error_class": "RuntimeError",
+                            "message": "full_review blocked: ibkr_fact_status not verified",
+                            "retryable": False,
+                            "intent": action["intent"],
+                            "parameters": action["parameters"],
+                            "resume_from_state": state["state"],
+                            "occurred_at": now,
+                        }
+                        failed["processed_actions"].append({
+                            "idempotency_key": original_action["idempotency_key"],
+                            "intent": original_action["intent"],
+                            "result_state": "FAILED_TOOL",
+                            "processed_at": now,
+                        })
+                        failed["allowed_actions"] = allowed_actions("FAILED_TOOL")
+                        failed["updated_at"] = now
+                        self.store.save(failed, expected_version=prev)
+                        return failed
 
             try:
                 _, manifest_path = archive_session(
@@ -161,13 +218,18 @@ class WorkflowCoordinator:
                     "confirmed_at": now,
                 }
             )
-        if action["intent"] in ("freeze", "quick_review"):
+        if action["intent"] in ("freeze", "quick_review", "review_day"):
             import json as _json
 
             from .models import new_daily4_review
             from .protocol import daily4_review_path
 
-            review_mode = "freeze" if action["intent"] == "freeze" else "quick_review"
+            if action["intent"] == "freeze":
+                review_mode = "freeze"
+            elif action["intent"] == "quick_review":
+                review_mode = "quick_review"
+            else:
+                review_mode = "full_review"
             review = new_daily4_review(
                 completed["session_id"],
                 completed.get("market_date", ""),
