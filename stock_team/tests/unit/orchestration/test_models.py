@@ -430,3 +430,33 @@ def test_daily4_review_path_returns_inputs_dir():
     path = daily4_review_path("trading-2026-07-01")
     assert path.name == "trading-2026-07-01-daily4-review.json"
     assert "inputs" in str(path).lower()
+
+
+# ---------------------------------------------------------------------------
+# L1: start_stage0_from_snapshot canonical intent
+# ---------------------------------------------------------------------------
+
+
+def test_validate_action_accepts_start_stage0_from_snapshot():
+    result = validate_action({
+        "intent": "start_stage0_from_snapshot",
+        "session_id": "trading-2026-07-01",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "key-1",
+    })
+    assert result["intent"] == "start_stage0_from_snapshot"
+
+
+def test_start_stage0_still_validates():
+    """Existing start_stage0 must still be accepted by validate_action."""
+    result = validate_action({
+        "intent": "start_stage0",
+        "session_id": "trading-2026-07-01",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "key-2",
+    })
+    assert result["intent"] == "start_stage0"

@@ -30,6 +30,7 @@ TRADING_STATES = {
 ACTION_INTENTS = {
     "initialize_day",
     "start_stage0",
+    "start_stage0_from_snapshot",
     "record_focus_confirmation",
     "start_stage1",
     "record_plan_approval",

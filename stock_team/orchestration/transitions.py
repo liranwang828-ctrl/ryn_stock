@@ -3,6 +3,7 @@ from __future__ import annotations
 
 BEGIN_TRANSITIONS = {
     ("DAY_INITIALIZED", "start_stage0"): "STAGE0_RUNNING",
+    ("DAY_INITIALIZED", "start_stage0_from_snapshot"): "STAGE0_RUNNING",
     ("STAGE0_READY", "record_focus_confirmation"): "FOCUS_CONFIRMED",
     ("FOCUS_CONFIRMED", "start_stage1"): "STAGE1_RUNNING",
     ("FOCUS_CONFIRMED", "start_observation"): "OBSERVATION_ACTIVE",
@@ -25,11 +26,12 @@ BEGIN_TRANSITIONS = {
 
 SUCCESS_TRANSITIONS = {
     ("STAGE0_RUNNING", "start_stage0"): "STAGE0_READY",
+    ("STAGE0_RUNNING", "start_stage0_from_snapshot"): "STAGE0_READY",
     ("STAGE1_RUNNING", "start_stage1"): "STAGE1_READY",
 }
 
 ALLOWED_ACTIONS = {
-    "DAY_INITIALIZED": ["start_stage0"],
+    "DAY_INITIALIZED": ["start_stage0", "start_stage0_from_snapshot"],
     "STAGE0_READY": ["record_focus_confirmation"],
     "FOCUS_CONFIRMED": ["start_stage1", "start_observation"],
     "STAGE1_READY": ["record_plan_approval"],

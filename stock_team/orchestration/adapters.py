@@ -125,6 +125,26 @@ class ExistingCliAdapter:
                 out,
             ]
             return [(snapshot_command, 120), (market_context_command, 90)], [snapshot_path, out]
+        if intent == "start_stage0_from_snapshot":
+            out = str(parameters["out"])
+            snapshot_path = str(parameters["pre_market_snapshot"])
+            market_context_command = [
+                self.python_executable,
+                "-m",
+                "stock_team.cli",
+                "market-context",
+                "--date",
+                str(parameters["date"]),
+                "--as-of",
+                str(parameters["as_of"]),
+                "--universe",
+                str(parameters["universe"]),
+                "--pre-market-snapshot",
+                snapshot_path,
+                "--out",
+                out,
+            ]
+            return [(market_context_command, 90)], [out]
         if intent == "start_stage1":
             out = str(parameters["out"])
             command = [

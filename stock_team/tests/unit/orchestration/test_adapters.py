@@ -245,3 +245,71 @@ def test_record_plan_approval_accepts_valid_plan_files(tmp_path):
     assert result.command == []
     assert str(trading_plan) in result.artifact_paths
     assert str(intraday) in result.artifact_paths
+
+
+# ---------------------------------------------------------------------------
+# L1: start_stage0_from_snapshot adapter — market-context only, no premarket-snapshot
+# ---------------------------------------------------------------------------
+
+
+def test_start_stage0_from_snapshot_builds_only_market_context(tmp_path, monkeypatch):
+    calls = []
+    snapshot_path = tmp_path / "existing_snapshot.json"
+    snapshot_path.write_text('{"source_kind": "formal_provider_snapshot"}', encoding="utf-8")
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    output_path = tmp_path / "stage0.md"
+    output_path.write_text("ok", encoding="utf-8")
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run(
+        "start_stage0_from_snapshot",
+        {
+            "date": "2026-06-15",
+            "as_of": "2026-06-15T09:20:00-04:00",
+            "universe": "universe.json",
+            "pre_market_snapshot": str(snapshot_path),
+            "out": str(output_path),
+        },
+    )
+    assert len(calls) == 1
+    assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]
+    assert "--pre-market-snapshot" in calls[0][0]
+    assert str(snapshot_path) in calls[0][0]
+
+
+def test_existing_start_stage0_still_builds_both_commands(tmp_path, monkeypatch):
+    """Existing start_stage0 must still build premarket-snapshot + market-context."""
+    calls = []
+    snapshot_path = tmp_path / "snapshot.json"
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        if command[:4] == ["python", "-m", "stock_team.cli", "premarket-snapshot"]:
+            snapshot_path.write_text("{}", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    output_path = tmp_path / "stage0.md"
+    output_path.write_text("ok", encoding="utf-8")
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run(
+        "start_stage0",
+        {
+            "date": "2026-06-15",
+            "as_of": "2026-06-15T09:20:00-04:00",
+            "universe": "universe.json",
+            "pre_market_snapshot": str(snapshot_path),
+            "focus_symbols": "AAOX",
+            "themes": "ai",
+            "catalysts": "none",
+            "notes": "test",
+            "out": str(output_path),
+        },
+    )
+    assert len(calls) == 2
+    assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "premarket-snapshot"]
+    assert calls[1][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]

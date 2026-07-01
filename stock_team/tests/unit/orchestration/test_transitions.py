@@ -67,3 +67,31 @@ def test_intraday_active_allows_request_exception():
 def test_request_exception_transition():
     result = begin_transition("INTRADAY_ACTIVE", "request_exception")
     assert result == "INTRADAY_ACTIVE"
+
+
+# ---------------------------------------------------------------------------
+# L1: start_stage0_from_snapshot transitions
+# ---------------------------------------------------------------------------
+
+
+def test_stage0_from_snapshot_moves_through_running_to_ready():
+    running = begin_transition("DAY_INITIALIZED", "start_stage0_from_snapshot")
+    assert running == "STAGE0_RUNNING"
+    assert complete_transition(running, "start_stage0_from_snapshot", success=True) == "STAGE0_READY"
+
+
+def test_stage0_from_snapshot_allowed_from_day_initialized():
+    actions = allowed_actions("DAY_INITIALIZED")
+    assert "start_stage0_from_snapshot" in actions
+
+
+def test_stage0_from_snapshot_failure_goes_to_failed_tool():
+    result = complete_transition("STAGE0_RUNNING", "start_stage0_from_snapshot", success=False)
+    assert result == "FAILED_TOOL"
+
+
+def test_existing_start_stage0_transition_still_works():
+    """Existing start_stage0 must still transition correctly."""
+    running = begin_transition("DAY_INITIALIZED", "start_stage0")
+    assert running == "STAGE0_RUNNING"
+    assert complete_transition(running, "start_stage0", success=True) == "STAGE0_READY"
