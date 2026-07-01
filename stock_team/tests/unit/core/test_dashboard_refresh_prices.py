@@ -428,3 +428,82 @@ def test_get_latest_manifest_picks_newest_by_mtime(tmp_path, monkeypatch):
 
     assert result["manifest"]["session_id"] == "trading-2026-07-01"
     assert len(result["manifest"]["artifacts"]) == 1
+
+
+def test_default_stage0_action_uses_from_snapshot_when_formal_ready(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _default_stage0_action
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (stock_team_home / "config").mkdir(parents=True)
+    (stock_team_home / "config" / "positions.json").write_text(json.dumps({}), encoding="utf-8")
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    (investing_os_home / "wiki" / "journals").mkdir(parents=True)
+
+    snapshot_path = investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-07-01-pre-market-snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "markets": {
+            "QQQ": {"price": 736.7, "prev_close": 721.34, "source": "polygon_premarket_snapshot"},
+            "SPY": {"price": 751.15, "prev_close": 741.75, "source": "polygon_premarket_snapshot"},
+            "IWM": {"price": 297.4, "prev_close": 292.25, "source": "polygon_premarket_snapshot"},
+            "VIXY": {"price": 22.47, "prev_close": 23.29, "source": "polygon_premarket_snapshot"},
+        },
+    }), encoding="utf-8")
+
+    session = {"session_id": "trading-2026-07-01", "market_date": "2026-07-01", "state": "DAY_INITIALIZED"}
+    result = _default_stage0_action(str(stock_team_home), session)
+
+    assert result["action"]["intent"] == "start_stage0_from_snapshot"
+    assert "pre_market_snapshot" in result["action"]["parameters"]
+
+
+def test_default_stage0_action_uses_start_stage0_when_not_formal_ready(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _default_stage0_action
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (stock_team_home / "config").mkdir(parents=True)
+    (stock_team_home / "config" / "positions.json").write_text(json.dumps({}), encoding="utf-8")
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    (investing_os_home / "wiki" / "journals").mkdir(parents=True)
+
+    snapshot_path = investing_os_home / "system" / "runtime" / "inputs" / "trading-2026-07-01-pre-market-snapshot.json"
+    snapshot_path.write_text(json.dumps({
+        "markets": [
+            {"symbol": "QQQ", "last": "736.7", "premarket_change_pct": "2.13", "note": "manual"},
+        ],
+    }), encoding="utf-8")
+
+    session = {"session_id": "trading-2026-07-01", "market_date": "2026-07-01", "state": "DAY_INITIALIZED"}
+    result = _default_stage0_action(str(stock_team_home), session)
+
+    assert result["action"]["intent"] == "start_stage0"
+    assert "pre_market_snapshot" not in result["action"]["parameters"]
+
+
+def test_coordinator_first_action_returns_from_snapshot_when_formal_ready():
+    from stock_team.server.dashboard_server import _coordinator_first_action
+
+    assert _coordinator_first_action("pre_market", "DAY_INITIALIZED", None, formal_ready=True) == "start_stage0_from_snapshot"
+    assert _coordinator_first_action("pre_market", "STAGE0_RUNNING", None, formal_ready=True) == "start_stage0_from_snapshot"
+
+
+def test_coordinator_first_action_returns_start_stage0_when_not_formal_ready():
+    from stock_team.server.dashboard_server import _coordinator_first_action
+
+    assert _coordinator_first_action("pre_market", "DAY_INITIALIZED", None, formal_ready=False) == "start_stage0"
+    assert _coordinator_first_action("pre_market", "STAGE0_RUNNING", None, formal_ready=False) == "start_stage0"
+
+
+def test_coordinator_first_action_does_not_change_other_states():
+    from stock_team.server.dashboard_server import _coordinator_first_action
+
+    assert _coordinator_first_action("pre_market", "STAGE0_READY", None, formal_ready=True) == "record_focus_confirmation"
+    assert _coordinator_first_action("pre_market", "FOCUS_CONFIRMED", None, formal_ready=True) == "start_stage1"
+    assert _coordinator_first_action("pre_market", "STAGE1_READY", None, formal_ready=True) == "record_plan_approval"

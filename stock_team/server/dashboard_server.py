@@ -349,7 +349,12 @@ def _default_stage0_action(base_dir: str, session: dict) -> dict:
         parameters["pre_market_snapshot"] = snapshot_path
     state = session.get("state", "DAY_INITIALIZED")
     effective_state = _effective_coordinator_state(session) or state
-    intent = "retry_last_action" if state == "FAILED_TOOL" else "start_stage0"
+    if state == "FAILED_TOOL":
+        intent = "retry_last_action"
+    elif formal_ready:
+        intent = "start_stage0_from_snapshot"
+    else:
+        intent = "start_stage0"
     action = {
         "intent": intent,
         "session_id": session_id,
@@ -536,12 +541,12 @@ def _coordinator_phase_from_state(state: str | None) -> str:
     return "done"
 
 
-def _coordinator_first_action(phase: str, state: str | None, decision: dict | None) -> str:
+def _coordinator_first_action(phase: str, state: str | None, decision: dict | None, formal_ready: bool = False) -> str:
     if state == "IDLE":
         return "init-day"
+    if state in ("DAY_INITIALIZED", "STAGE0_RUNNING"):
+        return "start_stage0_from_snapshot" if formal_ready else "start_stage0"
     state_action_map = {
-        "DAY_INITIALIZED": "start_stage0",
-        "STAGE0_RUNNING": "start_stage0",
         "STAGE0_READY": "record_focus_confirmation",
         "DISCUSSION_REQUIRED": "record_focus_confirmation",
         "FOCUS_CONFIRMED": "start_stage1",
@@ -784,7 +789,12 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
     state = session.get("state")
     effective_state = _effective_coordinator_state(session)
     phase = _coordinator_phase_from_state(effective_state)
-    first_action = _coordinator_first_action(phase, state, decision)
+    formal_ready = False
+    if session.get("session_id"):
+        snapshot_path = os.path.join(_coordinator_inputs_dir(base_dir), f"{session['session_id']}-pre-market-snapshot.json")
+        snapshot_payload = _load_json_any(snapshot_path, None)
+        formal_ready = _stage0_snapshot_source_kind(snapshot_payload) == "formal_provider_snapshot"
+    first_action = _coordinator_first_action(phase, state, decision, formal_ready=formal_ready)
     next_step = _coordinator_next_step(state, decision)
     start_here = {
         "idle": "init-day first",
@@ -1480,7 +1490,7 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
                 return
             choice = payload.get("choice")
-            if choice not in {"start_stage0", "record_focus_confirmation", "start_stage1"}:
+            if choice not in {"start_stage0", "start_stage0_from_snapshot", "record_focus_confirmation", "start_stage1"}:
                 self._set_headers("application/json; charset=utf-8", 400)
                 self.wfile.write(json.dumps({"error": f"unsupported choice: {choice}"}, ensure_ascii=False).encode("utf-8"))
                 return
@@ -1492,7 +1502,7 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 now_fn=lambda: datetime.now().astimezone().isoformat(),
             )
             action_context = {}
-            if choice == "start_stage0":
+            if choice in {"start_stage0", "start_stage0_from_snapshot"}:
                 stage0_bundle = _default_stage0_action(BASE, session)
                 action = stage0_bundle["action"]
                 action_context = stage0_bundle["context"]
