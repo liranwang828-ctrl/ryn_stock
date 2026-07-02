@@ -614,3 +614,98 @@ def test_archive_day_blocks_when_review_file_missing_for_full_review(tmp_path):
 
     loaded = store.load("trading-2026-06-16")
     assert loaded["state"] == "FAILED_TOOL"
+
+
+# ---------------------------------------------------------------------------
+# L3: start_stage0_from_snapshot coordinator isolation verification
+# ---------------------------------------------------------------------------
+
+
+def test_start_stage0_from_snapshot_advances_to_stage0_ready_with_artifact(tmp_path):
+    """start_stage0_from_snapshot from DAY_INITIALIZED reaches STAGE0_READY with a packet artifact."""
+    store = SessionStore(tmp_path)
+    store.create(new_trading_session("trading-2026-07-02", "2026-07-02", "2026-07-02T12:00:00+00:00"))
+
+    out = tmp_path / "stage0.md"
+    snapshot = tmp_path / "formal_snapshot.json"
+    snapshot.write_text('{"source_kind":"formal_provider_snapshot","markets":{"QQQ":{"price":736.7}}}', encoding="utf-8")
+
+    result = make_result(tmp_path, name="stage0.md")
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "start_stage0_from_snapshot",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": str(snapshot),
+            "out": str(out),
+        },
+        "idempotency_key": "stage0-snap-1",
+    })
+    assert state["state"] == "STAGE0_READY"
+    assert len(state["artifacts"]) == 1
+    assert state["artifacts"][0]["role"] == "start_stage0_from_snapshot"
+
+
+def test_start_stage0_from_snapshot_adapter_call_has_correct_intent(tmp_path):
+    """start_stage0_from_snapshot passes the correct intent to the adapter, not start_stage0."""
+    store = SessionStore(tmp_path)
+    store.create(new_trading_session("trading-2026-07-02", "2026-07-02", "2026-07-02T12:00:00+00:00"))
+
+    snapshot = tmp_path / "formal_snapshot.json"
+    snapshot.write_text('{"source_kind":"formal_provider_snapshot"}', encoding="utf-8")
+    out = tmp_path / "stage0.md"
+
+    result = make_result(tmp_path, name="stage0.md")
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    coordinator.execute({
+        "intent": "start_stage0_from_snapshot",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": str(snapshot),
+            "out": str(out),
+        },
+        "idempotency_key": "stage0-snap-2",
+    })
+    assert len(adapter.calls) == 1
+    assert adapter.calls[0][0] == "start_stage0_from_snapshot"
+
+
+def test_original_start_stage0_unchanged_by_new_intent(tmp_path):
+    """Existing start_stage0 path still works and passes the correct intent."""
+    store = SessionStore(tmp_path)
+    store.create(new_trading_session("trading-2026-07-02", "2026-07-02", "2026-07-02T12:00:00+00:00"))
+
+    result = make_result(tmp_path, name="stage0.md")
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "start_stage0",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": "s.json",
+            "out": str(tmp_path / "stage0.md"),
+        },
+        "idempotency_key": "stage0-orig-1",
+    })
+    assert state["state"] == "STAGE0_READY"
+    assert adapter.calls[0][0] == "start_stage0"

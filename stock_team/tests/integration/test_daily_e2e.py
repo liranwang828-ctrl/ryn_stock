@@ -432,3 +432,133 @@ def _verify_archive_manifest(tmp_path, session_id, market_date, artifact_specs):
         assert f["status"] == "archived"
         assert f["sha256"]
         assert f["size_bytes"] > 0
+
+
+# ---------------------------------------------------------------------------
+# L3: start_stage0_from_snapshot E2E
+# ---------------------------------------------------------------------------
+
+
+def test_e2e_start_stage0_from_snapshot_reaches_stage0_ready(tmp_path):
+    """E2E: init-day -> start_stage0_from_snapshot with formal snapshot -> STAGE0_READY."""
+    store = SessionStore(tmp_path)
+    snapshot = tmp_path / "formal_snapshot.json"
+    snapshot.write_text(
+        '{"source_kind":"formal_provider_snapshot","markets":{"QQQ":{"price":736.7}}}',
+        encoding="utf-8",
+    )
+    out = tmp_path / "packet.md"
+    out.write_text("", encoding="utf-8")
+
+    result = AdapterResult(
+        command=["python", "-m", "stock_team.cli", "market-context", "--pre-market-snapshot", str(snapshot)],
+        stdout="ok",
+        stderr="",
+        artifact_paths=[str(out)],
+    )
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    init = coordinator.execute({
+        "intent": "initialize_day",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "IDLE",
+        "user_confirmation": False,
+        "parameters": {"market_date": "2026-07-02"},
+        "idempotency_key": "init-1",
+    })
+    assert init["state"] == "DAY_INITIALIZED"
+
+    state = coordinator.execute({
+        "intent": "start_stage0_from_snapshot",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": str(snapshot),
+            "out": str(out),
+        },
+        "idempotency_key": "snap-1",
+    })
+    assert state["state"] == "STAGE0_READY"
+    assert len(state["artifacts"]) >= 1
+    assert state["artifacts"][0]["role"] == "start_stage0_from_snapshot"
+
+
+def test_e2e_original_start_stage0_still_reaches_stage0_ready(tmp_path):
+    """E2E regression: init-day -> start_stage0 (original) still works."""
+    store = SessionStore(tmp_path)
+    out = tmp_path / "packet.md"
+    out.write_text("", encoding="utf-8")
+
+    result = AdapterResult(command=["python"], stdout="ok", stderr="", artifact_paths=[str(out)])
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    state = coordinator.execute({
+        "intent": "initialize_day",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "IDLE",
+        "user_confirmation": False,
+        "parameters": {"market_date": "2026-07-02"},
+        "idempotency_key": "init-1",
+    })
+    assert state["state"] == "DAY_INITIALIZED"
+
+    state = coordinator.execute({
+        "intent": "start_stage0",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": "s.json",
+            "out": str(out),
+        },
+        "idempotency_key": "stage0-1",
+    })
+    assert state["state"] == "STAGE0_READY"
+    assert adapter.calls[0][0] == "start_stage0"
+
+
+def test_e2e_start_stage0_from_snapshot_adapter_called_with_correct_intent(tmp_path):
+    """E2E: start_stage0_from_snapshot sends correct intent to adapter, not start_stage0."""
+    store = SessionStore(tmp_path)
+    snapshot = tmp_path / "formal_snapshot.json"
+    snapshot.write_text('{"source_kind":"formal_provider_snapshot"}', encoding="utf-8")
+    out = tmp_path / "packet.md"
+    out.write_text("", encoding="utf-8")
+
+    result = AdapterResult(command=["python"], stdout="ok", stderr="", artifact_paths=[str(out)])
+    adapter = FakeAdapter(result=result)
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-02T12:00:00+00:00")
+
+    coordinator.execute({
+        "intent": "initialize_day",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "IDLE",
+        "user_confirmation": False,
+        "parameters": {"market_date": "2026-07-02"},
+        "idempotency_key": "init-1",
+    })
+
+    coordinator.execute({
+        "intent": "start_stage0_from_snapshot",
+        "session_id": "trading-2026-07-02",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-02",
+            "as_of": "2026-07-02T09:20:00-04:00",
+            "universe": "u.json",
+            "pre_market_snapshot": str(snapshot),
+            "out": str(out),
+        },
+        "idempotency_key": "snap-1",
+    })
+    assert adapter.calls[0][0] == "start_stage0_from_snapshot"
