@@ -36,6 +36,8 @@ def test_market_context_adapter_builds_snapshot_then_stage0_commands(tmp_path, m
     )
     assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "premarket-snapshot"]
     assert calls[1][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]
+    assert "--as-of" in calls[0][0]
+    assert "--as-of" in calls[1][0]
     assert calls[0][1]["timeout"] >= 90
     assert calls[1][1]["timeout"] >= 60
 
@@ -277,6 +279,8 @@ def test_start_stage0_from_snapshot_builds_only_market_context(tmp_path, monkeyp
     )
     assert len(calls) == 1
     assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]
+    assert "--as-of" in calls[0][0]
+    assert "2026-06-15T09:20:00-04:00" in calls[0][0]
     assert "--pre-market-snapshot" in calls[0][0]
     assert str(snapshot_path) in calls[0][0]
 
@@ -313,3 +317,5 @@ def test_existing_start_stage0_still_builds_both_commands(tmp_path, monkeypatch)
     assert len(calls) == 2
     assert calls[0][0][:4] == ["python", "-m", "stock_team.cli", "premarket-snapshot"]
     assert calls[1][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]
+    assert "--as-of" in calls[0][0]
+    assert "--as-of" in calls[1][0]
