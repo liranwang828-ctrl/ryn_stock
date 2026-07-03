@@ -190,7 +190,7 @@ def new_trading_session(session_id: str, market_date: str, now: str, session_typ
         "artifacts": [],
         "data_quality": {"status": "unknown", "warnings": []},
         "pending_confirmations": [],
-        "allowed_actions": ["start_stage0"],
+        "allowed_actions": ["start_stage0", "start_stage0_from_snapshot"],
         "processed_actions": [],
         "backlog_links": [],
         "intraday_exceptions": [],

@@ -164,7 +164,7 @@ def valid_session():
         "artifacts": [],
         "data_quality": {"status": "unknown", "warnings": []},
         "pending_confirmations": [],
-        "allowed_actions": ["start_stage0"],
+        "allowed_actions": ["start_stage0", "start_stage0_from_snapshot"],
         "processed_actions": [],
         "backlog_links": [],
         "last_error": None,
@@ -216,7 +216,7 @@ def test_new_trading_session_builds_valid_initial_state():
         now="2026-06-15T12:00:00+00:00",
     )
     assert session["state"] == "DAY_INITIALIZED"
-    assert session["allowed_actions"] == ["start_stage0"]
+    assert session["allowed_actions"] == ["start_stage0", "start_stage0_from_snapshot"]
 
 
 def test_observation_active_state_exists():
@@ -460,3 +460,21 @@ def test_start_stage0_still_validates():
         "idempotency_key": "key-2",
     })
     assert result["intent"] == "start_stage0"
+
+
+# ---------------------------------------------------------------------------
+# R1: new_trading_session allowed_actions includes start_stage0_from_snapshot
+# ---------------------------------------------------------------------------
+
+
+def test_new_trading_session_allowed_actions_includes_both_stage0_intents():
+    """R1: new_trading_session() must expose both start_stage0
+    and start_stage0_from_snapshot as allowed actions at DAY_INITIALIZED."""
+    session = new_trading_session(
+        session_id="trading-2026-07-03",
+        market_date="2026-07-03",
+        now="2026-07-03T09:00:00-04:00",
+    )
+    assert "start_stage0" in session["allowed_actions"]
+    assert "start_stage0_from_snapshot" in session["allowed_actions"]
+    assert len(session["allowed_actions"]) == 2
