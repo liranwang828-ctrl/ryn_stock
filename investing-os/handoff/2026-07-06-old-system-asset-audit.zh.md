@@ -75,6 +75,7 @@
 - [`2026-07-06-old-system-audit-dashboards-tools.zh.md`](./2026-07-06-old-system-audit-dashboards-tools.zh.md)
 - [`2026-07-06-old-system-audit-system-layer.zh.md`](./2026-07-06-old-system-audit-system-layer.zh.md)
 - [`2026-07-06-old-system-audit-wiki-templates.zh.md`](./2026-07-06-old-system-audit-wiki-templates.zh.md)
+- [`2026-07-06-recent-work-disposition-ledger.zh.md`](./2026-07-06-recent-work-disposition-ledger.zh.md)
 
 ---
 
