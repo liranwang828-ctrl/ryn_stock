@@ -66,6 +66,12 @@
 8. `stock_team/server/*dashboard* + templates/*`：旧运行面，不是空壳，而是一套已经膨胀但有价值的 legacy runtime surface。
 9. `handoff/`：项目迁移、审计、任务分发、历史决策记录层。
 
+本总审计对应的三份细拆附录：
+
+- [`2026-07-06-old-system-audit-dashboards-tools.zh.md`](./2026-07-06-old-system-audit-dashboards-tools.zh.md)
+- [`2026-07-06-old-system-audit-system-layer.zh.md`](./2026-07-06-old-system-audit-system-layer.zh.md)
+- [`2026-07-06-old-system-audit-wiki-templates.zh.md`](./2026-07-06-old-system-audit-wiki-templates.zh.md)
+
 ---
 
 ## 3. 重点结论：哪些是真正成熟资产
@@ -629,4 +635,3 @@
 更准确的项目策略应该是：
 
 > 在修当前 DAILY 主链的同时，把旧系统成熟资产重新识别、重新定级、重新接管。
-
