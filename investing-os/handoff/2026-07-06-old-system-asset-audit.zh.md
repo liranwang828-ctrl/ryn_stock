@@ -50,6 +50,10 @@
 
 > 这轮不是完全推倒重来，但对旧系统成熟资产的吸收明显不足，尤其不足在产品面、认知可视化面、以及旧 dashboard 运行体系。
 
+补充：2026-07-06 用户已进一步确认，`investing-os` 旧系统资产默认按“直接全部复用”处理，见：
+
+- [`decisions/2026-07-06-old-system-reuse-principle.md`](./decisions/2026-07-06-old-system-reuse-principle.md)
+
 ---
 
 ## 2. 旧系统资产的实际分层
@@ -613,6 +617,12 @@
 1. `operating-console.html` 是否恢复为正式主入口。
 2. `growth-dashboard-draft.html + generate-growth-dashboard-data.ps1 + traceability indexes` 是否恢复为正式认知 dashboard 链。
 3. `dashboard_server.py / dashboard_writer.py / daily_dashboard.html.j2` 是否拆成更干净的 runtime surface，而不是继续一边修 DAILY 一边往里堆。
+
+在用户已确认“`investing-os` 直接全部复用”的前提下，这条线的执行口径应调整为：
+
+1. `investing-os` 资产优先恢复 canonical 地位；
+2. `stock_team` 相关旧运行面再区分“直接沿用”与“接管式重构”；
+3. 不再把 `investing-os` 旧资产当作可有可无的参考材料。
 
 ---
 
