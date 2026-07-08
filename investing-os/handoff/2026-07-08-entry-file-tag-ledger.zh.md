@@ -33,7 +33,7 @@
 
 | file | tag | disposition | reason |
 |---|---|---|---|
-| `investing-os/dashboards/operating-console.html` | `canonical-entry` | `keep` | 用户正式入口壳，第一批直接承载 today status |
+| `investing-os/dashboards/operating-console.html` | `canonical-entry` | `keep` | 用户正式入口壳，第一批直接承载 today status，并保留 growth / review / principles 接回空间 |
 | `investing-os/dashboards/assets/operating-console-data.js` | `canonical-entry` | `keep` | 入口 view-model，适合加入最小 entry-state shape |
 | `stock_team/server/dashboard_server.py` | `runtime-source` | `transitional` | 当前先作为只读状态聚合来源 |
 | `stock_team/server/dashboard_writer.py` | `legacy-runtime` | `reference-only` | 本批不深改，只在必要时参考现有数据组织 |
@@ -63,4 +63,3 @@
 - 哪些文件已经进入最小主链，属于高价值保留
 - 哪些文件只是过渡桥，需要后续 merge-back 或退休
 - 哪些文件当前只保留参考，不应再继续膨胀
-
