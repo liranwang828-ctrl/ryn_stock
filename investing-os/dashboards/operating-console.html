@@ -71,6 +71,13 @@
     .hero-summary-card strong { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
     .hero-summary-card span { display: block; font-size: 18px; font-weight: 700; line-height: 1.3; }
     .hero-summary-card p { margin: 8px 0 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+    .entry-panel { margin-top: 16px; border: 1px solid #d1e9ff; border-radius: 12px; background: rgba(255,255,255,.94); padding: 14px; }
+    .entry-panel h3 { margin: 0 0 10px; font-size: 14px; }
+    .entry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .entry-card { border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; padding: 10px; min-height: 72px; }
+    .entry-card strong { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
+    .entry-card span { display: block; font-size: 16px; font-weight: 700; line-height: 1.35; }
+    .entry-card ul { margin-top: 0; }
     .workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
     .workflow-step { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #fbfcfe; min-height: 120px; }
     .workflow-step.active { border-color: #84caff; background: #eff8ff; box-shadow: 0 0 0 1px rgba(23, 92, 211, 0.08); }
@@ -150,6 +157,31 @@
               <strong>Mode / 入口模式</strong>
               <span id="heroMode">mixed-entry</span>
               <p id="heroModeNote">主交易链在这里推进，认知系统和研究入口在下方随时可用。</p>
+            </div>
+          </div>
+          <div class="entry-panel">
+            <h3>Minimal Entry State / 最小入口状态</h3>
+            <div class="entry-grid">
+              <div class="entry-card">
+                <strong>Today Mode</strong>
+                <span data-entry-field="today-mode">unknown</span>
+              </div>
+              <div class="entry-card">
+                <strong>Current Step</strong>
+                <span data-entry-field="current-step">unknown</span>
+              </div>
+              <div class="entry-card">
+                <strong>Readiness</strong>
+                <span data-entry-field="readiness">blocked</span>
+              </div>
+              <div class="entry-card">
+                <strong>Next Action</strong>
+                <span data-entry-field="next-action">inspect_runtime_state</span>
+              </div>
+              <div class="entry-card" style="grid-column: 1 / -1;">
+                <strong>Missing Items</strong>
+                <ul data-entry-field="missing-items"><li>none</li></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -333,6 +365,14 @@
         allowed: ["复盘与情绪降温", "风险降低计划", "公司 / 行业研究", "盘前计划与证据收集"],
         blocked: ["无计划短线", "杠杆产品扩张风险", "止损后立刻再交易", "为弥补亏损而加仓"]
       },
+      entryState: {
+        todayMode: "unknown",
+        currentStep: "unknown",
+        readiness: "blocked",
+        missingItems: [],
+        nextAction: "inspect_runtime_state",
+        tags: ["canonical-entry"]
+      },
       nextActions: [
         {
           id: "NA-001",
@@ -494,6 +534,24 @@
     const priorityClass = (priority) => priority === "High" ? "badge red" : "badge amber";
     const html = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
     const list = (id, items) => { document.getElementById(id).innerHTML = items.map((item) => `<li>${html(item)}</li>`).join(""); };
+    const setEntryText = (field, value) => {
+      const node = document.querySelector(`[data-entry-field="${field}"]`);
+      if (node) node.textContent = value;
+    };
+    const setEntryList = (field, items) => {
+      const node = document.querySelector(`[data-entry-field="${field}"]`);
+      if (!node) return;
+      const rows = (items || []).slice(0, 5);
+      node.innerHTML = rows.length ? rows.map((item) => `<li>${html(item)}</li>`).join("") : "<li>none</li>";
+    };
+    const renderEntryState = (entryState) => {
+      const entry = entryState || {};
+      setEntryText("today-mode", entry.todayMode || "unknown");
+      setEntryText("current-step", entry.currentStep || "unknown");
+      setEntryText("readiness", entry.readiness || "blocked");
+      setEntryText("next-action", entry.nextAction || "inspect_runtime_state");
+      setEntryList("missing-items", entry.missingItems || []);
+    };
     let snapshotState = null;
     const workflowSteps = [
       { id: "init-day", name: "Init Day", note: "Create or resume today's session." },
@@ -683,6 +741,13 @@
 
     const renderCoordinator = (manifest) => {
       if (manifest.status === "empty") {
+        renderEntryState({
+          todayMode: "maintenance",
+          currentStep: "DAY_NOT_STARTED",
+          readiness: "blocked",
+          missingItems: ["today session not started"],
+          nextAction: "init_day",
+        });
         document.getElementById("heroTitle").textContent = "No active trading day yet";
         document.getElementById("coordinatorLead").textContent = "Start a new day to enter the operating workflow. The system will create today's session, mark your place in the chain, and guide the next required action.";
         document.getElementById("coordinatorPhase").textContent = "idle";
@@ -730,6 +795,15 @@
       const decision = manifest.decision && manifest.decision.choice ? manifest.decision.choice : "none";
       const marketDate = manifest.session && manifest.session.market_date ? manifest.session.market_date : "--";
       const sessionId = manifest.session && manifest.session.session_id ? manifest.session.session_id : "--";
+      renderEntryState({
+        todayMode: manifest.mode || "mixed-entry",
+        currentStep: manifest.session && manifest.session.state ? manifest.session.state : (manifest.effective_state || "unknown"),
+        readiness: manifest.session && manifest.session.state === "FAILED_TOOL" ? "blocked" : "partial",
+        missingItems: manifest.session && manifest.session.state === "FAILED_TOOL"
+          ? ["tool execution failed; inspect runtime inputs"]
+          : [],
+        nextAction: firstAction,
+      });
       document.getElementById("heroTitle").textContent = `You are in ${phase.replace("_", " ")}. Next required action: ${firstAction}.`;
       document.getElementById("coordinatorLead").textContent = manifest.session && manifest.session.state === "FAILED_TOOL"
         ? `The last tool run failed, but your workflow anchor is still ${effectiveState}. Fix the missing input, then use ${firstAction} to continue from the same stage.`
@@ -862,6 +936,8 @@
         <p><span class="label">Source:</span> ${html(lesson.source)}</p>
         <p><span class="label">Target:</span> <code>${html(lesson.target)}</code></p>
       </div>`).join("");
+
+    renderEntryState(data.entryState);
 
     document.getElementById("saveSnapshotButton").addEventListener("click", async () => {
       const button = document.getElementById("saveSnapshotButton");
