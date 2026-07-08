@@ -1,6 +1,6 @@
 # 工作流实现状态台账
 
-更新日期：2026-07-01
+更新日期：2026-07-08
 状态口径来源：[`../../PROJECT-CHARTER.zh.md`](../../PROJECT-CHARTER.zh.md)
 实现计划：[`../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md`](../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md)
 
@@ -90,6 +90,43 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - Q1–Q3 已于 2026-07-01 获得用户明确批准，全部选择 A；此前 commit `e0d4338` 的批准记录缺少来源，现以独立用户批准记录为准；
 - 初版 H4（`record_plan_approval` 跃迁 bug）经高阶复核不成立，已从当前契约和当前待实施清单移除；历史审计报告和审核记录保留纠正谱系；
 - 下一阶段：L1/L2/L3 已通过高阶复核后，按 `2026-07-01-daily-h4-review-contract.zh.md` 固化 DAILY-4 契约，再按 `2026-07-01-daily-h4-task-packets.zh.md` 依次实施 H4-L1/H4-L2/H4-L3；完成前不得升级为 `implemented`。
+
+### 最小入口接线批次（2026-07-08）
+
+相关设计：
+
+- [`../../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md`](../../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md)
+
+相关计划：
+
+- [`../../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md`](../../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md)
+
+相关台账：
+
+- [`../../handoff/2026-07-08-entry-source-map.zh.md`](../../handoff/2026-07-08-entry-source-map.zh.md)
+- [`../../handoff/2026-07-08-entry-file-tag-ledger.zh.md`](../../handoff/2026-07-08-entry-file-tag-ledger.zh.md)
+
+当前结果：
+
+- `operating-console.html` 已恢复为第一批最小入口壳；
+- 入口可见 5 个核心字段：`Today Mode`、`Current Step`、`Readiness`、`Missing Items`、`Next Action`；
+- 入口保留了 `Growth / Principles / Review` 的轻量回链，不牺牲 `investing-os` 成长性；
+- `dashboard_server.py` 已提供最薄的 `entry_state` 聚合 helper 与 summary 暴露；
+- blocker 缺口已优先通过 active blocker → `entry_state.missing_items` → UI 这条链展示；
+- 文件标签体系已建立，用于后续筛选“主链文件 / 过渡桥文件 / 参考文件”。
+
+验证结果：
+
+- `python -m pytest stock_team/tests/unit -k "coordinator_summary_payload_exposes_blocker_missing_items" -v` → 通过
+- `python -m pytest stock_team/tests/unit -k "entry_state or dashboard or coordinator" -q` → 77 通过，1 旧失败
+- `python -m pytest stock_team/tests/unit/orchestration/ -q` → 121 通过
+- 旧失败仍是 `test_dashboard_reads_from_runtime_manifest` 的 freshness 断言，属于先前已知问题，与本批最小入口接线无关
+
+下一动作：
+
+- 继续把当前 blocker / readiness 来源从“最小解释层”逐步回写进 canonical workflow / template / packet contract；
+- 在不扩大范围的前提下，决定是否让 `operating-console` 直接读取统一的 `entry_state` payload，而不是继续兼容局部 fallback；
+- 之后再进入 Stage0 brain precondition 的 canonical 回写批次。
 
 ## RESEARCH 投资研究
 
