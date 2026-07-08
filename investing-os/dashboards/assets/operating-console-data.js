@@ -20,6 +20,14 @@ window.OPERATING_CONSOLE_DATA = {
       "为弥补亏损而加仓"
     ]
   },
+  entryState: {
+    todayMode: "unknown",
+    currentStep: "unknown",
+    readiness: "blocked",
+    missingItems: [],
+    nextAction: "inspect_runtime_state",
+    tags: ["canonical-entry"]
+  },
   nextActions: [
     {
       id: "NA-001",
