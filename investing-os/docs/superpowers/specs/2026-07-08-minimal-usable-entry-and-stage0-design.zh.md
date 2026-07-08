@@ -26,6 +26,17 @@
 4. 系统能给出唯一最主要的 next action；
 5. 所有接入文件都同时打上用途标签，为后续筛选“有用/无用文件”做准备。
 
+但本设计还有一个更高优先级的总约束：
+
+> 任何“先用起来”的接线方式，都不能以牺牲 `investing-os` 的成长性为代价。
+
+这里的成长性特指：
+
+1. 后续可以继续吸收经验、复盘、原则、lesson lineage、capability history；
+2. 后续可以自然接回 growth dashboard，而不是形成一个只能跑当天流程的死入口；
+3. 后续可以继续筛选有用/无用文件，而不是因为临时接线把旧系统结构再次搞混；
+4. 后续可以把近期 bridge 逻辑回并或退休，而不是越用越依赖临时层。
+
 ---
 
 ## 2. 非目标
@@ -39,6 +50,63 @@
 5. 不先清理所有旧文件。
 
 这些都重要，但都排在“先用起来”之后。
+
+补充：
+
+- “先用起来”不等于允许形成一条与成长系统脱钩的短线临时入口；
+- 如果某个简化方案会削弱 `investing-os` 未来的认知增长、经验吸收和文件筛选能力，则该方案不应采用。
+
+---
+
+## 2.1 成长性硬约束
+
+本设计新增以下硬约束：
+
+### G1. 入口必须面向成长系统，而不是只面向当天操作
+
+恢复 `operating-console` 时，不能把它做成“只看 today session 的壳”。
+
+它必须保留未来接回以下能力的空间：
+
+- growth dashboard 入口
+- review / lesson / report 回链
+- cognition / methodology / principle 入口
+
+### G2. 当前状态展示必须能回链到长期系统
+
+Today Mode / Current Step / Missing Items / Next Action 不应只是一次性提示。
+
+后续它们需要能自然连接到：
+
+- review
+- lesson extraction
+- principle update
+- capability history
+
+也就是说，今天的状态不是孤岛。
+
+### G3. 接入文件标签体系必须服务于长期筛选
+
+本轮新增的标签：
+
+- `canonical-entry`
+- `runtime-source`
+- `evidence-source`
+- `active-constraint`
+- `legacy-runtime`
+- `reference-only`
+
+不是临时管理小技巧，而是后续做文件去留判断的基础设施。
+
+### G4. bridge 逻辑必须可退场
+
+例如 `start_stage0_from_snapshot` 这一类过桥逻辑，允许保留，但必须保持：
+
+- 可识别
+- 可单独审计
+- 可在旧 canonical 主链接回后退休
+
+不能让 bridge 逻辑反过来成为系统新的永久核心。
 
 ---
 
@@ -56,6 +124,7 @@
 - 旧 `operating-console` 已经是成品级主入口；
 - 相比继续把零散 CLI / dashboard action 当用户入口，恢复旧主入口更符合“`investing-os` 全量优先复用”原则；
 - 入口统一后，后续无论接 Stage0、DAILY、review 还是 growth，都有稳定承载面。
+- 更重要的是，它为 `investing-os` 的成长性保留了正式入口，而不是让成长系统继续悬空。
 
 ### 3.2 `stock_team` 继续提供事实，`investing-os` 负责解释事实
 
@@ -105,6 +174,7 @@
 - 系统先能告诉用户“为什么不能继续”；
 - 后续再把这些缺口正式回写到 `pre-market-universe.json`、`pre-market.md`、`pre-market-context-packet.md`；
 - 避免一上来只做架构约束，系统却仍然跑不起来。
+- 同时保留后续把这些缺口接回 review / lesson / cognition 系统的可能性。
 
 ---
 
@@ -120,6 +190,14 @@
 ```
 
 这条链第一阶段只要求“解释与引导可用”，不要求“所有下游动作一键完成”。
+
+但它必须满足一个增长条件：
+
+```text
+today state
+  不是终点
+  而是 future review / lesson / growth dashboard 的起点
+```
 
 ---
 
@@ -140,6 +218,7 @@
 
 - 成为用户唯一正式入口；
 - 承载 today mode / current step / readiness / missing items / next action 五块核心信息。
+- 为未来接回 growth / cognition / review 提供稳定入口位。
 
 ### 5.2 当天 session / coordinator 状态
 
@@ -211,6 +290,7 @@
 
 - 不重新发明缺口解释体系；
 - 直接把最近这轮已经确认过的 blocker 变成用户可见缺口说明。
+- 为后续把缺口沉淀回 canonical workflow / template / contract 提供追溯入口。
 
 ---
 
@@ -262,6 +342,8 @@
 ## 7. 页面第一批只显示的 5 个核心信息
 
 为了避免又做成一个大而全 dashboard，第一批页面只显示 5 项。
+
+但这 5 项的组织方式必须为未来增长留接口，不能做成纯静态终点信息。
 
 ### 7.1 Today Mode
 
@@ -336,6 +418,14 @@
 
 - 系统必须告诉用户“接下来干什么”，而不是只展示状态。
 
+成长性要求：
+
+- Next Action 后续应能自然扩展为：
+  - 去 review
+  - 去 lesson extraction
+  - 去 growth dashboard
+  - 去 canonical workflow 节点
+
 ---
 
 ## 8. 文件筛选准备：统一标签体系
@@ -365,6 +455,10 @@
 3. 是长期 canonical，还是短期桥接；
 4. 接回旧系统后是否还有存在理由。
 
+这部分不是附属工作，而是本设计的核心收益之一：
+
+> 第一批最小主链不仅要能用，还要顺手为 `investing-os` 的长期成长与文件治理打基础。
+
 ---
 
 ## 9. 第一批实施边界
@@ -376,6 +470,12 @@
 3. 显示 5 个核心信息；
 4. 给接入文件打标签；
 5. 不先扩大成完整重构工程。
+
+同时要满足成长性底线：
+
+6. 不能把入口做成与 growth / review / cognition 脱钩的一次性页面；
+7. 不能把 bridge 逻辑埋成未来无法识别的永久核心；
+8. 不能让接入文件失去后续筛选和分级空间。
 
 这意味着第一批不做：
 
@@ -433,6 +533,15 @@
 - precondition 第一阶段先显示为用户可见缺口；
 - contract 回写放在后续批次。
 
+### 风险 5：为了“先用起来”牺牲 `investing-os` 成长性
+
+控制：
+
+- 入口必须继续面向 growth / review / cognition 接回；
+- 所有接入文件必须带用途标签；
+- bridge 逻辑必须保持可审计、可退场；
+- today state 的展示必须预留回链长期系统的空间。
+
 ---
 
 ## 12. 推荐后续顺序
@@ -451,5 +560,4 @@
 
 这份设计的核心不是“先把系统整理正确”，而是：
 
-> 先利用现有 `investing-os + stock_team` 做出一个真正能告诉用户“今天怎么继续”的最小入口，同时为后续筛有用/无用文件和逐步接管旧系统做好标签与边界准备。
-
+> 先利用现有 `investing-os + stock_team` 做出一个真正能告诉用户“今天怎么继续”的最小入口，同时不牺牲 `investing-os` 的成长性，并为后续筛有用/无用文件、接回 growth/review/cognition、以及逐步退休临时 bridge 做好准备。
