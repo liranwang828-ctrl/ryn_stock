@@ -785,6 +785,22 @@ def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_d
     }
 
 
+def _build_minimal_entry_state(session_summary: dict | None, blockers: list[str] | None) -> dict:
+    session_summary = session_summary or {}
+    blocker_items = [item for item in (blockers or []) if item]
+    readiness = session_summary.get("readiness", "partial")
+    if blocker_items:
+        readiness = "blocked"
+
+    return {
+        "today_mode": session_summary.get("mode", "unknown"),
+        "current_step": session_summary.get("state", "unknown"),
+        "readiness": readiness,
+        "missing_items": blocker_items[:5],
+        "next_action": session_summary.get("next_action", "inspect_runtime_state"),
+    }
+
+
 def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir: str = BASE) -> dict:
     state = session.get("state")
     effective_state = _effective_coordinator_state(session)

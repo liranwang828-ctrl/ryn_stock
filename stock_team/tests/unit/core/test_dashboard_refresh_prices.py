@@ -507,3 +507,20 @@ def test_coordinator_first_action_does_not_change_other_states():
     assert _coordinator_first_action("pre_market", "STAGE0_READY", None, formal_ready=True) == "record_focus_confirmation"
     assert _coordinator_first_action("pre_market", "FOCUS_CONFIRMED", None, formal_ready=True) == "start_stage1"
     assert _coordinator_first_action("pre_market", "STAGE1_READY", None, formal_ready=True) == "record_plan_approval"
+
+
+def test_entry_state_payload_contains_five_core_fields():
+    from stock_team.server.dashboard_server import _build_minimal_entry_state
+
+    payload = _build_minimal_entry_state(
+        {"mode": "trading", "state": "DAY_INITIALIZED", "next_action": "start_stage0"},
+        [],
+    )
+
+    assert set(payload.keys()) == {
+        "today_mode",
+        "current_step",
+        "readiness",
+        "missing_items",
+        "next_action",
+    }
