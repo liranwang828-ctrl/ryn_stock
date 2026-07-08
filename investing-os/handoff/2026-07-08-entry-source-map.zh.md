@@ -105,6 +105,13 @@
 3. 最近已确认的 blocker 文档
 4. `investing-os` 最小解释层 fallback
 
+补充的最终优先级约定：
+
+- `missing_items`
+  - `primary_source`: active blockers
+  - `fallback_source`: runtime session summary `missing_items`
+  - `owner`: `investing-os` 对 `stock_team` runtime 事实做最小解释
+
 ---
 
 ## 7. 设计边界
@@ -119,4 +126,3 @@
 
 - 让入口能真实显示今天怎么继续
 - 同时为后续 contract 回写保留来源追溯
-

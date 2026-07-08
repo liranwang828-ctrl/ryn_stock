@@ -827,6 +827,15 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
         "done": "continue-session",
     }.get(phase, "continue-session")
     needs_review = phase == "post_market" and next_step == "need-review"
+    blockers = []
+    if state == "FAILED_TOOL":
+        blockers.append("tool execution failed; inspect runtime inputs")
+    entry_state = _build_minimal_entry_state({
+        "mode": session.get("mode", "mixed-entry"),
+        "state": state,
+        "readiness": "partial",
+        "next_action": first_action,
+    }, blockers)
     return {
         "status": "ok",
         "session": {
@@ -843,6 +852,7 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
         "route_priority": route_priority,
         "needs_review": needs_review,
         "mode": "mixed-entry",
+        "entry_state": entry_state,
         "cross_day": {
             "needs_review": needs_review,
             "decision_applied": bool(decision),
@@ -874,6 +884,12 @@ def _load_coordinator_manifest(base_dir: str) -> dict:
             "route_priority": "init-day",
             "needs_review": False,
             "mode": "mixed-entry",
+            "entry_state": _build_minimal_entry_state({
+                "mode": "maintenance",
+                "state": "DAY_NOT_STARTED",
+                "readiness": "blocked",
+                "next_action": "init_day",
+            }, ["today session not started"]),
         }
     session = _load_json_any(candidates[0], {})
     session_id = session.get("session_id")

@@ -795,14 +795,15 @@
       const decision = manifest.decision && manifest.decision.choice ? manifest.decision.choice : "none";
       const marketDate = manifest.session && manifest.session.market_date ? manifest.session.market_date : "--";
       const sessionId = manifest.session && manifest.session.session_id ? manifest.session.session_id : "--";
+      const manifestEntry = manifest.entry_state || {};
       renderEntryState({
-        todayMode: manifest.mode || "mixed-entry",
-        currentStep: manifest.session && manifest.session.state ? manifest.session.state : (manifest.effective_state || "unknown"),
-        readiness: manifest.session && manifest.session.state === "FAILED_TOOL" ? "blocked" : "partial",
-        missingItems: manifest.session && manifest.session.state === "FAILED_TOOL"
+        todayMode: manifestEntry.today_mode || manifest.mode || "mixed-entry",
+        currentStep: manifestEntry.current_step || (manifest.session && manifest.session.state ? manifest.session.state : (manifest.effective_state || "unknown")),
+        readiness: manifestEntry.readiness || (manifest.session && manifest.session.state === "FAILED_TOOL" ? "blocked" : "partial"),
+        missingItems: manifestEntry.missing_items || (manifest.session && manifest.session.state === "FAILED_TOOL"
           ? ["tool execution failed; inspect runtime inputs"]
-          : [],
-        nextAction: firstAction,
+          : []),
+        nextAction: manifestEntry.next_action || firstAction,
       });
       document.getElementById("heroTitle").textContent = `You are in ${phase.replace("_", " ")}. Next required action: ${firstAction}.`;
       document.getElementById("coordinatorLead").textContent = manifest.session && manifest.session.state === "FAILED_TOOL"
