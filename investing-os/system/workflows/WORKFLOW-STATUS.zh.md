@@ -1,6 +1,6 @@
 # 工作流实现状态台账
 
-更新日期：2026-07-08
+更新日期：2026-07-09
 状态口径来源：[`../../PROJECT-CHARTER.zh.md`](../../PROJECT-CHARTER.zh.md)
 实现计划：[`../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md`](../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md)
 
@@ -124,9 +124,37 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 
 下一动作：
 
-- 继续把当前 blocker / readiness 来源从“最小解释层”逐步回写进 canonical workflow / template / packet contract；
 - 在不扩大范围的前提下，决定是否让 `operating-console` 直接读取统一的 `entry_state` payload，而不是继续兼容局部 fallback；
-- 之后再进入 Stage0 brain precondition 的 canonical 回写批次。
+- 把 Stage0 brain precondition 的 canonical 回写结果继续接到真正可运行的入口与写回链；
+- 继续利用文件标签体系，为后续筛掉无用文件、保留主链文件做准备。
+
+### Stage0 brain precondition canonical 回写批次（2026-07-09）
+
+相关设计：
+
+- [`../../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md`](../../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md)
+
+相关计划：
+
+- [`../../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md`](../../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md)
+
+当前结果：
+
+- `investing-os/templates/pre-market-universe.json` 已锁定 Stage0 正式 continuation 所需的 5 个脑侧前置字段语义；
+- `investing-os/system/workflows/pre-market.md` 已明确：Stage0 不是纯 market-data 动作，缺少这些输入时不得视为正式 ready；
+- `investing-os/system/data/packets/pre-market-context-packet.md` 已明确 ownership boundary：`stock_team` 只能消费这些前置输入做事实映射，不能改写最终 cognition / permission / forbidden-action judgment；
+- 三处已形成分工：template 管结构，workflow 管进入条件与阻断语义，packet contract 管 brain–muscle 边界。
+
+验证结果：
+
+- `rg -n "positions|prior_review|cognition_state|permission_state_before_open|forbidden_actions" investing-os/templates/pre-market-universe.json investing-os/system/workflows/pre-market.md investing-os/system/data/packets/pre-market-context-packet.md` → 三处字段一致
+- `rg -n "brain-owned precondition|must not overwrite|formally ready|not a pure market-data action" investing-os/system/workflows/pre-market.md investing-os/system/data/packets/pre-market-context-packet.md investing-os/templates/pre-market-universe.json` → 语义与边界一致
+
+下一动作：
+
+- 继续把这 5 个脑侧前置字段真正接到可运行入口，而不只是停留在文档层；
+- 优先做最小可用闭环：进入入口时能判断“只是看见数据”还是“正式 Stage0 ready”；
+- 后续再决定哪些 `stock_team` 过渡文件可以合并回 `investing-os` 主链，哪些应标记为 retire-later。
 
 ## RESEARCH 投资研究
 
