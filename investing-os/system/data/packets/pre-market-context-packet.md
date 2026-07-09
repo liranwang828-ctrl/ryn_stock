@@ -29,6 +29,16 @@ forbidden_sections_absent:
 
 Boundary: factual environment context only. No symbol selection or trading permission.
 
+Stage 0 consumes a brain-owned precondition bundle from `investing-os` before factual environment collection is treated as formally ready:
+
+- current positions context
+- prior review state
+- cognition state
+- permission state before open
+- forbidden actions
+
+`stock_team` may consume these inputs to scope fact gathering, relevance mapping, and warning output, but it must not overwrite or reinterpret final cognition, permission, or forbidden-action judgment. Those judgments remain owned by `investing-os` / user-side workflow.
+
 ## 1. Yesterday / Recent Market Context
 
 | Symbol | Label | Price | Yesterday % | 5D % | 20D % | Volume Ratio | Source |

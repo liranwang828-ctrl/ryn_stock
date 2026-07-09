@@ -4,6 +4,18 @@
 
 Prepare the day without creating unnecessary emotional attachment.
 
+Stage 0 is not a pure market-data action.
+
+Before requesting Stage 0 market context, the workflow must load the current brain-owned state that already exists before the market opens:
+
+- current positions context
+- prior review state
+- cognition state
+- permission state before open
+- forbidden actions
+
+If these inputs are missing, the system may still collect or display partial facts, but Stage 0 must not be treated as formally ready to continue the pre-market workflow.
+
 ## Steps
 
 0. Run file growth health check: `./tools/check-file-growth.ps1`.
