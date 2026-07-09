@@ -3,7 +3,7 @@
   "version": "1.0",
   "date": "YYYY-MM-DD",
   "created_by": "investing-os",
-  "purpose": "Stage 0 market context universe. This is not a trading permission list.",
+  "purpose": "Stage 0 market context universe. This is not a trading permission list. source_inputs, permission_state_before_open, and forbidden_actions are brain-owned preconditions for formal Stage 0 continuation.",
   "source_inputs": {
     "positions": [
       {
