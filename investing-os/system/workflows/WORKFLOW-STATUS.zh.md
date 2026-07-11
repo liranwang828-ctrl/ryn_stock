@@ -215,6 +215,16 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - 新发现：周六 intraday snapshot 仍标记 `in_window=true/status=verified`，需在真实 DAILY-2/3 前增加交易日校验；
 - 当前状态保持：fallback observation 可用，formal Stage 0 未完成。
 
+### Operating Console 首屏精简（2026-07-12）
+
+- 首屏已收缩为今日步骤、事实就绪、当前对话、今日关注四块；
+- coordinator、artifact、skill task、snapshot form、旧 routes 与认知摘要已移入默认折叠的诊断详情；
+- 页面继续只读 `daily_status`，未恢复流程按钮，growth cognition dashboard 未修改；
+- focused source-contract tests 通过；
+- 本地 HTTP `/` 与 `/api/coordinator-summary` 均返回 200，页面包含四块首屏和默认折叠 diagnostics；
+- Playwright 实际截图确认首屏在一个视口内完成主要信息呈现；
+- 当前“今日关注”仍可能来自旧会话 snapshot，本轮明确视为恢复数据问题，不代表今日焦点池已经确认。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |

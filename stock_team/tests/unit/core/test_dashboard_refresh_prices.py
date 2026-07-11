@@ -579,3 +579,19 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert 'data-choice="init_day"' not in page
     assert 'data-choice="record_focus_confirmation"' not in page
     assert 'data-choice="start_stage1"' not in page
+
+
+def test_operating_console_first_screen_is_four_summaries_with_collapsed_diagnostics():
+    from pathlib import Path
+
+    page = (Path(__file__).parents[4] / "investing-os" / "dashboards" / "operating-console.html").read_text(encoding="utf-8")
+
+    for element_id in (
+        "dailyStepSummary", "factReadinessSummary",
+        "conversationPromptSummary", "todayFocusSummary",
+    ):
+        assert f'id="{element_id}"' in page
+    assert '<details id="diagnosticDetails">' in page
+    assert "renderDailyFirstScreen(dailyStatus, manifest)" in page
+    assert page.index('id="diagnosticDetails"') < page.index('id="skillTaskCard"')
+    assert page.index('id="diagnosticDetails"') < page.index('class="snapshot"')

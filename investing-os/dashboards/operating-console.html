@@ -121,8 +121,18 @@
     .button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fbfcfe; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 700; }
     .button.primary { border-color: #b2ddff; background: #eff8ff; color: var(--blue); }
     .button.secondary { border-color: #fedf89; background: #fffaeb; color: var(--amber); }
+    .daily-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .daily-summary-card { min-height: 118px; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 16px; box-shadow: var(--shadow); }
+    .daily-summary-card h2 { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+    .daily-summary-card strong { display: block; font-size: 20px; margin-bottom: 8px; }
+    .daily-summary-card p { margin: 0; line-height: 1.55; color: var(--ink); }
+    #conversationPromptSummary { border-color: #b2ddff; background: #f5fbff; }
+    #todayFocusSummary { border-color: #fedf89; background: #fffcf5; }
+    #diagnosticDetails { margin-top: 12px; }
+    #diagnosticDetails > summary { cursor: pointer; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafc; font-weight: 700; }
+    #diagnosticDetails[open] > summary { margin-bottom: 12px; }
     code { font-family: Consolas, monospace; font-size: 12px; }
-    @media (max-width: 1100px) { .top, .grid, .routes, .split, .cognitive-grid, .workflow, .hero-summary { grid-template-columns: 1fr; } .hero-title { font-size: 26px; } .hero-top { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .top, .grid, .routes, .split, .cognitive-grid, .workflow, .hero-summary, .daily-overview { grid-template-columns: 1fr; } .hero-title { font-size: 26px; } .hero-top { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -133,6 +143,24 @@
       <div class="build-chip">Build: 2026-06-14 CN-FIX-1</div>
       <div class="links" id="links"></div>
     </header>
+
+    <main class="daily-overview" aria-label="Today daily workflow summary">
+      <article class="daily-summary-card" id="dailyStepSummary">
+        <h2>今日步骤</h2><strong>正在读取</strong><p>等待 DAILY 状态检查。</p>
+      </article>
+      <article class="daily-summary-card" id="factReadinessSummary">
+        <h2>事实就绪</h2><strong>正在读取</strong><p>等待账户与市场产物。</p>
+      </article>
+      <article class="daily-summary-card" id="conversationPromptSummary">
+        <h2>当前对话</h2><strong>下一步</strong><p>请在当前对话继续每日流程。</p>
+      </article>
+      <article class="daily-summary-card" id="todayFocusSummary">
+        <h2>今日关注</h2><strong>尚未确认</strong><p>等待焦点池与风险边界。</p>
+      </article>
+    </main>
+
+    <details id="diagnosticDetails">
+      <summary>诊断详情：文件、来源、协调器与旧工具</summary>
 
     <section class="hero" id="coordinator-summary">
       <div class="hero-top">
@@ -358,6 +386,7 @@
         </section>
       </div>
     </div>
+    </details>
   </div>
 
   <script>
@@ -560,6 +589,31 @@
       setEntryText("next-action", entry.nextAction || "inspect_runtime_state");
       setEntryList("missing-items", entry.missingItems || []);
     };
+    const renderDailyFirstScreen = (dailyStatus, manifest) => {
+      const status = dailyStatus || {};
+      const artifacts = Array.isArray(status.artifacts) ? status.artifacts : [];
+      const validCount = artifacts.filter((item) => item.present && item.valid).length;
+      const missing = Array.isArray(status.missing_items) ? status.missing_items : [];
+      const warnings = Array.isArray(status.warnings) ? status.warnings : [];
+      const focus = snapshotState && snapshotState.payload ? snapshotState.payload.focus_symbols : "";
+      document.getElementById("dailyStepSummary").innerHTML = `
+        <h2>今日步骤</h2>
+        <strong>${html(status.current_node || "尚未开始")} · ${html(status.current_step || "等待状态")}</strong>
+        <p>${html(status.overall_status || "not_started")}</p>`;
+      document.getElementById("factReadinessSummary").innerHTML = `
+        <h2>事实就绪</h2>
+        <strong>${validCount} / ${artifacts.length || 0} 项有效</strong>
+        <p>${html(missing[0] ? missing[0].message : "当前必需产物没有已知缺口。")}</p>`;
+      document.getElementById("conversationPromptSummary").innerHTML = `
+        <h2>当前对话</h2>
+        <strong>下一步</strong>
+        <p>${html(status.next_conversation_prompt || "请在当前对话开始或恢复今日流程。")}</p>`;
+      const boundary = status.observation_available ? "只读观察可用" : "等待正式权限确认";
+      document.getElementById("todayFocusSummary").innerHTML = `
+        <h2>今日关注</h2>
+        <strong>${html(focus || "焦点池尚未确认")}</strong>
+        <p>${html(warnings[0] || boundary)}</p>`;
+    };
     let snapshotState = null;
     const workflowSteps = [
       { id: "init-day", name: "Init Day", note: "Create or resume today's session." },
@@ -718,6 +772,7 @@
 
     const renderCoordinator = (manifest) => {
       if (manifest.status === "empty") {
+        renderDailyFirstScreen(null, manifest);
         renderEntryState({
           todayMode: "maintenance",
           currentStep: "DAY_NOT_STARTED",
@@ -758,6 +813,7 @@
       const marketDate = manifest.session && manifest.session.market_date ? manifest.session.market_date : "--";
       const sessionId = manifest.session && manifest.session.session_id ? manifest.session.session_id : "--";
       const dailyStatus = manifest.daily_status || {};
+      renderDailyFirstScreen(dailyStatus, manifest);
       const manifestEntry = manifest.entry_state || {};
       renderEntryState({
         todayMode: manifestEntry.today_mode || manifest.mode || "mixed-entry",
