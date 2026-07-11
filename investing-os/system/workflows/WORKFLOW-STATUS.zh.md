@@ -182,6 +182,30 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 4. 用离线 fixture 隔离跑 DAILY-0/1，再安排真实盘前时点试跑；
 5. DAILY-0/1 稳定后再设计 intraday conversation event schema。
 
+### DAILY status manifest 第一实施批次（2026-07-11）
+
+实现提交范围：
+
+- session schema 已增加 `daily0_confirmation`，记录活动模式、账户事实状态、分析范围和用户确认；
+- 新增 `daily-status.schema.json` 与独立只读 `stock_team/orchestration/daily_status.py`；
+- builder 已从现有 DAILY-0/1 runtime 文件推导五节点、DAILY-1A/B/C/D、artifact 状态、缺口提示与 `state_sync_needed`；
+- dashboard server 已生成并暴露 `{session_id}-daily-status.json`，兼容 `entry_state` 由 manifest 投影；
+- operating console 已移除主流程 Init/Confirm/Start 按钮，改为只读显示 manifest 与“在当前对话继续”提示；
+- growth cognition dashboard 未修改；
+- 离线 fixture 已从 DAILY-0 confirmation 推进到 DAILY-2 observation，未冒充真实盘前数据成功。
+
+验证：
+
+- `python -m pytest stock_team/tests/unit/orchestration stock_team/tests/integration/test_daily_e2e.py -q` → 143 passed；
+- `python -m pytest stock_team/tests/unit/core/test_dashboard_refresh_prices.py -k "not dashboard_reads_from_runtime_manifest" -q` → 22 passed, 1 deselected；
+- 保留的旧失败：`test_dashboard_reads_from_runtime_manifest` 使用固定 2026-07-01 `archived_at`，当前返回 stale 而非测试期待的 fresh，与本批 manifest 实现无关。
+
+当前边界：
+
+- 已完成离线 DAILY-0/1 文件驱动闭环与 Dashboard 投影；
+- 尚未完成真实 IBKR 账户确认写入、真实盘前 provider 数据试跑、盘中 conversation event runtime 和 DAILY-4→growth dashboard 桥接；
+- 下一步应进行隔离启动检查，然后在真实盘前窗口运行数据获取，不应继续扩展 schema。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |

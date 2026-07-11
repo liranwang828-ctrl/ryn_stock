@@ -364,7 +364,7 @@ def test_new_trading_session_defaults():
     session = new_trading_session("test-session", "2026-07-01", "2026-07-01T09:00:00+00:00")
     assert session["state"] == "DAY_INITIALIZED"
     assert session["state_version"] == 1
-    assert session["allowed_actions"] == ["start_stage0"]
+    assert session["allowed_actions"] == ["start_stage0", "start_stage0_from_snapshot"]
     assert session["session_type"] == "trading"
     assert session["data_quality"]["status"] == "unknown"
     assert session["pending_confirmations"] == []

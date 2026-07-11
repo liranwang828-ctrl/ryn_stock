@@ -106,3 +106,46 @@ def test_daily_status_schema_declares_required_contract():
         "next_conversation_prompt", "nodes", "artifacts", "missing_items",
         "warnings", "state_sync", "cognition_links",
     }
+
+
+def test_offline_daily0_daily1_artifacts_reach_open_observation(tmp_path):
+    inputs = tmp_path / "inputs"
+    packets = tmp_path / "packets"
+    inputs.mkdir()
+    packets.mkdir()
+    sid = "trading-2026-07-11"
+    (inputs / f"{sid}-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-07-11",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": ["loss_repair_reentry"],
+    }), encoding="utf-8")
+    (inputs / f"{sid}-pre-market-snapshot.json").write_text(json.dumps({
+        "markets": {
+            symbol: {"price": 1, "prev_close": 1, "source": "polygon_premarket_snapshot"}
+            for symbol in ("QQQ", "SPY", "IWM", "VIXY")
+        }
+    }), encoding="utf-8")
+    (packets / f"{sid}-stage0-market-context.md").write_text("# Stage 0\n", encoding="utf-8")
+    (inputs / f"{sid}-stage0-discussion-notes.md").write_text("# Discussion\n## Market Context\n## Risk\n", encoding="utf-8")
+    (inputs / f"{sid}-stage1-decision-sheet.json").write_text(json.dumps({
+        "date": "2026-07-11", "focus_symbols": ["NVDA"], "user_confirmed": True
+    }), encoding="utf-8")
+    (packets / f"{sid}-stage1-plan-evidence.md").write_text("# Stage 1\nNVDA\n", encoding="utf-8")
+    (inputs / f"{sid}-trading-plan.json").write_text(json.dumps({
+        "risk_mode": "observe_only",
+        "allowed_actions": [],
+        "forbidden_actions": ["new_risk"],
+        "user_confirmation": {"confirmed": True, "confirmed_version": "v1"},
+    }), encoding="utf-8")
+    (inputs / f"{sid}-intraday-guidance.json").write_text(json.dumps({
+        "risk_mode": "observe_only", "allowed_actions": [], "forbidden_actions": ["new_risk"]
+    }), encoding="utf-8")
+
+    manifest = build_daily_status(session=_session(), runtime_root=tmp_path)
+
+    assert manifest["current_node"] == "DAILY-2"
+    assert manifest["current_step"] == "DAILY-2"
+    assert manifest["overall_status"] == "active"
+    assert manifest["observation_available"] is True
+    assert manifest["missing_items"] == []
