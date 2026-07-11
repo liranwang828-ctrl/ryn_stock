@@ -206,6 +206,15 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - 尚未完成真实 IBKR 账户确认写入、真实盘前 provider 数据试跑、盘中 conversation event runtime 和 DAILY-4→growth dashboard 桥接；
 - 下一步应进行隔离启动检查，然后在真实盘前窗口运行数据获取，不应继续扩展 schema。
 
+### yfinance 隔离试跑（2026-07-11）
+
+- 记录：`investing-os/handoff/2026-07-11-yfinance-isolated-daily-trial.zh.md`；
+- yfinance 直接获取 COHR 成功，现有 intraday snapshot 也生成了价格/VWAP/量比事实；
+- 正式 Stage 0 正确拒绝无 explicit premarket snapshot 的 yfinance fallback；
+- 旧 `premarket --refresh` 生成分析缓存后超时，并改写正式 config，暂不接入 DAILY；
+- 新发现：周六 intraday snapshot 仍标记 `in_window=true/status=verified`，需在真实 DAILY-2/3 前增加交易日校验；
+- 当前状态保持：fallback observation 可用，formal Stage 0 未完成。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |
