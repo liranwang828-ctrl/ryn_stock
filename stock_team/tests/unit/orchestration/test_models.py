@@ -478,3 +478,37 @@ def test_new_trading_session_allowed_actions_includes_both_stage0_intents():
     assert "start_stage0" in session["allowed_actions"]
     assert "start_stage0_from_snapshot" in session["allowed_actions"]
     assert len(session["allowed_actions"]) == 2
+
+
+def test_validate_session_accepts_daily0_confirmation():
+    session = new_trading_session(
+        session_id="trading-2026-07-11",
+        market_date="2026-07-11",
+        now="2026-07-11T08:00:00-04:00",
+        session_type="observation",
+    )
+    session["daily0_confirmation"] = {
+        "confirmed_at": "2026-07-11T08:01:00-04:00",
+        "activity_mode": "observation",
+        "account_fact_status": "stale_unverified",
+        "account_snapshot_ref": "runtime/inputs/account.json",
+        "analysis_scope_ref": "runtime/inputs/universe.json",
+        "user_confirmed": True,
+    }
+
+    assert validate_session(session) == session
+
+
+def test_session_schema_declares_daily0_confirmation():
+    schema = load_schema("session-state.schema.json")
+    confirmation = schema["properties"]["daily0_confirmation"]
+
+    assert confirmation["additionalProperties"] is False
+    assert set(confirmation["required"]) == {
+        "confirmed_at",
+        "activity_mode",
+        "account_fact_status",
+        "account_snapshot_ref",
+        "analysis_scope_ref",
+        "user_confirmed",
+    }

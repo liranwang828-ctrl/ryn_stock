@@ -59,7 +59,7 @@ SESSION_REQUIRED = {
     "processed_actions",
     "updated_at",
 }
-SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path", "daily4_review_path"}
+SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path", "daily4_review_path", "daily0_confirmation"}
 REVIEW_MODES = {"full_review", "quick_review", "freeze"}
 JUDGMENT_TYPES = {"thesis", "execution", "sizing", "emotion", "data_quality"}
 CONFIDENCE_LEVELS = {"low", "medium", "high"}
@@ -159,6 +159,26 @@ def validate_session(data: dict) -> dict:
         raise ValidationError("intraday_exceptions must be a list")
     if data.get("observation_exceptions") is not None and not isinstance(data["observation_exceptions"], list):
         raise ValidationError("observation_exceptions must be a list")
+    confirmation = data.get("daily0_confirmation")
+    if confirmation is not None:
+        if not isinstance(confirmation, dict):
+            raise ValidationError("daily0_confirmation must be an object")
+        required = {
+            "confirmed_at", "activity_mode", "account_fact_status",
+            "account_snapshot_ref", "analysis_scope_ref", "user_confirmed",
+        }
+        _require_keys(confirmation, required, set(), "daily0_confirmation")
+        _require_iso_datetime(confirmation["confirmed_at"], "daily0_confirmation.confirmed_at")
+        if confirmation["activity_mode"] not in SESSION_TYPES:
+            raise ValidationError("daily0_confirmation.activity_mode must be canonical")
+        if confirmation["account_fact_status"] not in IBKR_FACT_STATUSES:
+            raise ValidationError("daily0_confirmation.account_fact_status must be canonical")
+        if not isinstance(confirmation["account_snapshot_ref"], str):
+            raise ValidationError("daily0_confirmation.account_snapshot_ref must be a string")
+        if not isinstance(confirmation["analysis_scope_ref"], str):
+            raise ValidationError("daily0_confirmation.analysis_scope_ref must be a string")
+        if confirmation["user_confirmed"] is not True:
+            raise ValidationError("daily0_confirmation.user_confirmed must be true")
     _require_iso_datetime(data["updated_at"], "updated_at")
     return data
 

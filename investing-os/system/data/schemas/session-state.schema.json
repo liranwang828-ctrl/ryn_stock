@@ -108,6 +108,32 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "daily0_confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confirmed_at",
+        "activity_mode",
+        "account_fact_status",
+        "account_snapshot_ref",
+        "analysis_scope_ref",
+        "user_confirmed"
+      ],
+      "properties": {
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "activity_mode": {
+          "type": "string",
+          "enum": ["trading", "observation", "research", "review", "maintenance"]
+        },
+        "account_fact_status": {
+          "type": "string",
+          "enum": ["verified", "stale_unverified", "missing"]
+        },
+        "account_snapshot_ref": { "type": "string" },
+        "analysis_scope_ref": { "type": "string" },
+        "user_confirmed": { "const": true }
+      }
+    },
     "last_error": {
       "anyOf": [
         {
