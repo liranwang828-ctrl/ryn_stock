@@ -156,6 +156,32 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - 优先做最小可用闭环：进入入口时能判断“只是看见数据”还是“正式 Stage0 ready”；
 - 后续再决定哪些 `stock_team` 过渡文件可以合并回 `investing-os` 主链，哪些应标记为 retire-later。
 
+### 对话驱动 DAILY 现有资产映射（2026-07-11）
+
+设计与执行依据：
+
+- `investing-os/docs/superpowers/specs/2026-07-11-conversation-driven-daily-workflow-design.zh.md`
+- `investing-os/docs/superpowers/plans/2026-07-11-daily-existing-assets-mapping-plan.zh.md`
+- `investing-os/handoff/2026-07-11-daily-existing-assets-map.zh.md`
+- `investing-os/handoff/2026-07-11-daily-existing-file-ledger.zh.md`
+
+当前结论：
+
+- DAILY-0/1 的 session、正式盘前 snapshot、Stage 0、对话笔记、焦点确认、Stage 1、计划与盘中指导文件均已有可复用链；
+- DAILY-2/3 的盘中 snapshot、evidence dashboard、权限投影和例外确认已有实现，缺口集中在“用户主动观察 + 对话引用 + pending_review”的结构化事件文件；
+- DAILY-4 的 full/quick/freeze schema、归档门和跨日恢复已有实现，缺口集中在对话聚类复盘与 growth dashboard promotion queue 的桥接；
+- `operating-console.html` 作为每日交易 Dashboard 复用，但应改为只读统一 manifest，不再承担 Init/Confirm/Start 等流程推进；
+- `growth-dashboard-draft.html` 及其 traceability 数据生成链作为独立认知 Dashboard 原样复用；
+- 当前最小新增能力是 `daily-status manifest` builder，而不是新建 DAILY 文件体系或新 Dashboard。
+
+下一实施批次：
+
+1. 定义 daily-status manifest 精确 schema，并映射到现有 runtime 文件；
+2. 测试先行实现只读 manifest builder；
+3. operating console 改为只渲染 manifest 和下一句对话建议；
+4. 用离线 fixture 隔离跑 DAILY-0/1，再安排真实盘前时点试跑；
+5. DAILY-0/1 稳定后再设计 intraday conversation event schema。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |
