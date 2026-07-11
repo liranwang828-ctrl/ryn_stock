@@ -545,3 +545,25 @@ def test_coordinator_summary_payload_exposes_blocker_missing_items(tmp_path, mon
 
     assert payload["entry_state"]["missing_items"] == ["tool execution failed; inspect runtime inputs"]
     assert payload["entry_state"]["readiness"] == "blocked"
+
+
+def test_coordinator_summary_payload_exposes_read_only_daily_status(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    session = {
+        "session_id": "trading-2026-07-11",
+        "session_type": "observation",
+        "state": "DAY_INITIALIZED",
+        "market_date": "2026-07-11",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["daily_status"]["current_node"] == "DAILY-0"
+    assert payload["daily_status"]["overall_status"] == "waiting_user"
+    assert session.get("daily0_confirmation") is None

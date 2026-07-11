@@ -21,6 +21,7 @@ import threading
 import time
 import uuid
 import urllib.parse
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as HTTPServer
 from datetime import datetime, date as _date, timedelta, timezone
 from stock_team.utils.workspace_paths import investing_os_home
@@ -802,6 +803,8 @@ def _build_minimal_entry_state(session_summary: dict | None, blockers: list[str]
 
 
 def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir: str = BASE) -> dict:
+    from stock_team.orchestration.daily_status import build_daily_status, write_daily_status
+
     state = session.get("state")
     effective_state = _effective_coordinator_state(session)
     phase = _coordinator_phase_from_state(effective_state)
@@ -830,12 +833,18 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
     blockers = []
     if state == "FAILED_TOOL":
         blockers.append("tool execution failed; inspect runtime inputs")
+    runtime_root = Path(investing_os_home(base_dir)) / "system" / "runtime"
+    daily_status = build_daily_status(session=session, runtime_root=runtime_root)
+    manifest_path = runtime_root / "manifests" / f"{session.get('session_id', 'current')}-daily-status.json"
+    write_daily_status(daily_status, manifest_path)
     entry_state = _build_minimal_entry_state({
         "mode": session.get("mode", "mixed-entry"),
         "state": state,
-        "readiness": "partial",
-        "next_action": first_action,
-    }, blockers)
+        "readiness": "blocked" if daily_status["overall_status"] == "blocked" else (
+            "ready" if daily_status["overall_status"] in {"active", "complete"} else "partial"
+        ),
+        "next_action": daily_status["next_conversation_prompt"] or first_action,
+    }, blockers or [item["message"] for item in daily_status["missing_items"]])
     return {
         "status": "ok",
         "session": {
@@ -853,6 +862,7 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
         "needs_review": needs_review,
         "mode": "mixed-entry",
         "entry_state": entry_state,
+        "daily_status": daily_status,
         "cross_day": {
             "needs_review": needs_review,
             "decision_applied": bool(decision),
