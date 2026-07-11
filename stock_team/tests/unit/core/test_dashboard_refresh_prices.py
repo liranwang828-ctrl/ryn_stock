@@ -567,3 +567,15 @@ def test_coordinator_summary_payload_exposes_read_only_daily_status(tmp_path, mo
     assert payload["daily_status"]["current_node"] == "DAILY-0"
     assert payload["daily_status"]["overall_status"] == "waiting_user"
     assert session.get("daily0_confirmation") is None
+
+
+def test_operating_console_uses_daily_status_as_read_only_workflow_view():
+    from pathlib import Path
+
+    page = (Path(__file__).parents[4] / "investing-os" / "dashboards" / "operating-console.html").read_text(encoding="utf-8")
+
+    assert "manifest.daily_status" in page
+    assert 'id="conversationWorkflowNotice"' in page
+    assert 'data-choice="init_day"' not in page
+    assert 'data-choice="record_focus_confirmation"' not in page
+    assert 'data-choice="start_stage1"' not in page

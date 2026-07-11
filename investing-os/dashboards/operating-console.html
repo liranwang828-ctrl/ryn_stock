@@ -206,6 +206,9 @@
         </div>
       </div>
       <div class="workflow" id="workflowSteps"></div>
+      <div class="coordinator-meta" id="conversationWorkflowNotice">
+        <span class="badge blue">流程由当前对话推进；Dashboard 只读检查 canonical 文件。</span>
+      </div>
     </section>
 
     <section class="task-card" id="skillTaskCard">
@@ -650,39 +653,8 @@
       document.getElementById("skillTaskInstructions").innerHTML = (task.instructions || []).map((line) => `
         <div class="task-row"><span class="task-dot ready"></span><div>${html(line)}</div></div>
       `).join("");
-      const actions = [];
-      if ((task.outputs || []).some((item) => !item.exists)) {
-        actions.push(`<button class="button secondary" data-choice="bootstrap_current_task">Create Starter Files</button>`);
-      }
-      if (task.unlock_action === "record_focus_confirmation") {
-        actions.push(`<button class="button primary" data-choice="record_focus_confirmation" ${task.unlock_ready ? "" : "disabled"}>Confirm Discussion Outputs</button>`);
-      }
-      if (task.unlock_action === "start_stage1") {
-        actions.push(`<button class="button primary" data-choice="start_stage1" ${task.unlock_ready ? "" : "disabled"}>Start Stage 1 Evidence</button>`);
-      }
-      document.getElementById("skillTaskActions").innerHTML = actions.join("") || `<span class="badge">No task action available</span>`;
-      document.querySelectorAll("#skillTaskActions button").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const choice = button.getAttribute("data-choice");
-          button.disabled = true;
-          try {
-            const response = choice === "bootstrap_current_task"
-              ? await fetch("/api/coordinator-task-bootstrap", { method: "POST" })
-              : await fetch("/api/coordinator-action", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ choice }),
-                });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const updated = await response.json();
-            renderCoordinator(updated);
-          } catch (err) {
-            document.getElementById("skillTaskSummary").textContent = `Task action failed: ${err.message}`;
-          } finally {
-            button.disabled = false;
-          }
-        });
-      });
+      document.getElementById("skillTaskActions").innerHTML =
+        `<span class="badge blue">在当前对话生成并确认这些产物</span>`;
     };
 
     const readSnapshotForm = () => ({
@@ -770,22 +742,7 @@
           `<span class="badge">Mode: mixed-entry</span>`,
         ].join("");
         document.getElementById("coordinatorActions").innerHTML =
-          `<button class="button primary" data-choice="init_day">Init Day</button>`;
-        document.querySelectorAll("#coordinatorActions button").forEach((button) => {
-          button.addEventListener("click", async () => {
-            button.disabled = true;
-            try {
-              const response = await fetch("/api/coordinator-init-day", { method: "POST" });
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const updated = await response.json();
-              renderCoordinator(updated);
-            } catch (err) {
-              document.getElementById("coordinatorLead").textContent = `Init failed: ${err.message}`;
-            } finally {
-              button.disabled = false;
-            }
-          });
-        });
+          `<span class="badge blue">请在当前对话开始或恢复今日会话</span>`;
         renderWorkflow("idle", "init-day");
         renderRoutes("idle", "pre_market");
         renderSkillTask(manifest.current_task);
@@ -800,15 +757,14 @@
       const decision = manifest.decision && manifest.decision.choice ? manifest.decision.choice : "none";
       const marketDate = manifest.session && manifest.session.market_date ? manifest.session.market_date : "--";
       const sessionId = manifest.session && manifest.session.session_id ? manifest.session.session_id : "--";
+      const dailyStatus = manifest.daily_status || {};
       const manifestEntry = manifest.entry_state || {};
       renderEntryState({
         todayMode: manifestEntry.today_mode || manifest.mode || "mixed-entry",
-        currentStep: manifestEntry.current_step || (manifest.session && manifest.session.state ? manifest.session.state : (manifest.effective_state || "unknown")),
-        readiness: manifestEntry.readiness || (manifest.session && manifest.session.state === "FAILED_TOOL" ? "blocked" : "partial"),
-        missingItems: manifestEntry.missing_items || (manifest.session && manifest.session.state === "FAILED_TOOL"
-          ? ["tool execution failed; inspect runtime inputs"]
-          : []),
-        nextAction: manifestEntry.next_action || firstAction,
+        currentStep: dailyStatus.current_step || manifestEntry.current_step || "unknown",
+        readiness: dailyStatus.overall_status || manifestEntry.readiness || "not_started",
+        missingItems: (dailyStatus.missing_items || []).map((item) => item.message) || manifestEntry.missing_items || [],
+        nextAction: dailyStatus.next_conversation_prompt || manifestEntry.next_action || firstAction,
       });
       document.getElementById("heroTitle").textContent = `You are in ${phase.replace("_", " ")}. Next required action: ${firstAction}.`;
       document.getElementById("coordinatorLead").textContent = manifest.session && manifest.session.state === "FAILED_TOOL"
@@ -833,51 +789,8 @@
         `<span class="badge blue">Priority: ${html(routePriority)}</span>`,
         `<span class="badge">Decision: ${html(decision)}</span>`,
       ].join("");
-      const buttons = [];
-      if (manifest.needs_review) {
-        buttons.push(`<button class="button primary" data-choice="freeze">Freeze and start new day</button>`);
-        buttons.push(`<button class="button secondary" data-choice="quick_review">Quick review</button>`);
-      }
-      if (firstAction === "start_stage0") {
-        buttons.push(`<button class="button primary" data-choice="start_stage0">Start Stage 0</button>`);
-      } else if (firstAction === "retry_last_action") {
-        buttons.push(`<button class="button primary" data-choice="start_stage0">Retry Stage 0</button>`);
-      }
-      buttons.push(`<button class="button" data-choice="continue">Continue current session</button>`);
-      document.getElementById("coordinatorActions").innerHTML = buttons.join("");
-      document.querySelectorAll("#coordinatorActions button").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const choice = button.getAttribute("data-choice");
-          const note = choice === "quick_review" ? "quick review from console" : "";
-          button.disabled = true;
-          try {
-            const response = choice === "start_stage0"
-              ? await fetch("/api/coordinator-action", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ choice }),
-                })
-              : await fetch("/api/coordinator-decision", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ choice, note }),
-                });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const updated = await response.json();
-            renderCoordinator(updated);
-            if (choice === "start_stage0" && updated.action_context) {
-              const context = updated.action_context;
-              document.getElementById("coordinatorLead").textContent =
-                `Stage 0 launched. Universe input: ${context.generated_universe_path}. Market packet: ${context.stage0_output_path}. Premarket source: ${context.snapshot_formal_ready ? "verified provider feed" : "refreshing provider feed"}.`;
-            }
-            await loadSnapshotForm();
-          } catch (err) {
-            document.getElementById("coordinatorLead").textContent = `Submit failed: ${err.message}`;
-          } finally {
-            button.disabled = false;
-          }
-        });
-      });
+      document.getElementById("coordinatorActions").innerHTML =
+        `<span class="badge blue">${html(dailyStatus.next_conversation_prompt || "请在当前对话继续每日流程")}</span>`;
       renderWorkflow(phase, firstAction);
       renderRoutes(phase, routePriority);
       renderSkillTask(manifest.current_task);
