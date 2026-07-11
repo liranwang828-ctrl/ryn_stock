@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://investing-os.local/schemas/daily-status.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "trading_date", "generated_at", "current_node",
+    "current_step", "overall_status", "observation_available",
+    "next_conversation_prompt", "nodes", "artifacts", "missing_items",
+    "warnings", "state_sync", "cognition_links"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "trading_date": { "type": "string", "format": "date" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "current_node": { "enum": ["DAILY-0", "DAILY-1", "DAILY-2", "DAILY-3", "DAILY-4"] },
+    "current_step": { "type": "string", "pattern": "^DAILY-[0-4]([A-D])?$" },
+    "overall_status": { "$ref": "#/$defs/status" },
+    "observation_available": { "type": "boolean" },
+    "next_conversation_prompt": { "type": "string" },
+    "nodes": { "type": "array", "items": { "type": "object" } },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "present", "valid", "confirmed", "freshness", "source", "updated_at", "issues"],
+        "properties": {
+          "role": { "type": "string" },
+          "path": { "type": "string" },
+          "present": { "type": "boolean" },
+          "valid": { "type": "boolean" },
+          "confirmed": { "type": "boolean" },
+          "freshness": { "enum": ["fresh", "stale", "missing", "unknown"] },
+          "source": { "type": "string" },
+          "updated_at": { "type": ["string", "null"] },
+          "issues": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "missing_items": { "type": "array", "items": { "type": "object" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "state_sync": {
+      "type": "object",
+      "required": ["needed", "canonical_step", "coordinator_state", "suggested_action"],
+      "properties": {
+        "needed": { "type": "boolean" },
+        "canonical_step": { "type": "string" },
+        "coordinator_state": { "type": ["string", "null"] },
+        "suggested_action": { "type": "string" }
+      }
+    },
+    "cognition_links": {
+      "type": "object",
+      "required": ["context_inputs", "cognition_updates", "promotion_queue"],
+      "properties": {
+        "context_inputs": { "type": "array" },
+        "cognition_updates": { "type": "array" },
+        "promotion_queue": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "status": { "enum": ["not_started", "waiting_data", "waiting_user", "active", "blocked", "complete"] }
+  }
+}
