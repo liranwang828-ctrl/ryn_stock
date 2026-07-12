@@ -225,6 +225,19 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - Playwright 实际截图确认首屏在一个视口内完成主要信息呈现；
 - 当前“今日关注”仍可能来自旧会话 snapshot，本轮明确视为恢复数据问题，不代表今日焦点池已经确认。
 
+### Operating Console 分页信息架构（2026-07-12）
+
+- 新规格：`investing-os/docs/superpowers/specs/2026-07-12-operating-console-paged-information-architecture.zh.md`；
+- 本实现取代同日“首屏四块 + 整体折叠”的布局：四块重复摘要、旧 coordinator hero、minimal entry、daily routes 和 cognitive summary 已退出；
+- `operating-console.html` 现提供 `#today / #evidence / #review / #diagnostics` 四个互斥页面，并保留独立认知系统入口；
+- 今日页只显示唯一主任务、DAILY 时间线、确认焦点/权限和最高提醒；
+- 证据页显示 artifact readiness 与当前产物任务；
+- 复盘页对尚未接线的 intraday events / cognition bridge 明确显示缺失；
+- 诊断页承接 coordinator、state sync、路径和 fallback 链接，不参与流程推进；
+- focused Dashboard tests：23 passed，1 个已知 fixed-date freshness test deselected；
+- Playwright 验证 desktop/mobile，`#review` 与 `#diagnostics` 均只有一个 active page；唯一 console error 为 favicon.ico 404；
+- 当前页面仍读取旧会话 `2026-06-15`，不应解释为今日 session 已恢复。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |

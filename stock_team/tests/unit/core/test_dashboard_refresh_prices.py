@@ -575,23 +575,28 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     page = (Path(__file__).parents[4] / "investing-os" / "dashboards" / "operating-console.html").read_text(encoding="utf-8")
 
     assert "manifest.daily_status" in page
-    assert 'id="conversationWorkflowNotice"' in page
+    assert 'id="todayPrompt"' in page
+    assert 'fetch("/api/coordinator-summary")' in page
+    assert 'method: "POST"' not in page
     assert 'data-choice="init_day"' not in page
     assert 'data-choice="record_focus_confirmation"' not in page
     assert 'data-choice="start_stage1"' not in page
 
 
-def test_operating_console_first_screen_is_four_summaries_with_collapsed_diagnostics():
+def test_operating_console_has_four_hash_pages_without_duplicate_legacy_summaries():
     from pathlib import Path
 
     page = (Path(__file__).parents[4] / "investing-os" / "dashboards" / "operating-console.html").read_text(encoding="utf-8")
 
-    for element_id in (
+    for element_id in ("pageToday", "pageEvidence", "pageReview", "pageDiagnostics"):
+        assert f'id="{element_id}"' in page
+    for route in ("#today", "#evidence", "#review", "#diagnostics"):
+        assert f'href="{route}"' in page
+    assert "setPageFromHash" in page
+    assert "window.addEventListener(\"hashchange\"" in page
+    for removed in (
         "dailyStepSummary", "factReadinessSummary",
         "conversationPromptSummary", "todayFocusSummary",
+        "Minimal Entry State", "Daily Routes",
     ):
-        assert f'id="{element_id}"' in page
-    assert '<details id="diagnosticDetails">' in page
-    assert "renderDailyFirstScreen(dailyStatus, manifest)" in page
-    assert page.index('id="diagnosticDetails"') < page.index('id="skillTaskCard"')
-    assert page.index('id="diagnosticDetails"') < page.index('class="snapshot"')
+        assert removed not in page
