@@ -58,6 +58,8 @@ investing-os/system/runtime/sessions/*
 investing-os/system/runtime/coordinator-decisions/
 investing-os/system/runtime/inputs/
 investing-os/system/runtime/packets/
+investing-os/system/runtime/archive/
+investing-os/system/runtime/manifests/
 investing-os/system/runtime/trade-history/
 investing-os/system/runtime/*.lock
 investing-os/system/runtime/*.tmp

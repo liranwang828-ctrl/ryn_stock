@@ -40,6 +40,35 @@ Dashboard/API 对历史失败会话现在返回：
 
 这比手工改 JSON 更可追溯，也不会把旧失败伪装成成功。
 
-## 尚需用户确认
+## 用户确认与实施结果
 
-是否采用上述方案，并在实现通过测试后，用它关闭 `trading-2026-06-15`。
+用户于 2026-07-12 确认采用上述方案。
+
+实施提交：
+
+- `db10c08`：新增 `abandon_failed_session` 状态机契约；
+- `1c8173e`：生成失败债务并登记同 session 历史产物；
+- `1cb8583`：验证完整归档链；
+- `0e923ea`：债务文件改为独立的 `failed-session-debt.json`，避免覆盖已有 `daily4-review.json`。
+
+真实运行结果：
+
+- `trading-2026-06-15`：`FAILED_TOOL -> CLOSED_UNREVIEWED -> DAY_ARCHIVED`；
+- 新债务文件：`investing-os/system/runtime/inputs/trading-2026-06-15-failed-session-debt.json`；
+- 归档 manifest：`investing-os/system/runtime/archive/2026-06-15/trading-2026-06-15/archive_manifest.json`；
+- 归档状态：`complete`；
+- 归档文件：8；
+- missing：0；
+- rejected：0；
+- 源文件与归档文件 hash 不一致：0；
+- 原 `daily4-review.json` 未被债务文件覆盖，并作为历史产物一并归档。
+
+关闭后的 Dashboard API：
+
+- `status = empty`；
+- `session_kind = not_started`；
+- `calendar_status = verified`；
+- 当前为非交易日，`formal_session_allowed = false`；
+- 没有自动创建 2026-07-13 session。
+
+runtime session、债务文件和归档目录属于运行态证据，不提交 Git；本文件保存可追溯结论。
