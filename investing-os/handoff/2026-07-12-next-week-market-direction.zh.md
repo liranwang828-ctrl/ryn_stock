@@ -44,6 +44,16 @@
 - https://www.asml.com/investors/financial-calendar
 - https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2026/Netflix-to-Announce-Second-Quarter-2026-Financial-Results/default.aspx
 
+### 官方日历复核（2026-07-12）
+
+因用户质疑“下周是否仍有 CPI/PPI”，已重新直接核对 BLS 官方 2026 年 7 月发布日历，而非沿用二手周历：
+
+- Tuesday, July 14, 2026：Consumer Price Index，June 2026，08:30 AM ET；
+- Wednesday, July 15, 2026：Producer Price Index，June 2026，08:30 AM ET；
+- 官方日历页面标注 Last Modified Date: February 18, 2026，并说明日历会按需要更新。
+
+核对地址：https://www.bls.gov/schedule/2026/07_sched.htm
+
 ## 认知系统过滤器
 
 最近亏损较多时，本系统的正确目标不是快速回本，而是防止以下链条再次发生：
