@@ -44,3 +44,9 @@
 - `investing-os/handoff/2026-07-13-daily0-preparation-draft.zh.md`
 
 账户事实仍为 `stale_unverified`；涉及账户真实性和最终范围时再由用户确认。
+
+## 下周方向研究
+
+- `investing-os/handoff/2026-07-12-next-week-market-direction.zh.md`
+
+当前推荐：保持 observation；先看 CPI/PPI 与利率，再用半导体财报验证 AI 基础设施方向，不做亏损修复型追涨。
