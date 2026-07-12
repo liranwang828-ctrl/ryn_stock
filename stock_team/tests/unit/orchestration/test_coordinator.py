@@ -126,6 +126,50 @@ def test_successful_stage0_registers_sha256_artifact_and_advances_state(tmp_path
     assert state["artifacts"][0]["sha256"] == expected
 
 
+def test_stage0_observation_advances_observation_session_to_ready(tmp_path):
+    from stock_team.orchestration.adapters import AdapterResult
+
+    store = SessionStore(tmp_path / "sessions")
+    store.create(new_trading_session(
+        "observation-2026-07-10", "2026-07-10", "2026-07-10T08:00:00-04:00", session_type="observation"
+    ))
+    snapshot = tmp_path / "snapshot.json"
+    packet = tmp_path / "context.md"
+    snapshot.write_text("{}", encoding="utf-8")
+    packet.write_text("# observation", encoding="utf-8")
+    adapter = FakeAdapter(result=AdapterResult(command=[], stdout="", stderr="", artifact_paths=[str(snapshot), str(packet)]))
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-10T08:30:00-04:00")
+
+    state = coordinator.execute({
+        "intent": "start_stage0_observation",
+        "session_id": "observation-2026-07-10",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {"date": "2026-07-10", "as_of": "2026-07-10T08:30:00-04:00", "snapshot_out": str(snapshot), "out": str(packet)},
+        "idempotency_key": "observation-stage0-1",
+    })
+    assert state["state"] == "STAGE0_READY"
+    assert adapter.calls[0][0] == "start_stage0_observation"
+
+
+def test_stage0_observation_rejects_trading_session_before_adapter_call(tmp_path):
+    store = SessionStore(tmp_path / "sessions")
+    store.create(new_trading_session("trading-2026-07-10", "2026-07-10", "2026-07-10T08:00:00-04:00"))
+    adapter = FakeAdapter()
+    coordinator = WorkflowCoordinator(store, adapter, now_fn=lambda: "2026-07-10T08:30:00-04:00")
+
+    with pytest.raises(ValueError, match="observation session"):
+        coordinator.execute({
+            "intent": "start_stage0_observation",
+            "session_id": "trading-2026-07-10",
+            "expected_state": "DAY_INITIALIZED",
+            "user_confirmation": False,
+            "parameters": {"date": "2026-07-10", "as_of": "2026-07-10T08:30:00-04:00", "snapshot_out": "snapshot.json", "out": "context.md"},
+            "idempotency_key": "observation-stage0-rejected",
+        })
+    assert adapter.calls == []
+
+
 def test_adapter_failure_records_failed_tool_and_retry_metadata(tmp_path):
     store = SessionStore(tmp_path)
     store.create(new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00"))

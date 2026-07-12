@@ -31,6 +31,7 @@ ACTION_INTENTS = {
     "initialize_day",
     "start_stage0",
     "start_stage0_from_snapshot",
+    "start_stage0_observation",
     "record_focus_confirmation",
     "start_stage1",
     "record_plan_approval",
@@ -211,7 +212,11 @@ def new_trading_session(session_id: str, market_date: str, now: str, session_typ
         "artifacts": [],
         "data_quality": {"status": "unknown", "warnings": []},
         "pending_confirmations": [],
-        "allowed_actions": ["start_stage0", "start_stage0_from_snapshot"],
+        "allowed_actions": (
+            ["start_stage0_observation"]
+            if session_type == "observation"
+            else ["start_stage0", "start_stage0_from_snapshot"]
+        ),
         "processed_actions": [],
         "backlog_links": [],
         "intraday_exceptions": [],

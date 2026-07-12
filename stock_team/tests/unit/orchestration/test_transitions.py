@@ -101,3 +101,10 @@ def test_failed_tool_can_be_abandoned_only_through_confirmed_action_contract():
     assert "abandon_failed_session" in allowed_actions("FAILED_TOOL")
     assert requires_confirmation("abandon_failed_session") is True
     assert begin_transition("FAILED_TOOL", "abandon_failed_session") == "CLOSED_UNREVIEWED"
+
+
+def test_stage0_observation_moves_through_running_to_ready():
+    assert "start_stage0_observation" in allowed_actions("DAY_INITIALIZED")
+    running = begin_transition("DAY_INITIALIZED", "start_stage0_observation")
+    assert running == "STAGE0_RUNNING"
+    assert complete_transition(running, "start_stage0_observation", success=True) == "STAGE0_READY"

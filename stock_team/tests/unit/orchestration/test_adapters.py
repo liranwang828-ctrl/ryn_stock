@@ -319,3 +319,28 @@ def test_existing_start_stage0_still_builds_both_commands(tmp_path, monkeypatch)
     assert calls[1][0][:4] == ["python", "-m", "stock_team.cli", "market-context"]
     assert "--as-of" in calls[0][0]
     assert "--as-of" in calls[1][0]
+
+
+def test_start_stage0_observation_builds_only_observation_producer_command(tmp_path, monkeypatch):
+    calls = []
+    snapshot_path = tmp_path / "snapshot.json"
+    output_path = tmp_path / "context.md"
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        snapshot_path.write_text("{}", encoding="utf-8")
+        output_path.write_text("# observation", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    result = adapter.run("start_stage0_observation", {
+        "date": "2026-07-10",
+        "as_of": "2026-07-10T08:30:00-04:00",
+        "snapshot_out": str(snapshot_path),
+        "out": str(output_path),
+    })
+
+    assert len(calls) == 1
+    assert calls[0][0][:3] == ["python", "-m", "stock_team.data_ingest.observation_market_context"]
+    assert result.artifact_paths == [str(snapshot_path), str(output_path)]

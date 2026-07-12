@@ -131,6 +131,7 @@ def test_action_schema_requires_optimistic_state_and_idempotency():
     assert schema["properties"]["intent"]["enum"] == [
         "initialize_day",
         "start_stage0",
+        "start_stage0_observation",
         "record_focus_confirmation",
         "start_stage1",
         "record_plan_approval",
@@ -207,6 +208,23 @@ def test_validate_action_accepts_abandon_failed_session():
     })
 
     assert result["intent"] == "abandon_failed_session"
+
+
+def test_validate_action_accepts_start_stage0_observation():
+    result = validate_action({
+        "intent": "start_stage0_observation",
+        "session_id": "observation-2026-07-10",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {
+            "date": "2026-07-10",
+            "as_of": "2026-07-10T08:30:00-04:00",
+            "snapshot_out": "snapshot.json",
+            "out": "context.md",
+        },
+        "idempotency_key": "observation-stage0-1",
+    })
+    assert result["intent"] == "start_stage0_observation"
 
 
 def test_new_session_supports_all_session_types():

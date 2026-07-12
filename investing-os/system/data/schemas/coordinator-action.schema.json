@@ -16,6 +16,7 @@
       "enum": [
         "initialize_day",
         "start_stage0",
+        "start_stage0_observation",
         "record_focus_confirmation",
         "start_stage1",
         "record_plan_approval",

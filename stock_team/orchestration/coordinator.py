@@ -39,6 +39,11 @@ class WorkflowCoordinator:
                 return state
         if action["expected_state"] != state["state"]:
             raise ValueError(f"expected_state mismatch: {action['expected_state']} != {state['state']}")
+        if action["intent"] == "start_stage0_observation":
+            if state.get("session_type") != "observation":
+                raise ValueError("start_stage0_observation requires an observation session")
+            if action["parameters"].get("date") != state.get("market_date"):
+                raise ValueError("observation Stage 0 date must match session market_date")
         if action["intent"] == "abandon_failed_session":
             last_error = state.get("last_error") or {}
             if last_error.get("retryable") is not False:
