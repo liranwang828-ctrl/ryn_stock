@@ -50,3 +50,9 @@
 - `investing-os/handoff/2026-07-12-next-week-market-direction.zh.md`
 
 当前推荐：保持 observation；先看 CPI/PPI 与利率，再用半导体财报验证 AI 基础设施方向，不做亏损修复型追涨。
+
+## 五标的研究
+
+- `investing-os/handoff/2026-07-12-semiconductor-five-symbol-direction.zh.md`
+
+当前分类：TSM/AMAT 为待验证建仓候选；MU 暂不加仓；COHR 禁止补仓修复；NBIS 仅观察经营兑现与融资风险。
