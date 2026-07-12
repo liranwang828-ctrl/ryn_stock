@@ -861,6 +861,27 @@ def _coordinator_summary_payload(
         ),
         "next_action": daily_status["next_conversation_prompt"] or first_action,
     }, blockers or [item["message"] for item in daily_status["missing_items"]])
+    current_task = _build_current_task_payload(session, decision, base_dir)
+    if session_kind == "recovery_required":
+        first_action = "resolve_historical_session_in_conversation"
+        next_step = "resolve-historical-session"
+        recovery_message = "historical session must be resolved before a new formal trading session"
+        entry_state = _build_minimal_entry_state({
+            "mode": session.get("mode", "mixed-entry"),
+            "state": state,
+            "readiness": "blocked",
+            "next_action": first_action,
+        }, [recovery_message])
+        current_task = {
+            **current_task,
+            "id": "historical_session_recovery",
+            "title": "Resolve Historical Session",
+            "summary": (
+                f"Session {session.get('session_id', '')} is historical and cannot be retried as today's pre-market flow. "
+                "Review the recorded failure in the current conversation before closing or repairing it."
+            ),
+            "unlock_ready": False,
+        }
     return {
         "status": "ok",
         "session": {
@@ -886,7 +907,7 @@ def _coordinator_summary_payload(
             "decision_applied": bool(decision),
             "decision": decision,
         },
-        "current_task": _build_current_task_payload(session, decision, base_dir),
+        "current_task": current_task,
     }
 
 

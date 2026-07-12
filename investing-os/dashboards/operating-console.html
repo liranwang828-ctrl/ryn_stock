@@ -141,6 +141,9 @@
         document.getElementById("todayPrompt").textContent = manifest.entry_state?.next_action || "请在当前对话开始今日流程。";
       } else if (kind === "recovery_required") {
         document.getElementById("todayTask").textContent = `历史交易日 ${status.trading_date || "--"} 待恢复`;
+        document.getElementById("todayPrompt").textContent = manifest.entry_state?.next_action === "resolve_historical_session_in_conversation"
+          ? "请在当前对话检查并处理这次历史失败；不要重跑旧交易日的盘前数据。"
+          : "请在当前对话处理历史会话后再开始新交易日。";
       } else if (kind === "blocked") {
         document.getElementById("todayTask").textContent = "会话冲突，需要诊断";
       }

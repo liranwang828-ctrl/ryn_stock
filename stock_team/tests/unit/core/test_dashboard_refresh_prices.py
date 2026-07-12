@@ -612,6 +612,37 @@ def test_non_trading_day_recovery_compares_artifacts_with_last_trading_date(tmp_
     assert universe["freshness"] == "stale"
 
 
+def test_historical_failed_session_requires_conversation_resolution_not_retry(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    session = {
+        "session_id": "trading-2026-06-15",
+        "session_type": "trading",
+        "state": "FAILED_TOOL",
+        "market_date": "2026-06-15",
+        "mode": "trading",
+        "last_error": {"retryable": False, "intent": "start_stage0"},
+    }
+
+    payload = _coordinator_summary_payload(
+        session,
+        None,
+        base_dir=str(stock_team_home),
+        trading_date_context={"trading_date": "2026-07-13", "calendar_status": "verified"},
+        session_kind="recovery_required",
+    )
+
+    assert payload["first_action"] == "resolve_historical_session_in_conversation"
+    assert payload["next_step"] == "resolve-historical-session"
+    assert payload["entry_state"]["readiness"] == "blocked"
+    assert payload["entry_state"]["next_action"] == "resolve_historical_session_in_conversation"
+    assert "retry" not in payload["current_task"]["summary"].lower()
+
+
 def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     from pathlib import Path
 
@@ -629,6 +660,7 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert 'id="tradingDateEt"' in page
     assert 'id="beijingTime"' in page
     assert 'id="sessionKind"' in page
+    assert "resolve_historical_session_in_conversation" in page
 
 
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():
