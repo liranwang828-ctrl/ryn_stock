@@ -40,11 +40,33 @@ def _formal_snapshot(payload) -> bool:
     return True
 
 
+def _observation_snapshot(payload) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("evidence_level") != "observation_only":
+        return False
+    if payload.get("permission") != "no_trading_permission":
+        return False
+    if payload.get("source_kind") != "yfinance_observation_context":
+        return False
+    markets = payload.get("markets")
+    if not isinstance(markets, dict):
+        return False
+    for symbol in ("QQQ", "SPY", "IWM", "VIXY"):
+        row = markets.get(symbol)
+        if not isinstance(row, dict):
+            return False
+        if any(row.get(field) in (None, "") for field in ("price", "prev_close", "source", "data_as_of")):
+            return False
+    return True
+
+
 def _artifact(
     role: str,
     path: Path,
     session_trading_date: str,
     active_trading_date: str | None,
+    observation_mode: bool,
 ) -> tuple[dict, object]:
     present = path.exists()
     payload = None
@@ -71,8 +93,12 @@ def _artifact(
                 valid = False
                 issues.append("missing:" + ".".join(keys))
     elif valid and role == "premarket_snapshot":
-        valid = _formal_snapshot(payload)
-        if not valid:
+        formal = _formal_snapshot(payload)
+        observation = observation_mode and _observation_snapshot(payload)
+        valid = formal or observation
+        if observation and not formal:
+            issues.append("observation_only_no_trading_permission")
+        elif not valid:
             issues.append("formal_premarket_snapshot_missing")
     elif valid and role == "stage1_decision_sheet":
         valid = (
@@ -168,6 +194,7 @@ def build_daily_status(
             Path(runtime_root) / folder / f"{session_id}-{suffix}",
             trading_date,
             active_trading_date,
+            session.get("session_type") == "observation",
         )
         records.append(record)
         payloads[role] = payload

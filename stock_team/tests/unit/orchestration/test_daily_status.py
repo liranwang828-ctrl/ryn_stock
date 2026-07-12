@@ -194,3 +194,56 @@ def test_current_session_artifact_is_valid_and_fresh(tmp_path):
     universe = next(item for item in manifest["artifacts"] if item["role"] == "stage0_universe")
     assert universe["valid"] is True
     assert universe["freshness"] == "fresh"
+
+
+def _write_observation_stage0(runtime_root, session_id="trading-2026-07-11"):
+    inputs = runtime_root / "inputs"
+    packets = runtime_root / "packets"
+    inputs.mkdir()
+    packets.mkdir()
+    (inputs / f"{session_id}-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-07-11",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": ["new_risk"],
+    }), encoding="utf-8")
+    (inputs / f"{session_id}-pre-market-snapshot.json").write_text(json.dumps({
+        "date": "2026-07-11",
+        "trading_date": "2026-07-11",
+        "as_of_et": "2026-07-11T08:30:00-04:00",
+        "evidence_level": "observation_only",
+        "permission": "no_trading_permission",
+        "source_kind": "yfinance_observation_context",
+        "markets": {
+            symbol: {"price": 1, "prev_close": 1, "source": "yfinance_daily_history", "data_as_of": "2026-07-10T16:00:00-04:00"}
+            for symbol in ("QQQ", "SPY", "IWM", "VIXY")
+        },
+    }), encoding="utf-8")
+    (packets / f"{session_id}-stage0-market-context.md").write_text(
+        "# Observation Context\nno_trading_permission\n", encoding="utf-8"
+    )
+
+
+def test_observation_snapshot_advances_observation_session_to_daily1b(tmp_path):
+    _write_observation_stage0(tmp_path)
+
+    manifest = build_daily_status(session=_session("observation"), runtime_root=tmp_path)
+
+    snapshot = next(item for item in manifest["artifacts"] if item["role"] == "premarket_snapshot")
+    assert snapshot["valid"] is True
+    assert snapshot["freshness"] == "fresh"
+    assert "observation_only_no_trading_permission" in snapshot["issues"]
+    assert manifest["current_step"] == "DAILY-1B"
+    assert manifest["overall_status"] == "waiting_user"
+
+
+def test_observation_snapshot_does_not_advance_trading_session(tmp_path):
+    _write_observation_stage0(tmp_path)
+
+    manifest = build_daily_status(session=_session("trading"), runtime_root=tmp_path)
+
+    snapshot = next(item for item in manifest["artifacts"] if item["role"] == "premarket_snapshot")
+    assert snapshot["valid"] is False
+    assert "formal_premarket_snapshot_missing" in snapshot["issues"]
+    assert manifest["current_step"] == "DAILY-1A"
+    assert manifest["overall_status"] == "waiting_data"
