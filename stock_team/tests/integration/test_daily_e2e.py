@@ -676,3 +676,70 @@ def test_e2e_abandon_failed_session_archives_debt_and_retained_artifacts(tmp_pat
     assert str(retained) in archived_sources
     assert str(inputs / "trading-2026-06-15-failed-session-debt.json") in archived_sources
     assert str(other) not in archived_sources
+
+
+def test_e2e_observation_stage0_stops_at_daily1b_for_conversation(tmp_path):
+    from datetime import datetime
+
+    from stock_team.data_ingest.observation_market_context import build_observation_context
+    from stock_team.orchestration.daily_status import build_daily_status
+
+    runtime = tmp_path / "runtime"
+    store = SessionStore(runtime / "sessions")
+    session = new_trading_session(
+        "observation-2026-07-10",
+        "2026-07-10",
+        "2026-07-10T08:00:00-04:00",
+        session_type="observation",
+    )
+    session["daily0_confirmation"] = {
+        "confirmed_at": "2026-07-10T08:01:00-04:00",
+        "activity_mode": "observation",
+        "account_fact_status": "stale_unverified",
+        "account_snapshot_ref": "",
+        "analysis_scope_ref": "",
+        "user_confirmed": True,
+    }
+    store.create(session)
+    inputs = runtime / "inputs"
+    packets = runtime / "packets"
+    inputs.mkdir()
+    packets.mkdir()
+    universe = inputs / "observation-2026-07-10-stage0-universe.json"
+    snapshot = inputs / "observation-2026-07-10-pre-market-snapshot.json"
+    packet = packets / "observation-2026-07-10-stage0-market-context.md"
+    universe.write_text(json.dumps({
+        "date": "2026-07-10",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": ["new_risk"],
+    }), encoding="utf-8")
+
+    def history(symbol):
+        return {"price": 10, "prev_close": 9, "source": "fake_history", "data_as_of": "2026-07-09T16:00:00-04:00"}
+
+    build_observation_context(
+        trading_date="2026-07-10",
+        as_of_et=datetime.fromisoformat("2026-07-10T08:30:00-04:00"),
+        snapshot_path=snapshot,
+        packet_path=packet,
+        history_loader=history,
+    )
+    result = AdapterResult(command=[], stdout="", stderr="", artifact_paths=[str(snapshot), str(packet)])
+    coordinator = WorkflowCoordinator(store, FakeAdapter(result=result), now_fn=lambda: "2026-07-10T08:30:00-04:00")
+    state = coordinator.execute({
+        "intent": "start_stage0_observation",
+        "session_id": "observation-2026-07-10",
+        "expected_state": "DAY_INITIALIZED",
+        "user_confirmation": False,
+        "parameters": {"date": "2026-07-10", "as_of": "2026-07-10T08:30:00-04:00", "snapshot_out": str(snapshot), "out": str(packet)},
+        "idempotency_key": "observation-stage0-1",
+    })
+    manifest = build_daily_status(session=state, runtime_root=runtime, active_trading_date="2026-07-10")
+
+    assert state["state"] == "STAGE0_READY"
+    assert manifest["current_step"] == "DAILY-1B"
+    assert manifest["overall_status"] == "waiting_user"
+    assert manifest["observation_available"] is True
+    snapshot_status = next(item for item in manifest["artifacts"] if item["role"] == "premarket_snapshot")
+    assert "observation_only_no_trading_permission" in snapshot_status["issues"]
