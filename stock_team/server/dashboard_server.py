@@ -841,10 +841,15 @@ def _coordinator_summary_payload(
     if state == "FAILED_TOOL":
         blockers.append("tool execution failed; inspect runtime inputs")
     runtime_root = Path(investing_os_home(base_dir)) / "system" / "runtime"
+    comparison_trading_date = (
+        (trading_date_context or {}).get("trading_date")
+        or (trading_date_context or {}).get("last_trading_date")
+        or session.get("market_date")
+    )
     daily_status = build_daily_status(
         session=session,
         runtime_root=runtime_root,
-        active_trading_date=(trading_date_context or {}).get("trading_date") or session.get("market_date"),
+        active_trading_date=comparison_trading_date,
     )
     manifest_path = runtime_root / "manifests" / f"{session.get('session_id', 'current')}-daily-status.json"
     write_daily_status(daily_status, manifest_path)

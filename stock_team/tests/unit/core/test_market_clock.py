@@ -103,3 +103,29 @@ def test_calendar_failure_is_unverified_and_never_allows_formal_session():
     assert context["calendar_status"] == "unverified"
     assert context["formal_session_allowed"] is False
     assert context["trading_date"] is None
+
+
+def test_exchange_calendar_non_session_uses_date_to_session_directions():
+    from stock_team.utils.market_clock import get_market_clock
+
+    class ExchangeCalendarLike:
+        def is_session(self, day):
+            return False
+
+        def previous_session(self, day):
+            raise RuntimeError("non-session rejected")
+
+        def next_session(self, day):
+            raise RuntimeError("non-session rejected")
+
+        def date_to_session(self, day, direction):
+            return date(2026, 7, 10) if direction == "previous" else date(2026, 7, 13)
+
+    context = get_market_clock(
+        datetime(2026, 7, 12, 10, 0, tzinfo=ET),
+        calendar=ExchangeCalendarLike(),
+    )
+
+    assert context["calendar_status"] == "verified"
+    assert context["last_trading_date"] == "2026-07-10"
+    assert context["next_trading_date"] == "2026-07-13"

@@ -81,8 +81,12 @@ def _trading_date_context(now_et: datetime, calendar=None) -> dict:
             formal_session_allowed = True
         else:
             trading_date = None
-            last_trading_date = _calendar_day(calendar.previous_session(today))
-            next_trading_date = _calendar_day(calendar.next_session(today))
+            if hasattr(calendar, "date_to_session"):
+                last_trading_date = _calendar_day(calendar.date_to_session(today, direction="previous"))
+                next_trading_date = _calendar_day(calendar.date_to_session(today, direction="next"))
+            else:
+                last_trading_date = _calendar_day(calendar.previous_session(today))
+                next_trading_date = _calendar_day(calendar.next_session(today))
             session_kind = "non_trading_day"
             formal_session_allowed = False
         return {

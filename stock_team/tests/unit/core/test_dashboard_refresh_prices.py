@@ -573,6 +573,45 @@ def test_coordinator_summary_payload_exposes_read_only_daily_status(tmp_path, mo
     assert session.get("daily0_confirmation") is None
 
 
+def test_non_trading_day_recovery_compares_artifacts_with_last_trading_date(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    inputs = investing_os_home / "system" / "runtime" / "inputs"
+    inputs.mkdir(parents=True)
+    (inputs / "trading-2026-06-15-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-06-15",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": [],
+    }), encoding="utf-8")
+    session = {
+        "session_id": "trading-2026-06-15",
+        "session_type": "observation",
+        "state": "FAILED_TOOL",
+        "market_date": "2026-06-15",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(
+        session,
+        None,
+        base_dir=str(stock_team_home),
+        trading_date_context={
+            "trading_date": None,
+            "last_trading_date": "2026-07-10",
+            "calendar_status": "verified",
+        },
+        session_kind="recovery_required",
+    )
+
+    universe = next(item for item in payload["daily_status"]["artifacts"] if item["role"] == "stage0_universe")
+    assert universe["valid"] is True
+    assert universe["freshness"] == "stale"
+
+
 def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     from pathlib import Path
 

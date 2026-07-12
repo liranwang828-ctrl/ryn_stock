@@ -562,3 +562,59 @@ def test_e2e_start_stage0_from_snapshot_adapter_called_with_correct_intent(tmp_p
         "idempotency_key": "snap-1",
     })
     assert adapter.calls[0][0] == "start_stage0_from_snapshot"
+
+
+def test_e2e_current_daily_status_never_reuses_old_session_artifacts(tmp_path):
+    from stock_team.orchestration.daily_status import build_daily_status
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    runtime_root = tmp_path / "runtime"
+    inputs = runtime_root / "inputs"
+    packets = runtime_root / "packets"
+    inputs.mkdir(parents=True)
+    packets.mkdir()
+
+    old = new_trading_session(
+        "trading-2026-07-10",
+        "2026-07-10",
+        "2026-07-10T08:00:00-04:00",
+        session_type="observation",
+    )
+    old["state"] = "DAY_ARCHIVED"
+    current = new_trading_session(
+        "trading-2026-07-13",
+        "2026-07-13",
+        "2026-07-13T08:00:00-04:00",
+        session_type="observation",
+    )
+    current["daily0_confirmation"] = {
+        "confirmed_at": "2026-07-13T08:01:00-04:00",
+        "activity_mode": "observation",
+        "account_fact_status": "stale_unverified",
+        "account_snapshot_ref": "runtime/inputs/account.json",
+        "analysis_scope_ref": "runtime/inputs/universe.json",
+        "user_confirmed": True,
+    }
+    (inputs / "trading-2026-07-10-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-07-10",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": [],
+    }), encoding="utf-8")
+    (packets / "trading-2026-07-10-stage0-market-context.md").write_text("# old context\n", encoding="utf-8")
+
+    selection = _select_dashboard_session(
+        [old, current],
+        {"trading_date": "2026-07-13", "calendar_status": "verified"},
+    )
+    manifest = build_daily_status(
+        session=selection["session"],
+        runtime_root=runtime_root,
+        active_trading_date="2026-07-13",
+    )
+
+    assert selection["session_kind"] == "current"
+    assert selection["session"]["session_id"] == "trading-2026-07-13"
+    assert manifest["current_step"] == "DAILY-1A"
+    assert manifest["overall_status"] == "waiting_data"
+    assert all(item["present"] is False for item in manifest["artifacts"])
