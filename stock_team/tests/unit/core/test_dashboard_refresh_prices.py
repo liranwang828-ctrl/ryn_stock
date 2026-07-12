@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 
 def test_updated_symbols_from_live_status_prefers_focus_symbols_with_detail(tmp_path):
@@ -330,7 +331,10 @@ def test_dashboard_reads_from_runtime_manifest(tmp_path, monkeypatch):
     manifest_file = archive_dir / "trading-2026-07-01_manifest.json"
     manifest_file.write_text(json.dumps(manifest), encoding="utf-8")
 
-    result = _get_latest_manifest(str(stock_team_home))
+    result = _get_latest_manifest(
+        str(stock_team_home),
+        now=datetime.fromisoformat("2026-07-01T10:00:00+00:00"),
+    )
 
     assert result["status"] == "ok"
     assert result["manifest"]["session_id"] == "trading-2026-07-01"
@@ -581,6 +585,61 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert 'data-choice="init_day"' not in page
     assert 'data-choice="record_focus_confirmation"' not in page
     assert 'data-choice="start_stage1"' not in page
+
+
+def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    sessions = [
+        {"session_id": "trading-2026-07-10", "market_date": "2026-07-10", "state": "DAY_ARCHIVED"},
+        {"session_id": "trading-2026-07-13", "market_date": "2026-07-13", "state": "DAY_INITIALIZED"},
+    ]
+
+    selected = _select_dashboard_session(sessions, {"trading_date": "2026-07-13", "calendar_status": "verified"})
+
+    assert selected["session"]["session_id"] == "trading-2026-07-13"
+    assert selected["session_kind"] == "current"
+
+
+def test_dashboard_session_selection_marks_single_old_open_session_for_recovery():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    sessions = [
+        {"session_id": "trading-2026-07-10", "market_date": "2026-07-10", "state": "STAGE0_READY"},
+    ]
+
+    selected = _select_dashboard_session(sessions, {"trading_date": "2026-07-13", "calendar_status": "verified"})
+
+    assert selected["session_kind"] == "recovery_required"
+    assert selected["session"]["session_id"] == "trading-2026-07-10"
+
+
+def test_dashboard_session_selection_blocks_multiple_open_sessions():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    sessions = [
+        {"session_id": "trading-2026-07-09", "market_date": "2026-07-09", "state": "STAGE0_READY"},
+        {"session_id": "trading-2026-07-10", "market_date": "2026-07-10", "state": "PLAN_APPROVED"},
+    ]
+
+    selected = _select_dashboard_session(sessions, {"trading_date": "2026-07-13", "calendar_status": "verified"})
+
+    assert selected["session"] is None
+    assert selected["session_kind"] == "blocked"
+    assert selected["diagnostics"]
+
+
+def test_dashboard_session_selection_does_not_create_session_on_non_trading_day():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    selected = _select_dashboard_session([], {
+        "trading_date": None,
+        "calendar_status": "verified",
+        "session_kind": "non_trading_day",
+    })
+
+    assert selected["session"] is None
+    assert selected["session_kind"] == "not_started"
 
 
 def test_operating_console_has_four_hash_pages_without_duplicate_legacy_summaries():

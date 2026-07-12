@@ -802,7 +802,14 @@ def _build_minimal_entry_state(session_summary: dict | None, blockers: list[str]
     }
 
 
-def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir: str = BASE) -> dict:
+def _coordinator_summary_payload(
+    session: dict,
+    decision: dict | None,
+    base_dir: str = BASE,
+    *,
+    trading_date_context: dict | None = None,
+    session_kind: str = "current",
+) -> dict:
     from stock_team.orchestration.daily_status import build_daily_status, write_daily_status
 
     state = session.get("state")
@@ -834,7 +841,11 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
     if state == "FAILED_TOOL":
         blockers.append("tool execution failed; inspect runtime inputs")
     runtime_root = Path(investing_os_home(base_dir)) / "system" / "runtime"
-    daily_status = build_daily_status(session=session, runtime_root=runtime_root)
+    daily_status = build_daily_status(
+        session=session,
+        runtime_root=runtime_root,
+        active_trading_date=(trading_date_context or {}).get("trading_date") or session.get("market_date"),
+    )
     manifest_path = runtime_root / "manifests" / f"{session.get('session_id', 'current')}-daily-status.json"
     write_daily_status(daily_status, manifest_path)
     entry_state = _build_minimal_entry_state({
@@ -863,6 +874,8 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
         "mode": "mixed-entry",
         "entry_state": entry_state,
         "daily_status": daily_status,
+        "trading_date_context": trading_date_context or {},
+        "session_kind": session_kind,
         "cross_day": {
             "needs_review": needs_review,
             "decision_applied": bool(decision),
@@ -872,17 +885,46 @@ def _coordinator_summary_payload(session: dict, decision: dict | None, base_dir:
     }
 
 
+def _select_dashboard_session(sessions: list[dict], trading_context: dict) -> dict:
+    terminal_states = {"DAY_ARCHIVED", "CLOSED_UNREVIEWED"}
+    open_sessions = [item for item in sessions if item.get("state") not in terminal_states]
+    if len(open_sessions) > 1:
+        return {
+            "session": None,
+            "session_kind": "blocked",
+            "diagnostics": ["multiple open sessions require recovery review"],
+        }
+    if len(open_sessions) == 1:
+        session = open_sessions[0]
+        kind = "current" if session.get("market_date") == trading_context.get("trading_date") else "recovery_required"
+        return {"session": session, "session_kind": kind, "diagnostics": []}
+    current_date = trading_context.get("trading_date")
+    matching_terminal = [item for item in sessions if item.get("market_date") == current_date]
+    if matching_terminal:
+        return {"session": matching_terminal[-1], "session_kind": "history", "diagnostics": []}
+    diagnostics = []
+    if trading_context.get("calendar_status") != "verified":
+        diagnostics.append("exchange calendar is unverified; formal session initialization is blocked")
+    return {"session": None, "session_kind": "not_started", "diagnostics": diagnostics}
+
+
 def _load_coordinator_manifest(base_dir: str) -> dict:
+    from stock_team.utils.market_clock import get_market_clock
+
     sessions_dir = _coordinator_sessions_dir(base_dir)
     decisions_dir = _coordinator_decisions_dir(base_dir)
-    candidates = []
+    trading_context = get_market_clock()
+    sessions = []
     if os.path.isdir(sessions_dir):
-        candidates = sorted(
-            (os.path.join(sessions_dir, name) for name in os.listdir(sessions_dir) if name.endswith(".json")),
-            key=lambda path: os.path.getmtime(path),
-            reverse=True,
-        )
-    if not candidates:
+        for name in sorted(os.listdir(sessions_dir)):
+            if not name.endswith(".json"):
+                continue
+            payload = _load_json_any(os.path.join(sessions_dir, name), None)
+            if isinstance(payload, dict) and all(payload.get(key) for key in ("session_id", "market_date", "state")):
+                sessions.append(payload)
+    selection = _select_dashboard_session(sessions, trading_context)
+    session = selection["session"]
+    if session is None:
         return {
             "status": "empty",
             "session": None,
@@ -899,16 +941,24 @@ def _load_coordinator_manifest(base_dir: str) -> dict:
                 "state": "DAY_NOT_STARTED",
                 "readiness": "blocked",
                 "next_action": "init_day",
-            }, ["today session not started"]),
+            }, selection["diagnostics"] or ["today session not started"]),
+            "trading_date_context": trading_context,
+            "session_kind": selection["session_kind"],
+            "diagnostics": selection["diagnostics"],
         }
-    session = _load_json_any(candidates[0], {})
     session_id = session.get("session_id")
     decision_path = os.path.join(decisions_dir, f"{session_id}.json") if session_id else ""
     decision = _load_json_any(decision_path, None) if decision_path else None
-    return _coordinator_summary_payload(session, decision)
+    return _coordinator_summary_payload(
+        session,
+        decision,
+        base_dir=base_dir,
+        trading_date_context=trading_context,
+        session_kind=selection["session_kind"],
+    )
 
 
-def _get_latest_manifest(base_dir: str) -> dict:
+def _get_latest_manifest(base_dir: str, *, now: datetime | None = None) -> dict:
     """Find the most recent coordinator archive manifest and validate freshness.
 
     Searches {SESSIONS_DIR}/archive/ and {SESSIONS_DIR}/ for *_manifest.json
@@ -972,7 +1022,7 @@ def _get_latest_manifest(base_dir: str) -> dict:
     if archived_at:
         try:
             archived_dt = datetime.fromisoformat(archived_at)
-            age = datetime.now(timezone.utc) - archived_dt
+            age = (now or datetime.now(timezone.utc)) - archived_dt
             if age > timedelta(hours=24):
                 freshness = "stale"
             elif age > timedelta(hours=6):
