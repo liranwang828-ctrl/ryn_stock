@@ -59,7 +59,53 @@ def _format_duration(seconds: int) -> str:
     return "".join(parts)
 
 
-def get_market_clock(now: datetime | None = None) -> dict:
+def _load_exchange_calendar():
+    import exchange_calendars as xcals
+
+    return xcals.get_calendar("XNYS")
+
+
+def _calendar_day(value):
+    return value.date() if hasattr(value, "date") else value
+
+
+def _trading_date_context(now_et: datetime, calendar=None) -> dict:
+    try:
+        calendar = calendar or _load_exchange_calendar()
+        today = now_et.date()
+        if calendar.is_session(today):
+            trading_date = today
+            last_trading_date = _calendar_day(calendar.previous_session(today))
+            next_trading_date = _calendar_day(calendar.next_session(today))
+            session_kind = "current"
+            formal_session_allowed = True
+        else:
+            trading_date = None
+            last_trading_date = _calendar_day(calendar.previous_session(today))
+            next_trading_date = _calendar_day(calendar.next_session(today))
+            session_kind = "non_trading_day"
+            formal_session_allowed = False
+        return {
+            "trading_date": trading_date.isoformat() if trading_date else None,
+            "last_trading_date": last_trading_date.isoformat(),
+            "next_trading_date": next_trading_date.isoformat(),
+            "session_kind": session_kind,
+            "calendar_status": "verified",
+            "formal_session_allowed": formal_session_allowed,
+        }
+    except Exception as exc:
+        return {
+            "trading_date": None,
+            "last_trading_date": None,
+            "next_trading_date": None,
+            "session_kind": "calendar_unverified",
+            "calendar_status": "unverified",
+            "formal_session_allowed": False,
+            "calendar_error": f"{type(exc).__name__}: {exc}",
+        }
+
+
+def get_market_clock(now: datetime | None = None, *, calendar=None) -> dict:
     """Return current US equity-market session state for dashboard display."""
     now_et = (now or datetime.now(ET)).astimezone(ET)
     today = now_et.date()
@@ -106,7 +152,7 @@ def get_market_clock(now: datetime | None = None) -> dict:
         next_close_dt = _session_dt(next_open_day, REGULAR_CLOSE)
 
     countdown_seconds = int((target_dt - now_et).total_seconds())
-    return {
+    payload = {
         "phase": phase,
         "phase_label": phase_label,
         "countdown_target": target,
@@ -119,3 +165,5 @@ def get_market_clock(now: datetime | None = None) -> dict:
         "next_open_et": target_dt.isoformat(timespec="seconds") if target == "open" else open_dt.isoformat(timespec="seconds"),
         "next_close_et": next_close_dt.isoformat(timespec="seconds"),
     }
+    payload.update(_trading_date_context(now_et, calendar=calendar))
+    return payload
