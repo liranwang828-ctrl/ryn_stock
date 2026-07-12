@@ -674,5 +674,5 @@ def test_e2e_abandon_failed_session_archives_debt_and_retained_artifacts(tmp_pat
     assert archive_manifest["status"] == "complete"
     archived_sources = {item["source_path"] for item in archive_manifest["files"]}
     assert str(retained) in archived_sources
-    assert str(inputs / "trading-2026-06-15-daily4-review.json") in archived_sources
+    assert str(inputs / "trading-2026-06-15-failed-session-debt.json") in archived_sources
     assert str(other) not in archived_sources

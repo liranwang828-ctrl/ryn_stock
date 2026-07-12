@@ -386,9 +386,11 @@ def test_abandon_failed_session_writes_debt_and_registers_only_session_artifacts
     retained_input = inputs / "trading-2026-06-15-stage0-universe.json"
     retained_packet = packets / "trading-2026-06-15-stage0-market-context.md"
     unrelated = inputs / "trading-2026-07-13-stage0-universe.json"
+    existing_review = inputs / "trading-2026-06-15-daily4-review.json"
     retained_input.write_text("{}", encoding="utf-8")
     retained_packet.write_text("# old context", encoding="utf-8")
     unrelated.write_text("{}", encoding="utf-8")
+    existing_review.write_text('{"existing":true}', encoding="utf-8")
     coordinator = WorkflowCoordinator(store, FakeAdapter(), now_fn=lambda: "2026-07-12T14:00:00+08:00")
 
     state = coordinator.execute({
@@ -404,10 +406,13 @@ def test_abandon_failed_session_writes_debt_and_registers_only_session_artifacts
     artifact_paths = {item["path"] for item in state["artifacts"]}
     assert str(retained_input) in artifact_paths
     assert str(retained_packet) in artifact_paths
+    assert str(existing_review) in artifact_paths
     assert str(unrelated) not in artifact_paths
 
     import json
-    review = json.loads((inputs / "trading-2026-06-15-daily4-review.json").read_text(encoding="utf-8"))
+    assert existing_review.read_text(encoding="utf-8") == '{"existing":true}'
+    debt_path = inputs / "trading-2026-06-15-failed-session-debt.json"
+    review = json.loads(debt_path.read_text(encoding="utf-8"))
     assert review["review_mode"] == "freeze"
     assert review["review_judgments"][0]["source"] == "user_confirmed"
     assert "historical non-retryable stage0 failure" in review["review_judgments"][0]["summary"]

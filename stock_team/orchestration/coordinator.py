@@ -305,12 +305,22 @@ class WorkflowCoordinator:
                 if action["parameters"].get("user_accepted"):
                     review["user_confirmations"]["bias_classification_confirmed"] = True
                     review["archive_closure"]["user_confirmed_at"] = now
-            review_path = Path(self.store.root).parent / "inputs" / f"{completed['session_id']}-daily4-review.json"
+            review_suffix = (
+                "failed-session-debt.json"
+                if action["intent"] == "abandon_failed_session"
+                else "daily4-review.json"
+            )
+            review_path = Path(self.store.root).parent / "inputs" / f"{completed['session_id']}-{review_suffix}"
             review_path.parent.mkdir(parents=True, exist_ok=True)
             review_path.write_text(_json.dumps(review, ensure_ascii=False, indent=2), encoding="utf-8")
-            completed["daily4_review_path"] = str(review_path)
+            if action["intent"] != "abandon_failed_session":
+                completed["daily4_review_path"] = str(review_path)
             completed["artifacts"].append({
-                "logical_name": "daily4_review",
+                "logical_name": (
+                    "failed_session_debt"
+                    if action["intent"] == "abandon_failed_session"
+                    else "daily4_review"
+                ),
                 "role": action["intent"],
                 "path": str(review_path),
                 "sha256": hashlib.sha256(review_path.read_bytes()).hexdigest(),
