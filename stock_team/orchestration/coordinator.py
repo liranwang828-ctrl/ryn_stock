@@ -39,6 +39,12 @@ class WorkflowCoordinator:
                 return state
         if action["expected_state"] != state["state"]:
             raise ValueError(f"expected_state mismatch: {action['expected_state']} != {state['state']}")
+        if action["intent"] == "abandon_failed_session":
+            last_error = state.get("last_error") or {}
+            if last_error.get("retryable") is not False:
+                raise ValueError("abandon_failed_session requires a non-retryable last_error")
+            if not str(action["parameters"].get("reason", "")).strip():
+                raise ValueError("abandon_failed_session requires a reason")
         original_action = action
         if action["intent"] == "retry_last_action":
             last_error = state.get("last_error") or {}
@@ -184,7 +190,7 @@ class WorkflowCoordinator:
         self.store.save(state, expected_version=previous_version)
 
         try:
-            _meta_intents = {"request_exception", "close_market", "close_observation_day", "freeze", "quick_review", "review_day", "record_observation_exception", "archive_day"}
+            _meta_intents = {"request_exception", "close_market", "close_observation_day", "freeze", "quick_review", "review_day", "record_observation_exception", "archive_day", "abandon_failed_session"}
             if action["intent"] in _meta_intents:
                 result = AdapterResult(command=[], stdout="", stderr="", artifact_paths=[])
             else:
@@ -211,7 +217,11 @@ class WorkflowCoordinator:
                     "processed_at": now,
                 }
             )
-            failed["allowed_actions"] = allowed_actions("FAILED_TOOL")
+            failed["allowed_actions"] = (
+                ["retry_last_action"]
+                if err.retryable
+                else allowed_actions("FAILED_TOOL")
+            )
             failed["updated_at"] = now
             self.store.save(failed, expected_version=prev)
             return failed
@@ -241,12 +251,12 @@ class WorkflowCoordinator:
                     "confirmed_at": now,
                 }
             )
-        if action["intent"] in ("freeze", "quick_review", "review_day"):
+        if action["intent"] in ("freeze", "quick_review", "review_day", "abandon_failed_session"):
             import json as _json
 
             from .models import new_daily4_review
 
-            if action["intent"] == "freeze":
+            if action["intent"] in ("freeze", "abandon_failed_session"):
                 review_mode = "freeze"
             elif action["intent"] == "quick_review":
                 review_mode = "quick_review"
@@ -258,6 +268,15 @@ class WorkflowCoordinator:
                 review_mode,
                 ibkr_fact_status=action["parameters"].get("ibkr_fact_status", "stale_unverified"),
             )
+            if action["intent"] == "abandon_failed_session":
+                review["review_judgments"].append({
+                    "judgment_type": "data_quality",
+                    "summary": f"Abandoned historical failure: {action['parameters']['reason']}",
+                    "evidence_refs": [],
+                    "confidence": "high",
+                    "source": "user_confirmed",
+                })
+                review["archive_closure"]["user_confirmed_at"] = now
             if action["intent"] == "quick_review":
                 for anomaly in action["parameters"].get("position_anomalies", []):
                     review["review_judgments"].append({
@@ -297,6 +316,25 @@ class WorkflowCoordinator:
                 "sha256": hashlib.sha256(review_path.read_bytes()).hexdigest(),
                 "created_at": now,
             })
+            if action["intent"] == "abandon_failed_session":
+                known_paths = {str(Path(item["path"])) for item in completed["artifacts"] if item.get("path")}
+                runtime_root = Path(self.store.root).parent
+                prefix = f"{completed['session_id']}-"
+                for folder in ("inputs", "packets"):
+                    artifact_dir = runtime_root / folder
+                    if not artifact_dir.exists():
+                        continue
+                    for path in sorted(artifact_dir.glob(f"{prefix}*")):
+                        if not path.is_file() or str(path) in known_paths:
+                            continue
+                        completed["artifacts"].append({
+                            "logical_name": path.name[len(prefix):],
+                            "role": "retained_historical_artifact",
+                            "path": str(path),
+                            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                            "created_at": now,
+                        })
+                        known_paths.add(str(path))
         for artifact_path in result.artifact_paths:
             path = Path(artifact_path)
             completed["artifacts"].append(

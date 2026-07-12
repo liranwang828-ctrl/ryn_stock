@@ -326,6 +326,93 @@ def test_freeze_generates_debt_record_review_file(tmp_path):
     assert artifact["path"] == str(review_path)
 
 
+def _failed_session(retryable=False):
+    session = new_trading_session("trading-2026-06-15", "2026-06-15", "2026-06-15T12:00:00+00:00")
+    session["state"] = "FAILED_TOOL"
+    session["state_version"] = 3
+    session["allowed_actions"] = ["retry_last_action", "abandon_failed_session"]
+    session["last_error"] = {
+        "error_class": "AdapterError",
+        "message": "historical stage0 failure",
+        "retryable": retryable,
+        "intent": "start_stage0",
+        "parameters": {},
+        "resume_from_state": "DAY_INITIALIZED",
+        "occurred_at": "2026-06-15T12:00:00+00:00",
+    }
+    return session
+
+
+def test_abandon_failed_session_requires_user_confirmation(tmp_path):
+    store = SessionStore(tmp_path / "runtime" / "sessions")
+    store.create(_failed_session())
+    coordinator = WorkflowCoordinator(store, FakeAdapter(), now_fn=lambda: "2026-07-12T14:00:00+08:00")
+
+    with pytest.raises(ValueError, match="user_confirmation"):
+        coordinator.execute({
+            "intent": "abandon_failed_session",
+            "session_id": "trading-2026-06-15",
+            "expected_state": "FAILED_TOOL",
+            "user_confirmation": False,
+            "parameters": {"reason": "historical non-retryable failure"},
+            "idempotency_key": "abandon-unconfirmed",
+        })
+
+
+def test_abandon_failed_session_rejects_retryable_failure(tmp_path):
+    store = SessionStore(tmp_path / "runtime" / "sessions")
+    store.create(_failed_session(retryable=True))
+    coordinator = WorkflowCoordinator(store, FakeAdapter(), now_fn=lambda: "2026-07-12T14:00:00+08:00")
+
+    with pytest.raises(ValueError, match="non-retryable"):
+        coordinator.execute({
+            "intent": "abandon_failed_session",
+            "session_id": "trading-2026-06-15",
+            "expected_state": "FAILED_TOOL",
+            "user_confirmation": True,
+            "parameters": {"reason": "should not close"},
+            "idempotency_key": "abandon-retryable",
+        })
+
+
+def test_abandon_failed_session_writes_debt_and_registers_only_session_artifacts(tmp_path):
+    runtime = tmp_path / "runtime"
+    store = SessionStore(runtime / "sessions")
+    store.create(_failed_session())
+    inputs = runtime / "inputs"
+    packets = runtime / "packets"
+    inputs.mkdir()
+    packets.mkdir()
+    retained_input = inputs / "trading-2026-06-15-stage0-universe.json"
+    retained_packet = packets / "trading-2026-06-15-stage0-market-context.md"
+    unrelated = inputs / "trading-2026-07-13-stage0-universe.json"
+    retained_input.write_text("{}", encoding="utf-8")
+    retained_packet.write_text("# old context", encoding="utf-8")
+    unrelated.write_text("{}", encoding="utf-8")
+    coordinator = WorkflowCoordinator(store, FakeAdapter(), now_fn=lambda: "2026-07-12T14:00:00+08:00")
+
+    state = coordinator.execute({
+        "intent": "abandon_failed_session",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "FAILED_TOOL",
+        "user_confirmation": True,
+        "parameters": {"reason": "historical non-retryable stage0 failure"},
+        "idempotency_key": "abandon-1",
+    })
+
+    assert state["state"] == "CLOSED_UNREVIEWED"
+    artifact_paths = {item["path"] for item in state["artifacts"]}
+    assert str(retained_input) in artifact_paths
+    assert str(retained_packet) in artifact_paths
+    assert str(unrelated) not in artifact_paths
+
+    import json
+    review = json.loads((inputs / "trading-2026-06-15-daily4-review.json").read_text(encoding="utf-8"))
+    assert review["review_mode"] == "freeze"
+    assert review["review_judgments"][0]["source"] == "user_confirmed"
+    assert "historical non-retryable stage0 failure" in review["review_judgments"][0]["summary"]
+
+
 def test_quick_review_generates_minimal_review_file(tmp_path):
     """quick_review writes a review file with risk check judgments from parameters."""
     store = SessionStore(tmp_path)
