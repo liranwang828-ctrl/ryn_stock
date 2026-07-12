@@ -585,6 +585,11 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert 'data-choice="init_day"' not in page
     assert 'data-choice="record_focus_confirmation"' not in page
     assert 'data-choice="start_stage1"' not in page
+    assert "manifest.trading_date_context" in page
+    assert "manifest.session_kind" in page
+    assert 'id="tradingDateEt"' in page
+    assert 'id="beijingTime"' in page
+    assert 'id="sessionKind"' in page
 
 
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():

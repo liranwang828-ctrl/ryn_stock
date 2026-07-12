@@ -55,7 +55,10 @@
 <body>
   <div class="shell">
     <header>
-      <div class="brand"><h1>Investing-OS 每日交易</h1><p id="headerDate">正在读取今日状态</p></div>
+      <div class="brand">
+        <h1>Investing-OS 每日交易</h1>
+        <p id="headerDate">交易日 <span id="tradingDateEt">--</span> ET · 北京时间 <span id="beijingTime">--</span> · <span id="sessionKind">读取中</span></p>
+      </div>
       <nav aria-label="每日交易页面">
         <a href="#today" data-route="today">今日交易</a>
         <a href="#evidence" data-route="evidence">证据</a>
@@ -121,6 +124,9 @@
     }
 
     function renderToday(status, manifest) {
+      const context = manifest.trading_date_context || {};
+      const kind = manifest.session_kind || context.session_kind || "not_started";
+      const kindLabels = {current:"当前会话",recovery_required:"旧会话待恢复",history:"已完成/历史",not_started:"今日尚未开始",blocked:"会话冲突",non_trading_day:"非交易日",calendar_unverified:"交易日历待验证"};
       const missing = status.missing_items || [];
       const warning = missing[0]?.message || status.warnings?.[0] || "当前没有已知高优先级警告。";
       document.getElementById("todayTask").textContent = `${status.current_node || "DAILY-0"} · ${status.current_step || "等待状态"}`;
@@ -130,7 +136,17 @@
       const decision = (status.artifacts || []).find(item => item.role === "stage1_decision_sheet");
       document.getElementById("todayFocus").textContent = decision?.confirmed ? "焦点池已确认；具体标的请在证据页查看 decision sheet。" : "焦点池尚未由用户确认。";
       document.getElementById("topWarning").textContent = warning;
-      document.getElementById("headerDate").textContent = `${status.trading_date || "未建日"} · ${status.overall_status || "not_started"}`;
+      if (kind === "not_started") {
+        document.getElementById("todayTask").textContent = "今日尚未开始";
+        document.getElementById("todayPrompt").textContent = manifest.entry_state?.next_action || "请在当前对话开始今日流程。";
+      } else if (kind === "recovery_required") {
+        document.getElementById("todayTask").textContent = `历史交易日 ${status.trading_date || "--"} 待恢复`;
+      } else if (kind === "blocked") {
+        document.getElementById("todayTask").textContent = "会话冲突，需要诊断";
+      }
+      document.getElementById("tradingDateEt").textContent = context.trading_date || status.trading_date || "非交易日";
+      document.getElementById("beijingTime").textContent = context.now_cn ? context.now_cn.replace("T", " ").slice(0, 16) : "--";
+      document.getElementById("sessionKind").textContent = kindLabels[kind] || kind;
     }
 
     function renderEvidence(status, manifest) {
