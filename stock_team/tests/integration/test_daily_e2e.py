@@ -618,3 +618,61 @@ def test_e2e_current_daily_status_never_reuses_old_session_artifacts(tmp_path):
     assert manifest["current_step"] == "DAILY-1A"
     assert manifest["overall_status"] == "waiting_data"
     assert all(item["present"] is False for item in manifest["artifacts"])
+
+
+def test_e2e_abandon_failed_session_archives_debt_and_retained_artifacts(tmp_path):
+    runtime = tmp_path / "runtime"
+    store = SessionStore(runtime / "sessions")
+    session = new_trading_session(
+        "trading-2026-06-15",
+        "2026-06-15",
+        "2026-06-15T12:00:00+00:00",
+    )
+    session["state"] = "FAILED_TOOL"
+    session["state_version"] = 3
+    session["allowed_actions"] = ["retry_last_action", "abandon_failed_session"]
+    session["last_error"] = {
+        "error_class": "AdapterError",
+        "message": "historical failure",
+        "retryable": False,
+        "intent": "start_stage0",
+        "parameters": {},
+        "resume_from_state": "DAY_INITIALIZED",
+        "occurred_at": "2026-06-15T12:00:00+00:00",
+    }
+    store.create(session)
+    inputs = runtime / "inputs"
+    packets = runtime / "packets"
+    inputs.mkdir()
+    packets.mkdir()
+    retained = inputs / "trading-2026-06-15-stage0-universe.json"
+    retained.write_text('{"date":"2026-06-15"}', encoding="utf-8")
+    other = packets / "trading-2026-07-13-stage0-market-context.md"
+    other.write_text("# other session", encoding="utf-8")
+    coordinator = WorkflowCoordinator(store, FakeAdapter(), now_fn=lambda: "2026-07-12T14:00:00+08:00")
+
+    closed = coordinator.execute({
+        "intent": "abandon_failed_session",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "FAILED_TOOL",
+        "user_confirmation": True,
+        "parameters": {"reason": "historical non-retryable stage0 failure"},
+        "idempotency_key": "abandon-1",
+    })
+    archived = coordinator.execute({
+        "intent": "archive_day",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "CLOSED_UNREVIEWED",
+        "user_confirmation": False,
+        "parameters": {},
+        "idempotency_key": "archive-1",
+    })
+
+    assert closed["state"] == "CLOSED_UNREVIEWED"
+    assert archived["state"] == "DAY_ARCHIVED"
+    archive_manifest = json.loads(Path(archived["archive_manifest_path"]).read_text(encoding="utf-8"))
+    assert archive_manifest["status"] == "complete"
+    archived_sources = {item["source_path"] for item in archive_manifest["files"]}
+    assert str(retained) in archived_sources
+    assert str(inputs / "trading-2026-06-15-daily4-review.json") in archived_sources
+    assert str(other) not in archived_sources
