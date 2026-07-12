@@ -39,4 +39,8 @@
 
 ## 下一步
 
-只读检查现有账户、持仓、最近复盘与 cognition 输入，形成下一交易日 DAILY-0 准备摘要；涉及账户真实性和最终范围时再由用户确认。
+只读检查已完成。下一交易日 DAILY-0 草稿：
+
+- `investing-os/handoff/2026-07-13-daily0-preparation-draft.zh.md`
+
+账户事实仍为 `stale_unverified`；涉及账户真实性和最终范围时再由用户确认。
