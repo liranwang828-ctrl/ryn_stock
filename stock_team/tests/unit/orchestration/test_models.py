@@ -141,6 +141,7 @@ def test_action_schema_requires_optimistic_state_and_idempotency():
         "freeze",
         "archive_day",
         "retry_last_action",
+        "abandon_failed_session",
         "start_observation",
         "request_exception",
     ]
@@ -193,6 +194,19 @@ def test_validate_action_rejects_empty_idempotency_key():
             "parameters": {},
             "idempotency_key": "",
         })
+
+
+def test_validate_action_accepts_abandon_failed_session():
+    result = validate_action({
+        "intent": "abandon_failed_session",
+        "session_id": "trading-2026-06-15",
+        "expected_state": "FAILED_TOOL",
+        "user_confirmation": True,
+        "parameters": {"reason": "historical non-retryable failure"},
+        "idempotency_key": "abandon-1",
+    })
+
+    assert result["intent"] == "abandon_failed_session"
 
 
 def test_new_session_supports_all_session_types():

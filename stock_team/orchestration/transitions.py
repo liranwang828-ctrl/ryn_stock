@@ -22,6 +22,7 @@ BEGIN_TRANSITIONS = {
     ("QUICK_REVIEWED", "archive_day"): "DAY_ARCHIVED",
     ("CLOSED_UNREVIEWED", "archive_day"): "DAY_ARCHIVED",
     ("OBSERVATION_ACTIVE", "archive_day"): "DAY_ARCHIVED",
+    ("FAILED_TOOL", "abandon_failed_session"): "CLOSED_UNREVIEWED",
 }
 
 SUCCESS_TRANSITIONS = {
@@ -42,10 +43,10 @@ ALLOWED_ACTIONS = {
     "REVIEW_REQUIRED": ["archive_day"],
     "QUICK_REVIEWED": ["archive_day"],
     "CLOSED_UNREVIEWED": ["archive_day"],
-    "FAILED_TOOL": ["retry_last_action"],
+    "FAILED_TOOL": ["retry_last_action", "abandon_failed_session"],
 }
 
-CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval", "request_exception", "record_observation_exception"}
+CONFIRMATION_ACTIONS = {"record_focus_confirmation", "record_plan_approval", "request_exception", "record_observation_exception", "abandon_failed_session"}
 
 
 class TransitionError(RuntimeError):

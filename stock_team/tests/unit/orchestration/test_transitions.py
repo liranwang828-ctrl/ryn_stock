@@ -1,6 +1,6 @@
 import pytest
 
-from stock_team.orchestration.transitions import TransitionError, allowed_actions, begin_transition, complete_transition
+from stock_team.orchestration.transitions import TransitionError, allowed_actions, begin_transition, complete_transition, requires_confirmation
 
 
 def test_stage0_moves_through_running_to_ready():
@@ -95,3 +95,9 @@ def test_existing_start_stage0_transition_still_works():
     running = begin_transition("DAY_INITIALIZED", "start_stage0")
     assert running == "STAGE0_RUNNING"
     assert complete_transition(running, "start_stage0", success=True) == "STAGE0_READY"
+
+
+def test_failed_tool_can_be_abandoned_only_through_confirmed_action_contract():
+    assert "abandon_failed_session" in allowed_actions("FAILED_TOOL")
+    assert requires_confirmation("abandon_failed_session") is True
+    assert begin_transition("FAILED_TOOL", "abandon_failed_session") == "CLOSED_UNREVIEWED"

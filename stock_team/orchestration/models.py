@@ -41,6 +41,7 @@ ACTION_INTENTS = {
     "freeze",
     "archive_day",
     "retry_last_action",
+    "abandon_failed_session",
     "start_observation",
     "request_exception",
     "refresh_market_observation",
