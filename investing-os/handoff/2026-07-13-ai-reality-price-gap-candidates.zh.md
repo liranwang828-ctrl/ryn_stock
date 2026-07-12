@@ -183,6 +183,18 @@ Oracle Q4 FY2026：
 3. CIEN 与 LITE 二选一做光网络价值链研究，并与COHR对比；
 4. ORCL只做融资与合同质量专项，不先做入场计划。
 
+## 用户确认与跨日恢复（2026-07-13）
+
+用户确认上述标的进入持续观察池：
+
+- `SNPS`：第一认知差研究候选；
+- `MSFT`：质量型AI商业化候选；
+- `CIEN`：AI网络盈利验证候选；
+- `LITE`：高波动光通信对照候选；
+- `ORCL`：仅做融资与合同质量专项观察。
+
+本轮停止扩展标的，不提前生成交易许可。下一次恢复点为 2026-07-14 美股盘前讨论，届时结合最新价格、CPI事件窗口、利率环境和现有 AMAT/TSM/MU/COHR/AMD 风险桶统一更新。恢复时应从本文件继续，不重新扫描整个仓库或重做本轮筛选。
+
 ## 官方来源
 
 - Synopsys Q2 FY2026：https://investor.synopsys.com/financials/quarterly-results/default.aspx
@@ -190,4 +202,3 @@ Oracle Q4 FY2026：
 - Ciena Q2 FY2026：https://investor.ciena.com/news/news-details/2026/Ciena-Reports-Fiscal-Second-Quarter-2026-Financial-Results/default.aspx
 - Lumentum Q3 FY2026：https://investor.lumentum.com/quarterly-results/default.aspx/1000/
 - Oracle Q4 FY2026：https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/
-
