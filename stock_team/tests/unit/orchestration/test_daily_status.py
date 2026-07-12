@@ -149,3 +149,48 @@ def test_offline_daily0_daily1_artifacts_reach_open_observation(tmp_path):
     assert manifest["overall_status"] == "active"
     assert manifest["observation_available"] is True
     assert manifest["missing_items"] == []
+
+
+def test_old_session_artifact_remains_valid_but_is_stale_for_active_trading_date(tmp_path):
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    sid = "trading-2026-07-11"
+    (inputs / f"{sid}-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-07-11",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": [],
+    }), encoding="utf-8")
+
+    manifest = build_daily_status(
+        session=_session(),
+        runtime_root=tmp_path,
+        active_trading_date="2026-07-14",
+    )
+
+    universe = next(item for item in manifest["artifacts"] if item["role"] == "stage0_universe")
+    assert universe["valid"] is True
+    assert universe["freshness"] == "stale"
+    assert "trading_date_mismatch" in universe["issues"]
+
+
+def test_current_session_artifact_is_valid_and_fresh(tmp_path):
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    sid = "trading-2026-07-11"
+    (inputs / f"{sid}-stage0-universe.json").write_text(json.dumps({
+        "date": "2026-07-11",
+        "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+        "permission_state_before_open": "Yellow",
+        "forbidden_actions": [],
+    }), encoding="utf-8")
+
+    manifest = build_daily_status(
+        session=_session(),
+        runtime_root=tmp_path,
+        active_trading_date="2026-07-11",
+    )
+
+    universe = next(item for item in manifest["artifacts"] if item["role"] == "stage0_universe")
+    assert universe["valid"] is True
+    assert universe["freshness"] == "fresh"

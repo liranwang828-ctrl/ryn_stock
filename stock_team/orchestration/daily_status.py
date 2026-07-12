@@ -40,7 +40,12 @@ def _formal_snapshot(payload) -> bool:
     return True
 
 
-def _artifact(role: str, path: Path, trading_date: str) -> tuple[dict, object]:
+def _artifact(
+    role: str,
+    path: Path,
+    session_trading_date: str,
+    active_trading_date: str | None,
+) -> tuple[dict, object]:
     present = path.exists()
     payload = None
     issues: list[str] = []
@@ -57,7 +62,7 @@ def _artifact(role: str, path: Path, trading_date: str) -> tuple[dict, object]:
             ("permission_state_before_open",),
             ("forbidden_actions",),
         )
-        valid = isinstance(payload, dict) and payload.get("date") == trading_date
+        valid = isinstance(payload, dict)
         for keys in required:
             value = payload
             for key in keys:
@@ -72,7 +77,6 @@ def _artifact(role: str, path: Path, trading_date: str) -> tuple[dict, object]:
     elif valid and role == "stage1_decision_sheet":
         valid = (
             isinstance(payload, dict)
-            and payload.get("date") == trading_date
             and isinstance(payload.get("focus_symbols"), list)
         )
         confirmed = valid and payload.get("user_confirmed") is True
@@ -82,6 +86,21 @@ def _artifact(role: str, path: Path, trading_date: str) -> tuple[dict, object]:
         if role == "trading_plan" and valid:
             confirmation = payload.get("user_confirmation") or {}
             confirmed = confirmation.get("confirmed") is True
+    artifact_trading_date = (
+        payload.get("trading_date") or payload.get("date")
+        if isinstance(payload, dict)
+        else session_trading_date
+    )
+    artifact_trading_date = artifact_trading_date or session_trading_date or None
+    if not present:
+        freshness = "missing"
+    elif not valid or not artifact_trading_date or not active_trading_date:
+        freshness = "unknown"
+    elif artifact_trading_date == active_trading_date:
+        freshness = "fresh"
+    else:
+        freshness = "stale"
+        issues.append("trading_date_mismatch")
     updated_at = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat() if present else None
     return {
         "role": role,
@@ -89,7 +108,7 @@ def _artifact(role: str, path: Path, trading_date: str) -> tuple[dict, object]:
         "present": present,
         "valid": bool(valid),
         "confirmed": bool(confirmed),
-        "freshness": "fresh" if valid else "missing",
+        "freshness": freshness,
         "source": "investing-os" if role not in {"premarket_snapshot", "stage0_market_context", "stage1_plan_evidence"} else "stock_team",
         "updated_at": updated_at,
         "issues": issues,
@@ -130,14 +149,26 @@ def _nodes(current_node: str, current_step: str, current_status: str) -> list[di
     return nodes
 
 
-def build_daily_status(*, session: dict, runtime_root: Path, now: datetime | None = None) -> dict:
+def build_daily_status(
+    *,
+    session: dict,
+    runtime_root: Path,
+    now: datetime | None = None,
+    active_trading_date: str | None = None,
+) -> dict:
     now = now or datetime.now(timezone.utc)
     session_id = session.get("session_id", "")
     trading_date = session.get("market_date", "")
+    active_trading_date = active_trading_date or trading_date or None
     records = []
     payloads = {}
     for role, (folder, suffix) in ARTIFACT_PATHS.items():
-        record, payload = _artifact(role, Path(runtime_root) / folder / f"{session_id}-{suffix}", trading_date)
+        record, payload = _artifact(
+            role,
+            Path(runtime_root) / folder / f"{session_id}-{suffix}",
+            trading_date,
+            active_trading_date,
+        )
         records.append(record)
         payloads[role] = payload
     by_role = {item["role"]: item for item in records}
@@ -148,19 +179,35 @@ def build_daily_status(*, session: dict, runtime_root: Path, now: datetime | Non
         node, step, status = "DAILY-0", "DAILY-0", "waiting_user"
         prompt = "请在当前对话确认今天的活动模式、账户事实状态和分析范围。"
         missing_items.append(_missing("daily0_confirmation_missing", status, "session", "DAILY-0 尚未确认。", prompt))
-    elif not all(by_role[r]["valid"] for r in ("stage0_universe", "premarket_snapshot", "stage0_market_context")):
+    elif not all(
+        by_role[r]["valid"] and by_role[r]["freshness"] == "fresh"
+        for r in ("stage0_universe", "premarket_snapshot", "stage0_market_context")
+    ):
         node, step, status = "DAILY-1", "DAILY-1A", "waiting_data"
         prompt = "请等待或刷新当日正式盘前数据。"
         missing_items.append(_missing("stage0_data_missing", status, "stage0_market_context", "正式 Stage 0 数据尚未齐全。", prompt))
-    elif not by_role["stage0_discussion_notes"]["valid"] or not by_role["stage1_decision_sheet"]["confirmed"]:
+    elif not (
+        by_role["stage0_discussion_notes"]["valid"]
+        and by_role["stage0_discussion_notes"]["freshness"] == "fresh"
+        and by_role["stage1_decision_sheet"]["confirmed"]
+        and by_role["stage1_decision_sheet"]["freshness"] == "fresh"
+    ):
         node, step, status = "DAILY-1", "DAILY-1B", "waiting_user"
         prompt = "请在当前对话讨论市场环境并确认进入 Stage 1 的标的。"
         missing_items.append(_missing("focus_confirmation_missing", status, "stage1_decision_sheet", "焦点池尚未确认。", prompt))
-    elif not by_role["stage1_plan_evidence"]["valid"]:
+    elif not (
+        by_role["stage1_plan_evidence"]["valid"]
+        and by_role["stage1_plan_evidence"]["freshness"] == "fresh"
+    ):
         node, step, status = "DAILY-1", "DAILY-1C", "waiting_data"
         prompt = "请等待焦点标的证据生成。"
         missing_items.append(_missing("stage1_evidence_missing", status, "stage1_plan_evidence", "Stage 1 证据尚未生成。", prompt))
-    elif not (by_role["trading_plan"]["confirmed"] and by_role["intraday_guidance"]["valid"]):
+    elif not (
+        by_role["trading_plan"]["confirmed"]
+        and by_role["trading_plan"]["freshness"] == "fresh"
+        and by_role["intraday_guidance"]["valid"]
+        and by_role["intraday_guidance"]["freshness"] == "fresh"
+    ):
         node, step, status = "DAILY-1", "DAILY-1D", "waiting_user"
         prompt = "请在当前对话确认今日计划、允许动作、禁止动作与失效条件。"
         missing_items.append(_missing("plan_confirmation_missing", status, "trading_plan", "交易计划尚未确认。", prompt))
