@@ -573,6 +573,64 @@ def test_coordinator_summary_payload_exposes_read_only_daily_status(tmp_path, mo
     assert session.get("daily0_confirmation") is None
 
 
+def test_coordinator_summary_payload_exposes_read_only_premarket_tape(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    inputs = investing_os_home / "system" / "runtime" / "inputs"
+    inputs.mkdir(parents=True)
+    (inputs / "observation-2026-07-13-premarket-tape.json").write_text(json.dumps({
+        "status": "partial",
+        "generated_at_et": "2026-07-13T08:25:00-04:00",
+        "records": {
+            "NQ=F": {"symbol": "NQ=F", "asset_class": "index_future", "last": 29728.5, "change_pct": 0.1, "freshness": "fresh", "quality": "usable_observation"},
+            "QQQ": {"symbol": "QQQ", "asset_class": "etf_premarket", "last": 717.62, "change_pct": -1.09, "freshness": "fresh", "quality": "degraded"},
+        },
+        "cross_asset_checks": {"QQQ_NQ": {"status": "conflicted"}},
+        "missing_symbols": ["BTC-USD"],
+        "warnings": ["BTC-USD:missing"],
+    }), encoding="utf-8")
+    session = {
+        "session_id": "observation-2026-07-13",
+        "session_type": "observation",
+        "state": "STAGE0_READY",
+        "market_date": "2026-07-13",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["premarket_tape"]["status"] == "partial"
+    assert payload["premarket_tape"]["groups"]["index_futures"][0]["symbol"] == "NQ=F"
+    assert payload["premarket_tape"]["cross_asset_checks"]["QQQ_NQ"]["status"] == "conflicted"
+
+
+def test_coordinator_summary_payload_handles_missing_premarket_tape(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    session = {
+        "session_id": "observation-2026-07-13",
+        "session_type": "observation",
+        "state": "DAY_INITIALIZED",
+        "market_date": "2026-07-13",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["premarket_tape"] == {
+        "status": "missing",
+        "groups": {},
+        "cross_asset_checks": {},
+    }
+
+
 def test_non_trading_day_recovery_compares_artifacts_with_last_trading_date(tmp_path, monkeypatch):
     from stock_team.server.dashboard_server import _coordinator_summary_payload
 
@@ -661,6 +719,8 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert 'id="beijingTime"' in page
     assert 'id="sessionKind"' in page
     assert "resolve_historical_session_in_conversation" in page
+    assert 'id="premarketTape"' in page
+    assert "manifest.premarket_tape" in page
 
 
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():

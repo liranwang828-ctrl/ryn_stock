@@ -161,7 +161,28 @@ class ExistingCliAdapter:
                 "--out",
                 out,
             ]
-            return [(command, 120)], [snapshot_path, out]
+            commands = [(command, 120)]
+            artifacts = [snapshot_path, out]
+            tape_out = parameters.get("tape_out")
+            if tape_out:
+                tape_command = [
+                    self.python_executable,
+                    "-m",
+                    "stock_team.data_ingest.premarket_tape",
+                    "--date",
+                    str(parameters["date"]),
+                    "--session-id",
+                    str(parameters.get("session_id") or f"observation-{parameters['date']}"),
+                    "--as-of",
+                    str(parameters["as_of"]),
+                    "--out",
+                    str(tape_out),
+                ]
+                if parameters.get("universe"):
+                    tape_command.extend(["--universe", str(parameters["universe"])])
+                commands.append((tape_command, 180))
+                artifacts.append(str(tape_out))
+            return commands, artifacts
         if intent == "start_stage1":
             out = str(parameters["out"])
             command = [

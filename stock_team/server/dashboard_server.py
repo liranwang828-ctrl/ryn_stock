@@ -802,6 +802,48 @@ def _build_minimal_entry_state(session_summary: dict | None, blockers: list[str]
     }
 
 
+def _premarket_tape_summary(runtime_root: Path, session_id: str) -> dict:
+    tape_path = Path(runtime_root) / "inputs" / f"{session_id}-premarket-tape.json"
+    if not tape_path.exists():
+        return {"status": "missing", "groups": {}, "cross_asset_checks": {}}
+    payload = _load_json_any(str(tape_path), None)
+    if not isinstance(payload, dict) or not isinstance(payload.get("records"), dict):
+        return {
+            "status": "invalid",
+            "groups": {},
+            "cross_asset_checks": {},
+            "warnings": ["invalid_premarket_tape"],
+        }
+    group_names = {
+        "index_future": "index_futures",
+        "etf_premarket": "etf_premarket",
+        "focus_equity_premarket": "focus_equities",
+        "crypto": "crypto_macro",
+        "commodity_future": "crypto_macro",
+        "currency_index": "crypto_macro",
+        "rates_future": "crypto_macro",
+        "volatility": "crypto_macro",
+    }
+    groups: dict[str, list] = {}
+    display_fields = (
+        "symbol", "asset_class", "last", "change_pct", "as_of_et",
+        "source", "freshness", "quality", "issues",
+    )
+    for record in payload["records"].values():
+        if not isinstance(record, dict):
+            continue
+        group = group_names.get(record.get("asset_class"), "other")
+        groups.setdefault(group, []).append({field: record.get(field) for field in display_fields})
+    return {
+        "status": payload.get("status", "unknown"),
+        "generated_at_et": payload.get("generated_at_et"),
+        "groups": groups,
+        "cross_asset_checks": payload.get("cross_asset_checks", {}),
+        "missing_symbols": payload.get("missing_symbols", []),
+        "warnings": payload.get("warnings", []),
+    }
+
+
 def _coordinator_summary_payload(
     session: dict,
     decision: dict | None,
@@ -862,6 +904,7 @@ def _coordinator_summary_payload(
         "next_action": daily_status["next_conversation_prompt"] or first_action,
     }, blockers or [item["message"] for item in daily_status["missing_items"]])
     current_task = _build_current_task_payload(session, decision, base_dir)
+    premarket_tape = _premarket_tape_summary(runtime_root, session.get("session_id", "current"))
     if session_kind == "recovery_required":
         first_action = "resolve_historical_session_in_conversation"
         next_step = "resolve-historical-session"
@@ -900,6 +943,7 @@ def _coordinator_summary_payload(
         "mode": "mixed-entry",
         "entry_state": entry_state,
         "daily_status": daily_status,
+        "premarket_tape": premarket_tape,
         "trading_date_context": trading_date_context or {},
         "session_kind": session_kind,
         "cross_day": {

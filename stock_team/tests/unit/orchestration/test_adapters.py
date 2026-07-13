@@ -344,3 +344,39 @@ def test_start_stage0_observation_builds_only_observation_producer_command(tmp_p
     assert len(calls) == 1
     assert calls[0][0][:3] == ["python", "-m", "stock_team.data_ingest.observation_market_context"]
     assert result.artifact_paths == [str(snapshot_path), str(output_path)]
+
+
+def test_start_stage0_observation_optionally_builds_premarket_tape(tmp_path, monkeypatch):
+    calls = []
+    snapshot_path = tmp_path / "snapshot.json"
+    output_path = tmp_path / "context.md"
+    tape_path = tmp_path / "tape.json"
+    universe_path = tmp_path / "universe.json"
+    universe_path.write_text("{}", encoding="utf-8")
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        if any("observation_market_context" in part for part in command):
+            snapshot_path.write_text("{}", encoding="utf-8")
+            output_path.write_text("# observation", encoding="utf-8")
+        if any("premarket_tape" in part for part in command):
+            tape_path.write_text("{}", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    result = adapter.run("start_stage0_observation", {
+        "date": "2026-07-13",
+        "as_of": "2026-07-13T08:30:00-04:00",
+        "snapshot_out": str(snapshot_path),
+        "out": str(output_path),
+        "tape_out": str(tape_path),
+        "universe": str(universe_path),
+    })
+
+    assert len(calls) == 2
+    assert calls[0][0][:3] == ["python", "-m", "stock_team.data_ingest.observation_market_context"]
+    assert calls[1][0][:3] == ["python", "-m", "stock_team.data_ingest.premarket_tape"]
+    assert calls[1][0][calls[1][0].index("--session-id") + 1] == "observation-2026-07-13"
+    assert calls[1][0][calls[1][0].index("--universe") + 1] == str(universe_path)
+    assert result.artifact_paths == [str(snapshot_path), str(output_path), str(tape_path)]

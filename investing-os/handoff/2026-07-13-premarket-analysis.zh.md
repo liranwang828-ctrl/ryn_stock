@@ -121,3 +121,26 @@
 - TSMC 2026 monthly revenue：https://investor.tsmc.com/english/monthly-revenue/2026
 - AP市场报道：https://apnews.com/article/2d6744b09c68b5473d0bc8584b89e60e
 
+## 盘前 Tape 更正与实施记录（08:42 ET）
+
+前文表格是较早一次个股盘前抓取，不能替代完整的跨资产盘前 Tape。系统现已把两层事实明确分开：
+
+- Stage 0 日线基线：用于市场结构和前一交易日收盘背景，不冒充当前盘前价格；
+- Premarket Tape：独立记录盘前现价、比较基准、时间戳、来源、新鲜度和跨资产冲突。
+
+本次正式 Tape 产物为 `investing-os/system/runtime/inputs/observation-2026-07-13-premarket-tape.json`，状态 `ready`，核心资产无缺失。关键读数：
+
+| 资产 | 盘前读数 | 相对基准 | 数据判断 |
+|---|---:|---:|---|
+| QQQ | 716.745 | -1.21% | fresh；成交量字段为 0，质量降级 |
+| NQ=F | 29668.25 | -0.09% | aging / usable |
+| SPY | 751.78 | -0.42% | fresh；成交量字段为 0，质量降级 |
+| ES=F | 7587.75 | +0.05% | aging / usable |
+| BTC-USD | 63995.74 | +0.39% | stale_unverified，不作为当前正式确认 |
+| ^VIX | 16.44 | +9.38% | aging / usable |
+
+跨资产检查显示：QQQ 与 NQ 变化差约 1.12 个百分点，标记为 `conflicted`；IWM 与 RTY 同样冲突；VIX 明显上行而股指期货近乎持平。因比较时点和交易机制不同，这些冲突不是自动交易信号，而是开盘前需要人工解释的风险提示。
+
+焦点股最新一轮盘前读数约为：AMAT -4.97%、TSM -0.07%、AMD -2.85%、MU -5.48%、COHR -4.18%。这强化了“TSM 相对强、AMAT/MU/COHR 先处理风险、AMD 等更好位置”的观察顺序，但不构成交易许可。
+
+Dashboard Evidence 页现只读展示 Premarket Tape 的核心状态、关键读数和警告，不在页面中生成结论或推进流程。后续每日会话由对话生成产物，Dashboard 只检查产物是否就绪。

@@ -86,6 +86,7 @@
       <section class="page" id="pageEvidence" data-page="evidence">
         <article class="card"><h2>证据与产物</h2><p>这里判断事实、来源、新鲜度与确认状态，不提供买卖结论。</p></article>
         <article class="card"><h3>当前产物任务</h3><div id="productTask" class="empty">暂无当前产物任务。</div></article>
+        <article class="card"><h3>Premarket Tape</h3><div id="premarketTape" class="empty">盘前跨资产数据尚未生成。</div></article>
         <article class="card"><h3>Artifact Readiness</h3><div style="overflow:auto"><table><thead><tr><th>产物</th><th>存在</th><th>有效</th><th>确认</th><th>新鲜度</th><th>问题</th></tr></thead><tbody id="artifactRows"></tbody></table></div></article>
       </section>
 
@@ -155,6 +156,11 @@
     function renderEvidence(status, manifest) {
       const task = manifest.current_task || {};
       document.getElementById("productTask").innerHTML = task.title ? `<strong>${html(task.title)}</strong><p>${html(task.summary || "")}</p>` : "暂无当前产物任务。";
+      const tape = manifest.premarket_tape || {};
+      const groupLabels = {index_futures:"指数期货",etf_premarket:"ETF盘前",crypto_macro:"24小时与宏观",focus_equities:"焦点标的"};
+      const tapeGroups = Object.entries(tape.groups || {}).map(([name, records]) => `<details open><summary>${html(groupLabels[name] || name)}</summary><div class="meta">${(records || []).map(item => badge(`${item.symbol} ${item.last ?? "--"} · ${item.change_pct == null ? "--" : `${item.change_pct}%`} · ${item.freshness || "unknown"}`,item.quality === "usable_observation" ? "green" : "amber")).join("")}</div></details>`).join("");
+      const checks = Object.entries(tape.cross_asset_checks || {}).filter(([name]) => name !== "macro_state").map(([name, item]) => badge(`${name}: ${item.status}`,item.status === "aligned" ? "green" : item.status === "conflicted" ? "red" : "amber")).join("");
+      document.getElementById("premarketTape").innerHTML = tape.status === "missing" ? "盘前跨资产数据尚未生成。" : `<p>更新 ${html(tape.generated_at_et || "--")} · 状态 ${html(tape.status || "unknown")}</p><div class="meta">${checks}</div>${tapeGroups}<p class="empty">这里只展示数据质量与跨资产一致性；结论在当前对话生成。</p>`;
       document.getElementById("artifactRows").innerHTML = (status.artifacts || []).map(item => `<tr><td>${html(item.role)}</td><td>${item.present ? "是" : "否"}</td><td>${item.valid ? "是" : "否"}</td><td>${item.confirmed ? "是" : "否"}</td><td>${html(item.freshness)}</td><td>${html((item.issues || []).join("；") || "—")}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">尚无 artifact 状态。</td></tr>`;
     }
 
