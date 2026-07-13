@@ -200,6 +200,19 @@ def build_daily_status(
         payloads[role] = payload
     by_role = {item["role"]: item for item in records}
 
+    if session.get("state") in {"PLAN_APPROVED", "INTRADAY_ACTIVE", "MARKET_CLOSED", "REVIEW_REQUIRED", "QUICK_REVIEWED", "CLOSED_UNREVIEWED", "DAY_ARCHIVED"}:
+        trading_plan = by_role.get("trading_plan")
+        intraday_guidance = by_role.get("intraday_guidance")
+        if (
+            trading_plan
+            and trading_plan["valid"]
+            and trading_plan["freshness"] == "fresh"
+            and intraday_guidance
+            and intraday_guidance["valid"]
+            and intraday_guidance["freshness"] == "fresh"
+        ):
+            trading_plan["confirmed"] = True
+
     missing_items = []
     confirmation = session.get("daily0_confirmation")
     if not isinstance(confirmation, dict) or confirmation.get("user_confirmed") is not True:

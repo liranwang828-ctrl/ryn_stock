@@ -3,7 +3,7 @@
 ```yaml
 session_id: observation-2026-07-13
 mode: observation
-status: stage1_ready
+status: plan_approved
 generated_at_et: 2026-07-13T08:51:00-04:00
 account_facts: stale_unverified
 permission: Yellow / no automatic trading permission
@@ -17,6 +17,16 @@ permission: Yellow / no automatic trading permission
   - `cli premarket` 兼容 canonical decision sheet 的 `focus_symbols` 字段
 - 额外修复一处执行预算问题：`start_stage1` adapter timeout 从 60 秒提升到 180 秒，避免将可成功完成的盘前证据生成误判为工具失败。
 - 生成产物：`investing-os/system/runtime/packets/observation-2026-07-13-stage1-plan-evidence.md`
+
+## Plan Approval Update
+
+- 今日 `trading_plan` 与 `intraday_guidance` 已写入 runtime，并通过 `record_plan_approval` 校验。
+- 当前 coordinator 状态已推进到 `PLAN_APPROVED`，下一步动作是 `start_intraday`。
+- 今日计划维持 `observe_only`：
+  - 优先处理 `MU / COHR` 风险观察
+  - `TSM` 作为相对强弱 tell
+  - `NVDA` 作为行业基准，不作为追涨标的
+  - `AMAT / AMD` 继续等待稳定或更清晰结构
 
 ## 一句话计划
 
