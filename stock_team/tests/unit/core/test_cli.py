@@ -1346,6 +1346,34 @@ def test_cli_premarket_generation_no_watchlist(tmp_path):
     assert "MU" in content
 
 
+def test_cli_premarket_accepts_canonical_focus_symbols(tmp_path):
+    """Dashboard canonical decision sheet uses focus_symbols instead of legacy focus_pool."""
+    decision_sheet = tmp_path / "decision_sheet.json"
+    decision_sheet.write_text(json.dumps({
+        "sheet_type": "pre_market_decision_sheet",
+        "stage": "stage_1_symbol_plan_evidence_request",
+        "date": "2026-06-06",
+        "focus_symbols": ["NVDA"],
+        "user_confirmed": True,
+        "permission_state_before_open": "Yellow",
+    }), encoding="utf-8")
+
+    out_file = tmp_path / "plan_evidence_focus_symbols.md"
+
+    res = subprocess.run([
+        PYTHON, "-m", "stock_team.cli", "premarket",
+        "--date", "2026-06-06",
+        "--decision-sheet", str(decision_sheet),
+        "--out", str(out_file)
+    ], cwd=WORKSPACE_DIR, env=get_env(), capture_output=True, text=True, encoding="utf-8")
+
+    assert res.returncode == 0
+    assert os.path.exists(out_file)
+    content = out_file.read_text(encoding="utf-8")
+    assert "packet_type: plan_evidence_packet" in content
+    assert "NVDA" in content
+
+
 def test_cli_premarket_accepts_decision_sheet_with_utf8_bom(tmp_path):
     """PowerShell-authored brain artifacts may include a UTF-8 BOM."""
     decision_sheet = tmp_path / "decision_sheet.json"

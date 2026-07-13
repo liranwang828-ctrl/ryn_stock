@@ -401,6 +401,7 @@ def _default_stage1_action(base_dir: str, session: dict, task: dict) -> dict:
         "expected_state": session.get("state", "FOCUS_CONFIRMED"),
         "user_confirmation": False,
         "parameters": {
+            "date": session.get("market_date", ""),
             "context_packet": inputs.get("stock_team_packet", ""),
             "decision_sheet": inputs.get("decision_sheet", ""),
             "out": out_path,

@@ -380,3 +380,69 @@ def test_start_stage0_observation_optionally_builds_premarket_tape(tmp_path, mon
     assert calls[1][0][calls[1][0].index("--session-id") + 1] == "observation-2026-07-13"
     assert calls[1][0][calls[1][0].index("--universe") + 1] == str(universe_path)
     assert result.artifact_paths == [str(snapshot_path), str(output_path), str(tape_path)]
+
+
+def test_start_stage1_uses_cli_supported_date_contract(tmp_path, monkeypatch):
+    calls = []
+    output_path = tmp_path / "stage1.md"
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        output_path.write_text("# Stage 1", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run("start_stage1", {
+        "date": "2026-07-13",
+        "context_packet": str(tmp_path / "context.md"),
+        "decision_sheet": str(tmp_path / "decision.json"),
+        "out": str(output_path),
+    })
+
+    assert calls[0][:4] == ["python", "-m", "stock_team.cli", "premarket"]
+    assert calls[0][calls[0].index("--date") + 1] == "2026-07-13"
+    assert "--context-packet" not in calls[0]
+
+
+def test_start_stage1_recovers_date_from_existing_decision_sheet(tmp_path, monkeypatch):
+    calls = []
+    output_path = tmp_path / "stage1.md"
+    decision_path = tmp_path / "decision.json"
+    decision_path.write_text(json.dumps({"date": "2026-07-13"}), encoding="utf-8")
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        output_path.write_text("# Stage 1", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run("start_stage1", {
+        "context_packet": str(tmp_path / "context.md"),
+        "decision_sheet": str(decision_path),
+        "out": str(output_path),
+    })
+
+    assert calls[0][calls[0].index("--date") + 1] == "2026-07-13"
+
+
+def test_start_stage1_uses_extended_timeout_budget(tmp_path, monkeypatch):
+    timeouts = []
+    output_path = tmp_path / "stage1.md"
+
+    def fake_run(command, **kwargs):
+        timeouts.append(kwargs.get("timeout"))
+        output_path.write_text("# Stage 1", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    adapter = ExistingCliAdapter(workspace_root=tmp_path, python_executable="python")
+    adapter.run("start_stage1", {
+        "date": "2026-07-13",
+        "context_packet": str(tmp_path / "context.md"),
+        "decision_sheet": str(tmp_path / "decision.json"),
+        "out": str(output_path),
+    })
+
+    assert timeouts == [180]

@@ -185,19 +185,26 @@ class ExistingCliAdapter:
             return commands, artifacts
         if intent == "start_stage1":
             out = str(parameters["out"])
+            decision_sheet = str(parameters["decision_sheet"])
+            trading_date = parameters.get("date")
+            if not trading_date:
+                decision_payload = json.loads(Path(decision_sheet).read_text(encoding="utf-8"))
+                trading_date = decision_payload.get("date")
+            if not trading_date:
+                raise AdapterError("start_stage1 requires a trading date", retryable=False)
             command = [
                 self.python_executable,
                 "-m",
                 "stock_team.cli",
                 "premarket",
-                "--context-packet",
-                str(parameters["context_packet"]),
+                "--date",
+                str(trading_date),
                 "--decision-sheet",
-                str(parameters["decision_sheet"]),
+                decision_sheet,
                 "--out",
                 out,
             ]
-            return [(command, 60)], [out]
+            return [(command, 180)], [out]
         if intent == "record_focus_confirmation":
             decision_sheet_path = Path(str(parameters["decision_sheet"]))
             if not decision_sheet_path.exists():

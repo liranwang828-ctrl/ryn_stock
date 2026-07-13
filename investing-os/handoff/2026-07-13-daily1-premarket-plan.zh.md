@@ -3,11 +3,20 @@
 ```yaml
 session_id: observation-2026-07-13
 mode: observation
-status: pending_user_confirmation
+status: stage1_ready
 generated_at_et: 2026-07-13T08:51:00-04:00
 account_facts: stale_unverified
 permission: Yellow / no automatic trading permission
 ```
+
+## Stage 1 Update
+
+- `start_stage1` 已恢复可执行，当前会话已从 `FAILED_TOOL` 回到 `STAGE1_READY`。
+- 本次修复包含两处契约对齐：
+  - adapter 改为向 `stock_team.cli premarket` 传递 `--date`，不再传旧的 `--context-packet`
+  - `cli premarket` 兼容 canonical decision sheet 的 `focus_symbols` 字段
+- 额外修复一处执行预算问题：`start_stage1` adapter timeout 从 60 秒提升到 180 秒，避免将可成功完成的盘前证据生成误判为工具失败。
+- 生成产物：`investing-os/system/runtime/packets/observation-2026-07-13-stage1-plan-evidence.md`
 
 ## 一句话计划
 
@@ -46,9 +55,12 @@ Price 已先行压缩，但尚未形成止跌确认。今天需要判断这是�
 |---|---:|---|---|---|
 | TSM | 434.50 / +0.09% | `relative_strength_watch / event_wait` | 持续强于 SMH/SOXX；回踩后守住 428 并收回，或财报后站稳 441–452 | 跌破约 409 且无法快速收回；财报 Reality 破坏 |
 | AMAT | 576.79 / -4.27% | `zone_touched / no_entry` | 550–580 内停止扩大跌幅、波动收缩并恢复相对 SMH 强度 | 跌破约 528 且不能收回；TSM capex 证据恶化 |
+| NVDA | 207.84 / -1.48% | `core_ai_benchmark / no_chase` | 守住约 202 的 MA20，并重新站稳 209–212；持续强于 SMH/SOXX | 跌破 202 后无法收回；进一步回看 192–195 区域，不机械抄底 |
 | AMD | 544.21 / -2.45% | `continue_wait` | 回到 510–535 后仍保持相对行业强度，或重新建立趋势确认 | 跌势与行业同步扩大；把 8 月 4 日财报误当成今天必须抢跑的理由 |
 | MU | 926.23 / -5.42% | `hold_no_add / risk_watch` | 收回 950 后稳定，再讨论是否完成第一层修复 | 跌破 891–900 且不能收回；杠杆工具需单独降低路径风险 |
 | COHR | 311.39 / -4.04% | `risk_review / no_add` | 守住 304 并先收回 330；368–370 才是更完整修复 | 跌破 304 且不能快速收回；反弹无相对强度只视为风险处理窗口 |
+
+NVDA 的公司 Reality 仍强：最新官方季度收入 816 亿美元、同比增长 85%，Vera Rubin 已进入量产爬坡。但其核心 AI 平台地位已是高度共识，当前 Price 也处于近 20 日高位附近，因此它不是“Reality 改善而 Price 尚未反映”的首选；今天更适合作为行业基准，观察其能否明显强于 SMH/SOXX。
 
 认知差观察池：SNPS 与 MSFT 盘前分别约 +1.12%、+0.73%，继续作为软件/商业化相对强度对照；CIEN、LITE 与光通信风险同步走弱。今天不把观察池升级为买入池。
 
@@ -78,9 +90,9 @@ Price 已先行压缩，但尚未形成止跌确认。今天需要判断这是�
 - MU/COHR 的风险处理优先于新增 AMAT/TSM 风险；
 - CPI 前不因怕踏空提高总风险，不使用摊低成本修复近期亏损。
 
-## 待用户一次性确认
+## 用户确认
 
-确认本日焦点顺序为：`MU/COHR 风险处理 -> TSM 相对强度 -> AMAT 观察区 -> AMD 等待 -> SNPS/MSFT 对照`。确认后进入开盘观察，不再重复询问同一组选择。
+用户已确认本日焦点顺序：`MU/COHR 风险处理 -> TSM 相对强度 -> NVDA 行业基准 -> AMAT 观察区 -> AMD 等待 -> SNPS/MSFT 对照`。进入 Stage 1 证据生成后，不再重复询问同一组选择。
 
 ## 来源
 
@@ -89,4 +101,6 @@ Price 已先行压缩，但尚未形成止跌确认。今天需要判断这是�
 - BLS PPI：https://www.bls.gov/ppi/
 - TSM Q2 2026：https://investor.tsmc.com/english/quarterly-results/2026/q2
 - AMD Q2 2026：https://ir.amd.com/news-events/press-releases/detail/1289/amd-to-report-fiscal-second-quarter-2026-financial-results
+- NVIDIA Q1 FY2027：https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx
+- NVIDIA Vera Rubin：https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Vera-Rubin-Ramps-Into-Full-Production-to-Power-Agentic-AI-Factories-Worldwide/default.aspx
 - AP 7 月 13 日市场报道：https://apnews.com/article/2d6744b09c68b5473d0bc8584b89e60e

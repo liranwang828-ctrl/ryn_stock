@@ -1170,6 +1170,8 @@ def handle_premarket(args):
             
             # Extract focus pool symbols
             focus_pool = decision_sheet.get("user_confirmed_focus_pool")
+            if not focus_pool:
+                focus_pool = decision_sheet.get("focus_symbols")
             if focus_pool:
                 symbols = focus_pool
             else:
@@ -1198,7 +1200,7 @@ def handle_premarket(args):
     if not symbols and brain_symbol_map:
         symbols = list(brain_symbol_map.keys())
     if not symbols:
-        print("[ERROR] Focus symbols must be defined either in watchlist or decision sheet user_confirmed_focus_pool/symbols.", file=sys.stderr)
+        print("[ERROR] Focus symbols must be defined either in watchlist or decision sheet focus_symbols/user_confirmed_focus_pool/symbols.", file=sys.stderr)
         sys.exit(1)
 
     # Check refresh or run premarket.py to generate premarket_analysis_{date}.json

@@ -299,6 +299,28 @@ def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path
     assert intraday_guidance["default_action"] == "observe_only"
 
 
+def test_default_stage1_action_passes_market_date_to_cli_adapter(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _default_stage1_action
+
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    session = {
+        "session_id": "observation-2026-07-13",
+        "state": "FOCUS_CONFIRMED",
+        "market_date": "2026-07-13",
+    }
+    task = {
+        "inputs": [
+            {"role": "stock_team_packet", "path": "context.md"},
+            {"role": "decision_sheet", "path": "decision.json"},
+        ]
+    }
+
+    action = _default_stage1_action(str(tmp_path / "stock_team"), session, task)
+
+    assert action["parameters"]["date"] == "2026-07-13"
+
+
 def test_dashboard_reads_from_runtime_manifest(tmp_path, monkeypatch):
     """Dashboard reads snapshot paths from a coordinator manifest instead of constructing its own path."""
     from stock_team.server.dashboard_server import _get_latest_manifest
