@@ -923,5 +923,9 @@ def test_historical_session_no_longer_blocks_after_quick_review(tmp_path, monkey
 
     summary = _load_coordinator_manifest(str(stock_team_home))
 
-    assert summary["session_kind"] != "recovery_required"
-    assert summary["first_action"] != "resolve_historical_session_in_conversation"
+    assert summary["session_kind"] == "not_started"
+    assert summary["session"] is None
+    assert summary["first_action"] == "init-day"
+    assert summary["next_step"] == "init-day"
+    assert summary["entry_state"]["current_step"] == "DAY_NOT_STARTED"
+    assert summary["entry_state"]["next_action"] == "init_day"

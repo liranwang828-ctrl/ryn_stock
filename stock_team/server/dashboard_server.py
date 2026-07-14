@@ -992,7 +992,6 @@ def _historical_session_still_blocks(session: dict, today: str | None) -> bool:
         "DAY_ARCHIVED",
         "CLOSED_UNREVIEWED",
         "QUICK_REVIEWED",
-        "FULL_REVIEWED",
         "IDLE",
     }
     return session.get("state") not in resolved_states
