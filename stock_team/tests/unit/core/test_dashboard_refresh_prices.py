@@ -845,14 +845,19 @@ def test_dashboard_today_ignores_historical_artifacts_for_readiness(tmp_path, mo
     )
 
     assert payload["entry_state"]["readiness"] == "blocked"
+    assert payload["daily_status"]["overall_status"] == "blocked"
     assert "historical_session_blocking" in {
         item["code"] for item in payload["daily_status"]["missing_items"]
     }
-    assert all(
-        artifact["freshness"] != "fresh"
+    historical_artifacts = [
+        artifact
         for artifact in payload["daily_status"]["artifacts"]
-        if artifact["path"].endswith("2026-07-13-stage0-market-context.md")
-    )
+        if artifact["path"].endswith("2026-07-13-stage0-universe.json")
+        or artifact["path"].endswith("2026-07-13-stage0-market-context.md")
+    ]
+    assert historical_artifacts
+    assert all(artifact["freshness"] == "stale" for artifact in historical_artifacts)
+    assert all("trading_date_mismatch" in artifact["issues"] for artifact in historical_artifacts)
 
 
 def test_operating_console_has_four_hash_pages_without_duplicate_legacy_summaries():

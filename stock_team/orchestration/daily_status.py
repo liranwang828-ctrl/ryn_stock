@@ -152,6 +152,12 @@ def _missing(code: str, severity: str, role: str, message: str, prompt: str) -> 
     }
 
 
+def _is_today_artifact(artifact: dict, trading_date: str | None) -> bool:
+    if not trading_date:
+        return True
+    return "trading_date_mismatch" not in set(artifact.get("issues") or [])
+
+
 def _nodes(current_node: str, current_step: str, current_status: str) -> list[dict]:
     node_ids = ["DAILY-0", "DAILY-1", "DAILY-2", "DAILY-3", "DAILY-4"]
     labels = ["晨间准备", "盘前决策", "开盘观察", "盘中管理", "盘后复盘"]
@@ -199,6 +205,12 @@ def build_daily_status(
         records.append(record)
         payloads[role] = payload
     by_role = {item["role"]: item for item in records}
+    historical_session_blocking = bool(
+        trading_date
+        and active_trading_date
+        and trading_date != active_trading_date
+        and session.get("state") != "DAY_ARCHIVED"
+    )
 
     if session.get("state") in {"PLAN_APPROVED", "INTRADAY_ACTIVE", "MARKET_CLOSED", "REVIEW_REQUIRED", "QUICK_REVIEWED", "CLOSED_UNREVIEWED", "DAY_ARCHIVED"}:
         trading_plan = by_role.get("trading_plan")
@@ -215,20 +227,35 @@ def build_daily_status(
 
     missing_items = []
     confirmation = session.get("daily0_confirmation")
-    if not isinstance(confirmation, dict) or confirmation.get("user_confirmed") is not True:
+    if historical_session_blocking:
+        node, step, status = "DAILY-0", "DAILY-0", "blocked"
+        prompt = "请先在当前对话中处理历史会话，再开始今天的新流程。"
+        missing_items.append(
+            _missing(
+                "historical_session_blocking",
+                status,
+                "session",
+                "历史会话仍未处理，当前日期流程已被阻塞。",
+                prompt,
+            )
+        )
+    elif not isinstance(confirmation, dict) or confirmation.get("user_confirmed") is not True:
         node, step, status = "DAILY-0", "DAILY-0", "waiting_user"
         prompt = "请在当前对话确认今天的活动模式、账户事实状态和分析范围。"
         missing_items.append(_missing("daily0_confirmation_missing", status, "session", "DAILY-0 尚未确认。", prompt))
     elif not all(
-        by_role[r]["valid"] and by_role[r]["freshness"] == "fresh"
+        _is_today_artifact(by_role[r], active_trading_date)
+        and by_role[r]["valid"] and by_role[r]["freshness"] == "fresh"
         for r in ("stage0_universe", "premarket_snapshot", "stage0_market_context")
     ):
         node, step, status = "DAILY-1", "DAILY-1A", "waiting_data"
         prompt = "请等待或刷新当日正式盘前数据。"
         missing_items.append(_missing("stage0_data_missing", status, "stage0_market_context", "正式 Stage 0 数据尚未齐全。", prompt))
     elif not (
-        by_role["stage0_discussion_notes"]["valid"]
+        _is_today_artifact(by_role["stage0_discussion_notes"], active_trading_date)
+        and by_role["stage0_discussion_notes"]["valid"]
         and by_role["stage0_discussion_notes"]["freshness"] == "fresh"
+        and _is_today_artifact(by_role["stage1_decision_sheet"], active_trading_date)
         and by_role["stage1_decision_sheet"]["confirmed"]
         and by_role["stage1_decision_sheet"]["freshness"] == "fresh"
     ):
@@ -236,15 +263,18 @@ def build_daily_status(
         prompt = "请在当前对话讨论市场环境并确认进入 Stage 1 的标的。"
         missing_items.append(_missing("focus_confirmation_missing", status, "stage1_decision_sheet", "焦点池尚未确认。", prompt))
     elif not (
-        by_role["stage1_plan_evidence"]["valid"]
+        _is_today_artifact(by_role["stage1_plan_evidence"], active_trading_date)
+        and by_role["stage1_plan_evidence"]["valid"]
         and by_role["stage1_plan_evidence"]["freshness"] == "fresh"
     ):
         node, step, status = "DAILY-1", "DAILY-1C", "waiting_data"
         prompt = "请等待焦点标的证据生成。"
         missing_items.append(_missing("stage1_evidence_missing", status, "stage1_plan_evidence", "Stage 1 证据尚未生成。", prompt))
     elif not (
-        by_role["trading_plan"]["confirmed"]
+        _is_today_artifact(by_role["trading_plan"], active_trading_date)
+        and by_role["trading_plan"]["confirmed"]
         and by_role["trading_plan"]["freshness"] == "fresh"
+        and _is_today_artifact(by_role["intraday_guidance"], active_trading_date)
         and by_role["intraday_guidance"]["valid"]
         and by_role["intraday_guidance"]["freshness"] == "fresh"
     ):
