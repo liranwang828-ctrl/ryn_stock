@@ -16,6 +16,13 @@ ARTIFACT_PATHS = {
     "intraday_guidance": ("inputs", "intraday-guidance.json"),
 }
 
+RESOLVED_HISTORICAL_SESSION_STATES = {
+    "DAY_ARCHIVED",
+    "CLOSED_UNREVIEWED",
+    "QUICK_REVIEWED",
+    "IDLE",
+}
+
 
 def _read_json(path: Path):
     try:
@@ -158,6 +165,15 @@ def _is_today_artifact(artifact: dict, trading_date: str | None) -> bool:
     return "trading_date_mismatch" not in set(artifact.get("issues") or [])
 
 
+def _historical_session_still_blocks(session_trading_date: str, active_trading_date: str | None, session_state: str | None) -> bool:
+    return bool(
+        session_trading_date
+        and active_trading_date
+        and session_trading_date != active_trading_date
+        and session_state not in RESOLVED_HISTORICAL_SESSION_STATES
+    )
+
+
 def _nodes(current_node: str, current_step: str, current_status: str) -> list[dict]:
     node_ids = ["DAILY-0", "DAILY-1", "DAILY-2", "DAILY-3", "DAILY-4"]
     labels = ["晨间准备", "盘前决策", "开盘观察", "盘中管理", "盘后复盘"]
@@ -205,11 +221,10 @@ def build_daily_status(
         records.append(record)
         payloads[role] = payload
     by_role = {item["role"]: item for item in records}
-    historical_session_blocking = bool(
-        trading_date
-        and active_trading_date
-        and trading_date != active_trading_date
-        and session.get("state") != "DAY_ARCHIVED"
+    historical_session_blocking = _historical_session_still_blocks(
+        trading_date,
+        active_trading_date,
+        session.get("state"),
     )
 
     if session.get("state") in {"PLAN_APPROVED", "INTRADAY_ACTIVE", "MARKET_CLOSED", "REVIEW_REQUIRED", "QUICK_REVIEWED", "CLOSED_UNREVIEWED", "DAY_ARCHIVED"}:

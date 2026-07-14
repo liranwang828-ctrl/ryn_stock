@@ -860,6 +860,30 @@ def test_dashboard_today_ignores_historical_artifacts_for_readiness(tmp_path, mo
     assert all("trading_date_mismatch" in artifact["issues"] for artifact in historical_artifacts)
 
 
+def test_daily_status_does_not_block_resolved_historical_sessions(tmp_path):
+    from stock_team.orchestration.daily_status import build_daily_status
+
+    runtime_root = tmp_path / "runtime"
+    runtime_root.mkdir(parents=True)
+
+    status = build_daily_status(
+        session={
+            "session_id": "trading-2026-07-13",
+            "market_date": "2026-07-13",
+            "state": "IDLE",
+            "mode": "trading",
+            "session_type": "trading",
+        },
+        runtime_root=runtime_root,
+        active_trading_date="2026-07-14",
+    )
+
+    assert status["overall_status"] != "blocked"
+    assert "historical_session_blocking" not in {
+        item["code"] for item in status["missing_items"]
+    }
+
+
 def test_operating_console_has_four_hash_pages_without_duplicate_legacy_summaries():
     from pathlib import Path
 
