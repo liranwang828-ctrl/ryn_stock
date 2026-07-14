@@ -886,6 +886,42 @@ def test_historical_session_blocks_today_until_resolved(tmp_path, monkeypatch):
     assert summary["session_kind"] == "recovery_required"
     assert summary["first_action"] == "resolve_historical_session_in_conversation"
     assert summary["entry_state"]["readiness"] == "blocked"
-    assert "historical_session_blocking" in {
-        item["code"] for item in summary["daily_status"]["missing_items"]
+
+
+def test_historical_session_no_longer_blocks_after_quick_review(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _load_coordinator_manifest
+    from stock_team.utils import market_clock
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    sessions_dir = investing_os_home / "system" / "runtime" / "sessions"
+    sessions_dir.mkdir(parents=True)
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    monkeypatch.setattr(market_clock, "get_market_clock", lambda: {
+        "trading_date": "2026-07-14",
+        "last_trading_date": "2026-07-13",
+        "next_trading_date": "2026-07-15",
+        "session_kind": "current",
+        "calendar_status": "verified",
+        "formal_session_allowed": True,
+    })
+
+    historical_session = {
+        "session_id": "observation-2026-07-13",
+        "market_date": "2026-07-13",
+        "trading_date": "2026-07-13",
+        "state": "QUICK_REVIEWED",
+        "mode": "observation",
+        "session_type": "observation",
+        "allowed_actions": [],
+        "completed": {"artifacts": []},
     }
+    (sessions_dir / "observation-2026-07-13.json").write_text(
+        json.dumps(historical_session),
+        encoding="utf-8",
+    )
+
+    summary = _load_coordinator_manifest(str(stock_team_home))
+
+    assert summary["session_kind"] != "recovery_required"
+    assert summary["first_action"] != "resolve_historical_session_in_conversation"

@@ -957,8 +957,10 @@ def _coordinator_summary_payload(
 
 
 def _select_dashboard_session(sessions: list[dict], trading_context: dict) -> dict:
-    terminal_states = {"DAY_ARCHIVED", "CLOSED_UNREVIEWED"}
-    open_sessions = [item for item in sessions if item.get("state") not in terminal_states]
+    open_sessions = [
+        item for item in sessions
+        if _historical_session_still_blocks(item, trading_context.get("trading_date"))
+    ]
     if len(open_sessions) > 1:
         return {
             "session": None,
@@ -977,6 +979,23 @@ def _select_dashboard_session(sessions: list[dict], trading_context: dict) -> di
     if trading_context.get("calendar_status") != "verified":
         diagnostics.append("exchange calendar is unverified; formal session initialization is blocked")
     return {"session": None, "session_kind": "not_started", "diagnostics": diagnostics}
+
+
+def _historical_session_still_blocks(session: dict, today: str | None) -> bool:
+    session_date = session.get("market_date") or session.get("trading_date")
+    if not session_date:
+        return True
+    if today and session_date >= today:
+        return True
+
+    resolved_states = {
+        "DAY_ARCHIVED",
+        "CLOSED_UNREVIEWED",
+        "QUICK_REVIEWED",
+        "FULL_REVIEWED",
+        "IDLE",
+    }
+    return session.get("state") not in resolved_states
 
 
 def _load_coordinator_manifest(base_dir: str) -> dict:
