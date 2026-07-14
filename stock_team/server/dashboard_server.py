@@ -981,19 +981,21 @@ def _select_dashboard_session(sessions: list[dict], trading_context: dict) -> di
 
 
 def _historical_session_still_blocks(session: dict, today: str | None) -> bool:
-    session_date = session.get("market_date") or session.get("trading_date")
-    if not session_date:
-        return True
-    if today and session_date >= today:
-        return True
-
     resolved_states = {
         "DAY_ARCHIVED",
         "CLOSED_UNREVIEWED",
         "QUICK_REVIEWED",
         "IDLE",
     }
-    return session.get("state") not in resolved_states
+    if session.get("state") in resolved_states:
+        return False
+
+    session_date = session.get("market_date") or session.get("trading_date")
+    if not session_date:
+        return True
+    # Any non-resolved session still counts as open; the date only determines
+    # whether the selector classifies it as current-day or recovery-required.
+    return True
 
 
 def _load_coordinator_manifest(base_dir: str) -> dict:

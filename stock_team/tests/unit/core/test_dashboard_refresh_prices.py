@@ -822,6 +822,33 @@ def test_dashboard_session_selection_blocks_multiple_open_sessions():
     assert selected["diagnostics"]
 
 
+def test_dashboard_session_selection_treats_same_day_archived_session_as_history():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    sessions = [
+        {"session_id": "trading-2026-07-14", "market_date": "2026-07-14", "state": "DAY_ARCHIVED"},
+    ]
+
+    selected = _select_dashboard_session(sessions, {"trading_date": "2026-07-14", "calendar_status": "verified"})
+
+    assert selected["session"]["session_id"] == "trading-2026-07-14"
+    assert selected["session_kind"] == "history"
+
+
+def test_dashboard_session_selection_ignores_same_day_archived_when_older_session_needs_recovery():
+    from stock_team.server.dashboard_server import _select_dashboard_session
+
+    sessions = [
+        {"session_id": "trading-2026-07-14", "market_date": "2026-07-14", "state": "DAY_ARCHIVED"},
+        {"session_id": "trading-2026-07-13", "market_date": "2026-07-13", "state": "PLAN_APPROVED"},
+    ]
+
+    selected = _select_dashboard_session(sessions, {"trading_date": "2026-07-14", "calendar_status": "verified"})
+
+    assert selected["session"]["session_id"] == "trading-2026-07-13"
+    assert selected["session_kind"] == "recovery_required"
+
+
 def test_dashboard_session_selection_does_not_create_session_on_non_trading_day():
     from stock_team.server.dashboard_server import _select_dashboard_session
 
