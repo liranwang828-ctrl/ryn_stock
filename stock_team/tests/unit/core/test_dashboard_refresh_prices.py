@@ -860,6 +860,62 @@ def test_dashboard_today_ignores_historical_artifacts_for_readiness(tmp_path, mo
     assert all("trading_date_mismatch" in artifact["issues"] for artifact in historical_artifacts)
 
 
+def test_dashboard_summary_uses_same_historical_session_blocker_as_daily_status(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    runtime_root = investing_os_home / "system" / "runtime"
+    inputs_dir = runtime_root / "inputs"
+    packets_dir = runtime_root / "packets"
+    inputs_dir.mkdir(parents=True)
+    packets_dir.mkdir(parents=True)
+
+    (inputs_dir / "observation-2026-07-13-stage0-universe.json").write_text(
+        json.dumps({
+            "date": "2026-07-13",
+            "source_inputs": {"positions": [], "prior_review": {}, "cognition_state": {}},
+            "permission_state_before_open": "Yellow",
+            "forbidden_actions": [],
+        }),
+        encoding="utf-8",
+    )
+    (packets_dir / "observation-2026-07-13-stage0-market-context.md").write_text("# stale", encoding="utf-8")
+
+    session = {
+        "session_id": "observation-2026-07-13",
+        "market_date": "2026-07-13",
+        "trading_date": "2026-07-13",
+        "state": "PLAN_APPROVED",
+        "mode": "observation",
+        "session_type": "observation",
+        "daily0_confirmation": {"user_confirmed": True},
+        "allowed_actions": [],
+        "completed": {"artifacts": []},
+    }
+
+    payload = _coordinator_summary_payload(
+        session,
+        None,
+        base_dir=str(stock_team_home),
+        trading_date_context={"trading_date": "2026-07-14", "calendar_status": "verified"},
+        session_kind="recovery_required",
+    )
+
+    assert payload["entry_state"]["readiness"] == "blocked"
+    assert payload["entry_state"]["next_action"] == "resolve_historical_session_in_conversation"
+    assert payload["entry_state"]["missing_items"] == [
+        item["message"] for item in payload["daily_status"]["missing_items"]
+    ]
+    assert payload["daily_status"]["overall_status"] == "blocked"
+    assert any(
+        item["code"] == "historical_session_blocking"
+        for item in payload["daily_status"]["missing_items"]
+    )
+
+
 def test_daily_status_does_not_block_resolved_historical_sessions(tmp_path):
     from stock_team.orchestration.daily_status import build_daily_status
 

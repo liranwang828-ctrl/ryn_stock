@@ -909,13 +909,12 @@ def _coordinator_summary_payload(
     if session_kind == "recovery_required":
         first_action = "resolve_historical_session_in_conversation"
         next_step = "resolve-historical-session"
-        recovery_message = "historical session must be resolved before a new formal trading session"
         entry_state = _build_minimal_entry_state({
             "mode": session.get("mode", "mixed-entry"),
             "state": state,
             "readiness": "blocked",
             "next_action": first_action,
-        }, [recovery_message])
+        }, blockers or [item["message"] for item in daily_status["missing_items"]])
         current_task = {
             **current_task,
             "id": "historical_session_recovery",
