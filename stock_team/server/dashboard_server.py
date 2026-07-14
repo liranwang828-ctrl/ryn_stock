@@ -914,7 +914,7 @@ def _coordinator_summary_payload(
             "state": state,
             "readiness": "blocked",
             "next_action": first_action,
-        }, blockers or [item["message"] for item in daily_status["missing_items"]])
+        }, [item["message"] for item in daily_status["missing_items"]])
         current_task = {
             **current_task,
             "id": "historical_session_recovery",
