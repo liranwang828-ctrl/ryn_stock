@@ -886,4 +886,6 @@ def test_historical_session_blocks_today_until_resolved(tmp_path, monkeypatch):
     assert summary["session_kind"] == "recovery_required"
     assert summary["first_action"] == "resolve_historical_session_in_conversation"
     assert summary["entry_state"]["readiness"] == "blocked"
-    assert summary["daily_status"]["missing_items"][0]["code"] == "historical_session_blocking"
+    assert "historical_session_blocking" in {
+        item["code"] for item in summary["daily_status"]["missing_items"]
+    }

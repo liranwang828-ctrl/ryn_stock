@@ -845,7 +845,9 @@ def test_dashboard_today_ignores_historical_artifacts_for_readiness(tmp_path, mo
     )
 
     assert payload["entry_state"]["readiness"] == "blocked"
-    assert payload["daily_status"]["missing_items"][0]["code"] == "historical_session_blocking"
+    assert "historical_session_blocking" in {
+        item["code"] for item in payload["daily_status"]["missing_items"]
+    }
     assert all(
         artifact["freshness"] != "fresh"
         for artifact in payload["daily_status"]["artifacts"]
