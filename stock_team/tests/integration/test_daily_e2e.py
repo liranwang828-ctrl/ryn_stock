@@ -743,3 +743,46 @@ def test_e2e_observation_stage0_stops_at_daily1b_for_conversation(tmp_path):
     assert manifest["observation_available"] is True
     snapshot_status = next(item for item in manifest["artifacts"] if item["role"] == "premarket_snapshot")
     assert "observation_only_no_trading_permission" in snapshot_status["issues"]
+
+
+def test_today_entry_returns_to_init_day_after_historical_session_is_archived(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _load_coordinator_manifest
+    from stock_team.utils import market_clock
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    sessions_dir = investing_os_home / "system" / "runtime" / "sessions"
+    sessions_dir.mkdir(parents=True)
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    monkeypatch.setattr(market_clock, "get_market_clock", lambda: {
+        "trading_date": "2026-07-14",
+        "last_trading_date": "2026-07-13",
+        "next_trading_date": "2026-07-15",
+        "session_kind": "current",
+        "calendar_status": "verified",
+        "formal_session_allowed": True,
+    })
+
+    historical_session = {
+        "session_id": "observation-2026-07-13",
+        "market_date": "2026-07-13",
+        "trading_date": "2026-07-13",
+        "state": "DAY_ARCHIVED",
+        "mode": "observation",
+        "session_type": "observation",
+        "allowed_actions": [],
+        "completed": {"artifacts": []},
+    }
+    (sessions_dir / "observation-2026-07-13.json").write_text(
+        json.dumps(historical_session),
+        encoding="utf-8",
+    )
+
+    summary = _load_coordinator_manifest(str(stock_team_home))
+
+    assert summary["session_kind"] == "not_started"
+    assert summary["session"] is None
+    assert summary["first_action"] == "init-day"
+    assert summary["next_step"] == "init-day"
+    assert summary["entry_state"]["current_step"] == "DAY_NOT_STARTED"
+    assert summary["entry_state"]["next_action"] == "init_day"
