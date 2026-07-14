@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -746,7 +748,8 @@ def test_e2e_observation_stage0_stops_at_daily1b_for_conversation(tmp_path):
 
 
 def test_today_entry_returns_to_init_day_after_historical_session_is_archived(tmp_path, monkeypatch):
-    from stock_team.server.dashboard_server import _load_coordinator_manifest
+    from stock_team.server import dashboard_server
+    from stock_team.server.dashboard_server import DashboardHTTPRequestHandler, HTTPServer
     from stock_team.utils import market_clock
 
     stock_team_home = tmp_path / "stock_team"
@@ -778,7 +781,19 @@ def test_today_entry_returns_to_init_day_after_historical_session_is_archived(tm
         encoding="utf-8",
     )
 
-    summary = _load_coordinator_manifest(str(stock_team_home))
+    monkeypatch.setattr(dashboard_server, "BASE", str(stock_team_home))
+    server = HTTPServer(("127.0.0.1", 0), DashboardHTTPRequestHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{server.server_port}/api/coordinator-summary"
+        ) as response:
+            summary = json.loads(response.read().decode("utf-8"))
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
     assert summary["session_kind"] == "not_started"
     assert summary["session"] is None
