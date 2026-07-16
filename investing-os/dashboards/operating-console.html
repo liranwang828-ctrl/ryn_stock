@@ -178,6 +178,7 @@
       const nextValidation = mainReport.next_validation || [];
       const evidenceLayers = researchDb.evidence_layers || {};
       const missingFields = researchDb.missing_fields || [];
+      const readinessNotes = researchDb.readiness_notes || [];
       const trackedMetrics = (researchDb.tracked_metrics || {}).metrics || [];
       document.getElementById("productTask").innerHTML = task.title ? `<strong>${html(task.title)}</strong><p>${html(task.summary || "")}</p>` : "暂无当前产物任务。";
       document.getElementById("researchReportStatus").textContent = mainReport.exists
@@ -199,7 +200,9 @@
       document.getElementById("researchEvidenceLayers").textContent = cards.length && Object.keys(evidenceLayers).length
         ? `Evidence Layers: ${Object.entries(evidenceLayers).map(([layer, count]) => `${layer}: ${count}`).join(" · ")}`
         : "Evidence Layers: 暂无卡片统计";
-      document.getElementById("researchMissingFields").textContent = missingFields.length
+      document.getElementById("researchMissingFields").textContent = readinessNotes.length
+        ? `Readiness Notes: ${readinessNotes.join(" · ")}`
+        : missingFields.length
         ? `Readiness Notes: ${missingFields.join(" · ")}`
         : "Readiness Notes: 暂无缺口";
       document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length

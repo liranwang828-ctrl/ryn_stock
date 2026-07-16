@@ -296,6 +296,9 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
     payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
 
     assert payload["research_database"]["main_report"]["exists"] is True
+    assert payload["research_database"]["main_report"]["path"].endswith(
+        "observation-2026-07-16-daily-main-report.md"
+    )
     assert payload["research_database"]["main_report"]["questions"] == [
         "Which AI workload owners are showing pricing power?",
         "What evidence confirms durable margin migration?",
@@ -313,6 +316,7 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
         "industry_evidence": 1,
     }
     assert payload["research_database"]["missing_fields"] == []
+    assert payload["research_database"]["readiness_notes"] == []
     assert payload["research_database"]["tracked_metrics"]["dataset_id"] == "mvd-core"
 
 
@@ -335,6 +339,9 @@ def test_coordinator_summary_payload_research_database_summary_uses_safe_default
     payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
 
     assert payload["research_database"]["main_report"]["exists"] is False
+    assert payload["research_database"]["main_report"]["path"].endswith(
+        "observation-2026-07-16-daily-main-report.md"
+    )
     assert payload["research_database"]["main_report"]["questions"] == []
     assert payload["research_database"]["main_report"]["hypotheses"] == []
     assert payload["research_database"]["main_report"]["next_validation"] == []
@@ -343,6 +350,12 @@ def test_coordinator_summary_payload_research_database_summary_uses_safe_default
     assert payload["research_database"]["topics"] == []
     assert payload["research_database"]["evidence_layers"] == {}
     assert payload["research_database"]["missing_fields"] == [
+        "missing main report",
+        "missing topics",
+        "missing cards",
+        "no next validation found",
+    ]
+    assert payload["research_database"]["readiness_notes"] == [
         "missing main report",
         "missing topics",
         "missing cards",
@@ -1001,6 +1014,7 @@ def test_operating_console_renders_research_database_sections():
     assert "const nextValidation = mainReport.next_validation || [];" in page
     assert "const evidenceLayers = researchDb.evidence_layers || {};" in page
     assert "const missingFields = researchDb.missing_fields || [];" in page
+    assert "const readinessNotes = researchDb.readiness_notes || [];" in page
     assert 'document.getElementById("researchReportStatus").textContent' in page
     assert 'document.getElementById("researchPrimaryTopics").textContent' in page
     assert 'document.getElementById("researchTopicDetails").textContent' in page
@@ -1008,7 +1022,7 @@ def test_operating_console_renders_research_database_sections():
     assert 'document.getElementById("researchHypothesesSummary").textContent = hypotheses.length' in page
     assert 'document.getElementById("researchNextValidationSummary").textContent = nextValidation.length' in page
     assert 'document.getElementById("researchEvidenceLayers").textContent' in page
-    assert 'document.getElementById("researchMissingFields").textContent = missingFields.length' in page
+    assert 'document.getElementById("researchMissingFields").textContent = readinessNotes.length' in page
     assert 'document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length' in page
     assert 'Primary Topics: 未挂载' in page or 'Primary Topics: 鏈寕杞?' in page
     assert 'Questions: 暂无摘要' in page or 'Questions: 鏆傛棤鎽樿' in page
