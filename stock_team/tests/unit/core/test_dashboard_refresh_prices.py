@@ -1041,8 +1041,11 @@ def test_tracked_metrics_template_starts_with_mvd_structure():
     from pathlib import Path
 
     path = Path("investing-os/templates/tracked-metrics-index.json")
-    text = path.read_text(encoding="utf-8")
+    data = json.loads(path.read_text(encoding="utf-8"))
 
+    assert data["dataset_id"] == "mvd-core"
+    assert data["metrics"][0]["metric_id"] == "gpu_lead_time"
+    assert data["metrics"][0]["source_layer"] == "alternative_evidence"
 
 
 def test_pre_market_plan_template_preserves_guardrails():
@@ -1056,3 +1059,22 @@ def test_pre_market_plan_template_preserves_guardrails():
     assert "Slippage Limit" in text
     assert "Intraday Exception Rules" in text
     assert "No-Trade Conditions" in text
+
+
+def test_research_card_templates_exist():
+    from pathlib import Path
+
+    expected_templates = {
+        "investing-os/templates/research-topic.md": ["# Research Topic", "## Core Question"],
+        "investing-os/templates/evidence-card.md": ["# Evidence Card", "## Claim"],
+        "investing-os/templates/observation-card.md": ["# Observation Card", "## Observation"],
+        "investing-os/templates/hypothesis-card.md": ["# Hypothesis Card", "## Hypothesis"],
+        "investing-os/templates/decision-card.md": ["# Decision Card", "## Decision"],
+    }
+
+    for template_path, markers in expected_templates.items():
+        path = Path(template_path)
+        assert path.exists()
+        text = path.read_text(encoding="utf-8")
+        for marker in markers:
+            assert marker in text
