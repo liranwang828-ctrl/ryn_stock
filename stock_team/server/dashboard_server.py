@@ -519,13 +519,25 @@ def _default_stage0_action(base_dir: str, session: dict) -> dict:
     snapshot_payload = _load_json_any(snapshot_path, None)
     snapshot_kind = _stage0_snapshot_source_kind(snapshot_payload)
     formal_ready = snapshot_kind == "formal_provider_snapshot"
-    if formal_ready:
-        parameters["pre_market_snapshot"] = snapshot_path
     state = session.get("state", "DAY_INITIALIZED")
     effective_state = _effective_coordinator_state(session) or state
-    if state == "FAILED_TOOL":
+    if session.get("session_type") == "observation" and state != "FAILED_TOOL":
+        tape_path = os.path.join(inputs_dir, f"{session_id}-premarket-tape.json")
+        parameters = {
+            "date": market_date,
+            "as_of": f"{market_date}T09:20:00-04:00",
+            "universe": universe_path,
+            "snapshot_out": snapshot_path,
+            "out": out_path,
+            "tape_out": tape_path,
+            "session_id": session_id,
+        }
+        intent = "start_stage0_observation"
+        snapshot_kind = "observation_runtime_generation"
+    elif state == "FAILED_TOOL":
         intent = "retry_last_action"
     elif formal_ready:
+        parameters["pre_market_snapshot"] = snapshot_path
         intent = "start_stage0_from_snapshot"
     else:
         intent = "start_stage0"
@@ -1047,6 +1059,8 @@ def _coordinator_summary_payload(
         snapshot_payload = _load_json_any(snapshot_path, None)
         formal_ready = _stage0_snapshot_source_kind(snapshot_payload) == "formal_provider_snapshot"
     first_action = _coordinator_first_action(phase, state, decision, formal_ready=formal_ready)
+    if session.get("session_type") == "observation" and state in {"DAY_INITIALIZED", "STAGE0_RUNNING"} and state != "FAILED_TOOL":
+        first_action = "start_stage0_observation"
     next_step = _coordinator_next_step(state, decision)
     start_here = {
         "idle": "init-day first",
@@ -1112,6 +1126,7 @@ def _coordinator_summary_payload(
         "status": "ok",
         "session": {
             "session_id": session.get("session_id"),
+            "session_type": session.get("session_type"),
             "state": state,
             "market_date": session.get("market_date"),
         },
@@ -1856,7 +1871,7 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "no active session"}, ensure_ascii=False).encode("utf-8"))
                 return
             choice = payload.get("choice")
-            if choice not in {"start_stage0", "start_stage0_from_snapshot", "record_focus_confirmation", "start_stage1"}:
+            if choice not in {"start_stage0", "start_stage0_from_snapshot", "start_stage0_observation", "record_focus_confirmation", "start_stage1"}:
                 self._set_headers("application/json; charset=utf-8", 400)
                 self.wfile.write(json.dumps({"error": f"unsupported choice: {choice}"}, ensure_ascii=False).encode("utf-8"))
                 return
@@ -1868,7 +1883,7 @@ class DashboardHTTPRequestHandler(BaseHTTPRequestHandler):
                 now_fn=lambda: datetime.now().astimezone().isoformat(),
             )
             action_context = {}
-            if choice in {"start_stage0", "start_stage0_from_snapshot"}:
+            if choice in {"start_stage0", "start_stage0_from_snapshot", "start_stage0_observation"}:
                 stage0_bundle = _default_stage0_action(BASE, session)
                 action = stage0_bundle["action"]
                 action_context = stage0_bundle["context"]

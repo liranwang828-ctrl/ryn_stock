@@ -12,24 +12,43 @@ REQUIRED_MARKETS = ("QQQ", "SPY", "IWM", "VIXY")
 ET = ZoneInfo("America/New_York")
 
 
+def _prior_regular_close(ticker, observed_at: datetime) -> float:
+    daily = ticker.history(period="5d", interval="1d", auto_adjust=False)
+    if daily.empty:
+        raise RuntimeError("daily history missing")
+    candidates = daily
+    try:
+        dates = daily.index.tz_convert(ET).date if daily.index.tz is not None else daily.index.date
+        candidates = daily[dates < observed_at.date()]
+    except (AttributeError, TypeError):
+        pass
+    if candidates.empty:
+        raise RuntimeError("prior regular close missing")
+    return round(float(candidates["Close"].dropna().iloc[-1]), 4)
+
+
 def _yfinance_history(symbol: str) -> dict:
     import yfinance as yf
 
-    history = yf.Ticker(symbol).history(period="5d", auto_adjust=False)
-    if history.empty or len(history) < 2:
+    ticker = yf.Ticker(symbol)
+    intraday = ticker.history(period="1d", interval="1m", prepost=True, auto_adjust=False)
+    if intraday.empty:
         return {}
-    latest = history.iloc[-1]
-    previous = history.iloc[-2]
-    timestamp = history.index[-1]
+    close = intraday["Close"].dropna()
+    if close.empty:
+        return {}
+    latest = float(close.iloc[-1])
+    timestamp = close.index[-1]
     if getattr(timestamp, "tzinfo", None) is None:
         timestamp = timestamp.tz_localize(ET)
     else:
         timestamp = timestamp.tz_convert(ET)
+    prev_close = _prior_regular_close(ticker, timestamp)
     return {
-        "price": round(float(latest["Close"]), 4),
-        "prev_close": round(float(previous["Close"]), 4),
+        "price": round(latest, 4),
+        "prev_close": prev_close,
         "data_as_of": timestamp.isoformat(),
-        "source": "yfinance_daily_history",
+        "source": "yfinance_1m_prepost",
     }
 
 
@@ -74,7 +93,7 @@ def build_observation_context(
         "- permission: `no_trading_permission`",
         f"- as_of_et: `{as_of_et.isoformat()}`",
         "",
-        "| Symbol | Latest Daily Close | Previous Daily Close | Data As Of | Source |",
+        "| Symbol | Latest Premarket Quote | Prior Regular Close | Data As Of | Source |",
         "|---|---:|---:|---|---|",
     ]
     for symbol in REQUIRED_MARKETS:
