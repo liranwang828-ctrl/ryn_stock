@@ -1,11 +1,11 @@
-# Investing-OS V2 设计：以 Daily 为入口，把 Knowledge Base 升级为 Research Database
+# Investing-OS V2.1 设计：以 Daily 为入口，把 Knowledge Base 升级为 Research Database 与 Evidence System
 
 ## 元信息
 
 - 日期：2026-07-16
 - 状态：draft_for_review
 - 适用范围：Investing-OS daily 工作流、daily 产物结构、轻量 Topic 挂载、dashboard 最小适配
-- 不在本次范围：完整长期数据库、自动抓取产业数据、复杂可视化分析引擎、自动推理决策
+- 不在本次范围：完整长期数据库服务、全自动产业数据抓取、复杂可视化分析引擎、自动推理交易决策
 
 ## 1. 背景
 
@@ -15,7 +15,11 @@
 - Reality → Consensus → Price
 - AI 第二阶段 / 利润迁移框架
 
-但系统的主要瓶颈已经不是“缺少框架”，而是“缺少证据化结构”。
+但系统的主要瓶颈已经不是“缺少框架”，而是同时缺少：
+
+- 证据化结构
+- 证据生产能力
+- 稳定研究基础设施
 
 当前很多判断仍容易走成：
 
@@ -32,16 +36,23 @@
 - 长期研究问题与当天盘前/盘中脱节
 - dashboard 能显示状态，但不能清楚呈现“今天到底在验证什么”
 
-因此，本次设计的目标，不是再增加一层新框架，而是让 Investing-OS 从“记录知识”升级为“记录问题、证据、假设与验证过程”。
+因此，本次设计的目标，不是再增加一层新框架，而是让 Investing-OS 从“记录知识”升级为：
+
+- 记录问题
+- 生产证据
+- 维护假设
+- 持续验证
+- 逐步形成 Evidence Chain
 
 ## 2. 设计目标
 
-本次设计只追求四个目标：
+本次设计只追求五个目标：
 
 1. 让 daily 的核心输出从“结论笔记”升级为“研究产物”
 2. 让长期 Research Topic 可以轻量挂载到 daily，而不是孤立存在
 3. 让每个 daily 判断都能追到对应的 Question / Evidence / Hypothesis
 4. 让 dashboard 在不承担复杂判断逻辑的前提下，展示这些研究产物是否存在、是否完整、是否可读
+5. 让 Evidence System 和后续长期 Research Infrastructure 有明确最小起点
 
 ## 3. 非目标
 
@@ -52,6 +63,7 @@
 - 不要求所有历史认知资产一次性迁移
 - 不让 dashboard 负责生成研究结论
 - 不把所有公司研究立即重构为 Topic-first 全量系统
+- 不承诺第一版就完成外部数据自动接入
 
 第一版强调：
 
@@ -60,7 +72,7 @@
 
 ## 4. 核心范式升级
 
-### 4.1 从 Knowledge Base 到 Research Database
+### 4.1 从 Knowledge Base 到 Research Database / Research Operating System
 
 V1 更像：
 
@@ -68,7 +80,7 @@ V1 更像：
 记录知识
 ```
 
-V2 要升级为：
+V2 / V2.1 要升级为：
 
 ```text
 记录问题
@@ -90,6 +102,18 @@ Question
 -> Investment Decision
 ```
 
+更长期的定位是：
+
+```text
+Question Driven Research System
+```
+
+也就是：
+
+- 不是新闻驱动
+- 不是观点驱动
+- 而是问题驱动、证据驱动、验证驱动
+
 ### 4.2 Daily 的新定位
 
 daily 不再只是“今天怎么交易”的流程。
@@ -102,9 +126,30 @@ daily 不再只是“今天怎么交易”的流程。
 
 换句话说：
 
-daily 是入口层，Research Database 是积累层。
+daily 是入口层，Research Database 是积累层，Evidence System 是生产层，Research Infrastructure 是支撑层。
 
-## 5. 第一版信息架构
+## 5.1 Evidence System 的角色
+
+Evidence System 回答的是：
+
+- 证据从哪里来
+- 证据按什么优先级被采用
+- 什么能作为 Reality 证据
+- 什么只能作为 Hypothesis 触发器
+
+如果没有 Evidence System，Research Database 很容易重新退化成观点库。
+
+## 5.2 Research Infrastructure 的角色
+
+Research Infrastructure 回答的是：
+
+- 我们长期跟踪哪些问题
+- 我们长期跟踪哪些高价值变量
+- 我们靠什么低成本、持续地更新这些证据
+
+因此第一版虽然不做完整基础设施，但必须为它预留结构。
+
+## 6. 第一版信息架构
 
 第一版采用：
 
@@ -136,7 +181,7 @@ daily 是入口层，Research Database 是积累层。
 
 这样既能支持长期累积，又不阻塞 daily 落地。
 
-## 6. 主报告设计
+## 7. 主报告设计
 
 ### 6.1 主报告角色
 
@@ -186,7 +231,7 @@ daily 是入口层，Research Database 是积累层。
 - 每个假设都标注当前置信度
 - 每个结论都必须能指出下一次验证节点
 
-## 7. 卡片设计
+## 8. 卡片设计
 
 第一版只定义四类卡片。
 
@@ -250,7 +295,7 @@ daily 是入口层，Research Database 是积累层。
 - trigger_conditions
 - invalidation_conditions
 
-## 8. Research Topic 设计
+## 9. Research Topic 设计
 
 ### 8.1 第一版 Topic 目标
 
@@ -281,7 +326,7 @@ Topic 不是为了制造一套更复杂的分类系统，而是为了让 daily �
 - 今天的研究有主线
 - 具体观察又不被硬塞进单一分类
 
-## 9. Evidence 结构
+## 10. Evidence 结构
 
 用户已明确要求第一版直接采用完整结构，而不是轻量简写。
 
@@ -301,19 +346,191 @@ Topic 不是为了制造一套更复杂的分类系统，而是为了让 daily �
 
 ### 9.1 Source 分层
 
-为避免“观点冒充证据”，证据来源分五层：
+为避免“观点冒充证据”，证据来源在第一版正式收敛为四层：
 
-1. Official Data
-2. Industry Data
-3. Value Chain
-4. Alternative Data
-5. Expert View
+1. Official Evidence
+2. Industry Evidence
+3. Alternative Evidence
+4. Expert View
 
-### 9.2 第一版处理原则
+其中：
+
+- Official Evidence：最高优先级，用于建立 Reality
+- Industry Evidence：用于验证产业 Reality
+- Alternative Evidence：用于领先发现 Reality 变化
+- Expert View：用于产生或修正 Hypothesis，不能直接替代 Reality
+
+Value Chain 不再单独作为来源层，而作为研究组织方式与解释层存在。
+
+### 10.2 第一版处理原则
 
 第一版允许先以人工填写为主，不做自动抓取，但输出格式必须预留这些来源层级。
 
-## 10. Workflow 设计
+### 10.3 证据优先级原则
+
+第一版明确采用：
+
+- Evidence Quality 高于 Information Quantity
+
+因此：
+
+- 新闻数量不是优势
+- 能直接建立或修正 Reality 的高质量证据才是优势
+
+任何新闻都不能替代：
+
+- 财报
+- Earnings Call
+- Investor Day
+- SEC 文件
+- 官方披露
+
+## 11. Evidence Production 与数据源策略
+
+### 11.1 当前目标
+
+第一版不追求“抓最多信息”，而追求“生产最有用证据”。
+
+系统要优先支持：
+
+- 读取
+- 摘要
+- 结构化
+- 追踪
+- 验证
+
+而不是泛化新闻流收集。
+
+### 11.2 默认高 ROI 数据源
+
+预算有限时，默认优先级应为：
+
+#### A. Official Evidence（最高）
+
+- 财报
+- Earnings Call Transcript
+- Investor Presentation
+- Investor Day
+- SEC 文件
+- 官方 Blog / 公告
+
+理由：
+
+- 免费
+- 可持续
+- 最接近 Reality
+
+#### B. 宏观与产业新闻补充
+
+- Reuters
+- 免费 Bloomberg 新闻
+
+用途：
+
+- 补充事实
+- 宏观日历
+- 产业事件定位
+
+#### C. 长期研究型社交与社区来源
+
+- X（固定研究者 / 工程师 / 分析师账号）
+- Reddit 技术社区
+- GitHub
+
+用途：
+
+- 发现新问题
+- 发现技术变化
+- 形成 Hypothesis
+
+限制：
+
+- 不能直接当成 Reality
+
+### 11.3 未来付费数据源优先级
+
+如果后续增加预算，建议优先级为：
+
+1. SemiAnalysis
+2. TrendForce
+3. TechInsights
+
+暂不建议第一优先就上 Bloomberg 终端式广覆盖，因为当前目标是 AI 专项 Reality 研究，不是大而全信息平台。
+
+### 11.4 Codex 的角色
+
+AI 在这套系统中的职责不是预测股价。
+
+AI 的职责更接近：
+
+- Research Analyst
+- Evidence Organizer
+- Earnings Reader
+- Topic Updater
+- Dashboard Maintainer
+
+也就是：
+
+- 读取财报
+- 提取指标
+- 更新证据链
+- 维护假设
+- 生成验证节点
+
+而不是直接替用户替代投资判断。
+
+## 12. Research Infrastructure：MVD 与长期追踪
+
+### 12.1 Minimum Viable Dataset（MVD）
+
+系统长期目标不是追踪一百个指标，而是持续追踪少量真正影响 Reality 的高价值变量。
+
+第一版设计必须允许未来挂载一个最小可行指标集。
+
+示例：
+
+- HBM ASP
+- GPU Lead Time
+- Hyperscaler CapEx
+- TSMC CapEx
+- AMAT Orders
+- VRT Orders
+- Copilot Adoption
+- Oracle OCI Growth
+- GPU Rental Price
+- Data Center Power
+
+### 12.2 MVD 的作用
+
+MVD 的作用不是立刻量化一切，而是为 future dashboard 和 weekly research update 提供稳定核心变量。
+
+### 12.3 Value Chain 作为研究组织方式
+
+以后研究对象默认优先是 Question，而不是 Company。
+
+例如：
+
+- 不是先研究 MU
+- 而是先研究 HBM
+
+MU、三星、SK Hynix 只是 HBM 问题下的 Evidence。
+
+再例如：
+
+- 不是先研究 Microsoft
+- 而是先研究 AI Monetization
+
+Microsoft、Oracle、Meta、ServiceNow 都只是该问题下的 Evidence。
+
+这意味着 Value Chain 主要作为：
+
+- 研究组织方式
+- 证据归位方式
+- 上下游传导解释方式
+
+而不是单独的一层证据来源。
+
+## 13. Workflow 设计
 
 ### 10.1 Pre-Market
 
@@ -350,13 +567,13 @@ Topic 不是为了制造一套更复杂的分类系统，而是为了让 daily �
 - 哪些 Topic 的置信度该调整
 - 下一次验证节点是什么
 
-## 11. Dashboard 最小适配
+## 14. Dashboard 最小适配
 
 第一版 dashboard 不新增复杂推理。
 
 只做最小可读与就绪检查。
 
-### 11.1 要展示的内容
+### 14.1 要展示的内容
 
 - 今日主报告是否存在
 - primary_topics
@@ -366,8 +583,10 @@ Topic 不是为了制造一套更复杂的分类系统，而是为了让 daily �
 - 每张卡片的 type / topic / status
 - 缺失字段提醒
 - next_validation 摘要
+- evidence source layer 摘要
+- 如未来已有 MVD，则显示核心变量摘要
 
-### 11.2 明确不做的事
+### 14.2 明确不做的事
 
 - 不在 dashboard 里自动生成研究结论
 - 不在 dashboard 里做复杂 Topic 评分
@@ -379,13 +598,15 @@ dashboard 的职责只是：
 - 看得懂
 - 知道哪里缺
 
-## 12. 文件与产物建议
+## 15. 文件与产物建议
 
 第一版建议新增或调整以下产物层：
 
 - daily 主报告模板
 - card 模板
 - research topics 索引文件
+- evidence source / evidence card 结构
+- MVD / tracked metrics 索引文件（可先空结构）
 - dashboard 读取这些结构化文件的最小适配逻辑
 
 建议采用：
@@ -393,10 +614,11 @@ dashboard 的职责只是：
 - 主报告：单文件
 - 卡片：可单独文件或内嵌数组结构
 - Topic：索引文件
+- MVD：索引文件或占位结构
 
 第一版优先保证可读和可维护，不追求过早规范化。
 
-## 13. 数据流
+## 16. 数据流
 
 第一版数据流建议为：
 
@@ -404,6 +626,7 @@ dashboard 的职责只是：
 active_topic_selection
 -> daily main report creation
 -> cards creation / update
+-> evidence source classification
 -> dashboard reads report + cards + topic links
 -> review updates hypothesis confidence and next validation
 ```
@@ -412,9 +635,10 @@ active_topic_selection
 
 - Topic 驱动 daily
 - daily 反向更新 Topic
+- Evidence 层级驱动证据可信度排序
 - dashboard 只读取，不决策
 
-## 14. 错误处理与失败模式
+## 17. 错误处理与失败模式
 
 第一版优先考虑以下失败模式：
 
@@ -443,7 +667,21 @@ active_topic_selection
 - Source 分层必须显式存在
 - Expert View 不得直接当作 Reality
 
-## 15. 测试与验收
+### 17.5 信息数量重新压倒证据质量
+
+防护方式：
+
+- 模板优先要求来源层级与用途
+- dashboard 展示“缺来源 / 缺验证”而不是堆更多文本
+
+### 17.6 MVD 过早膨胀
+
+防护方式：
+
+- 第一版先允许空结构
+- 只记录少量高价值变量，不做全量指标仓库
+
+## 18. 测试与验收
 
 第一版验收不以“研究结论是否正确”为标准，而以“结构是否被系统稳定产出和展示”为标准。
 
@@ -452,16 +690,20 @@ active_topic_selection
 1. daily 能生成带完整研究字段的主报告
 2. 主报告能关联 1–3 个 primary_topics
 3. 卡片能挂载 related_topics
-4. dashboard 能显示主报告摘要、卡片摘要、缺失项、next_validation
+4. dashboard 能显示主报告摘要、卡片摘要、缺失项、next_validation、evidence source layer
 5. workflow 文档与模板能明确要求 Question / Evidence / Hypothesis 结构
+6. 系统结构中已为 MVD / tracked metrics 预留挂载位
+7. Expert View 不会在结构上被伪装成 Reality 证据
 
-## 16. 分阶段实施建议
+## 19. 分阶段实施建议
 
 ### Phase 1
 
 - 写清 daily 主报告结构
 - 写清 card 结构
 - 写清 topic 索引结构
+- 写清 evidence source layer 结构
+- 写清 MVD 占位结构
 - 调整 workflow 文档
 
 ### Phase 2
@@ -474,8 +716,9 @@ active_topic_selection
 
 - 把近期已有认知与 AI 第二阶段框架逐步挂到 Topic 层
 - 开始形成跨日验证链
+- 逐步接入官方财报 / call / 手工整理的高 ROI evidence production 流程
 
-## 17. 本设计的取舍
+## 20. 本设计的取舍
 
 本设计刻意选择：
 
@@ -488,18 +731,21 @@ active_topic_selection
 - daily 真正变成研究入口
 - Topic 有轻量但真实的挂载
 - Evidence 结构可长期累积
+- Evidence Production 有明确优先级
+- 后续研究基础设施有自然生长位
 
-## 18. 结论
+## 21. 结论
 
 本次设计的核心，不是再创造一个新框架。
 
-而是把已有框架真正变成日常研究生产系统。
+而是把已有框架真正变成日常研究生产系统，并开始建立 Evidence System 与 Research Infrastructure 的最小骨架。
 
 第一版最重要的成果应当是：
 
 - daily 不再只是结论记录
 - Topic 不再只是长期想法
 - dashboard 不再只显示状态
+- Evidence 不再只是顺手引用的信息碎片
 
 而三者开始形成：
 
@@ -511,4 +757,10 @@ Question
 -> Topic Update
 ```
 
-这就是 Investing-OS 从 Knowledge Base 升级为 Research Database 的最小可用起点。
+这就是 Investing-OS 从 Knowledge Base 升级为：
+
+- Research Database
+- Evidence System
+- Question Driven Research System
+
+的最小可用起点。
