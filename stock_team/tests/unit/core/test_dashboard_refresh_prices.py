@@ -1087,7 +1087,10 @@ def test_pre_market_workflow_requires_topic_driven_evidence_output():
     assert "primary topics" in text.lower()
     assert "evidence layer" in text.lower()
     assert "question" in text.lower()
+    assert "counter evidence" in text.lower()
     assert "hypothesis" in text.lower()
+    assert "confidence" in text.lower()
+    assert "next validation" in text.lower()
 
 
 def test_daily_report_workflow_references_main_report_and_cards():
@@ -1097,3 +1100,5 @@ def test_daily_report_workflow_references_main_report_and_cards():
     assert "main report" in text.lower()
     assert "cards" in text.lower()
     assert "research topics" in text.lower()
+    assert "counter evidence" in text.lower()
+    assert "next validation" in text.lower()
