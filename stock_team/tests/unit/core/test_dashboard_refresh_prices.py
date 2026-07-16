@@ -247,6 +247,46 @@ def test_coordinator_summary_exposes_skill_guided_stage0_discussion(tmp_path, mo
     assert payload["first_action"] == "record_focus_confirmation"
 
 
+def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    inputs = investing_os_home / "system" / "runtime" / "inputs"
+    inputs.mkdir(parents=True)
+
+    (inputs / "observation-2026-07-16-daily-main-report.md").write_text(
+        "---\nprimary_topics:\n  - ai-profit-migration\n---\n## Pre-Market / 盘前\n- Questions:\n",
+        encoding="utf-8",
+    )
+    (inputs / "observation-2026-07-16-research-cards.json").write_text(json.dumps([
+        {"card_id": "card-1", "type": "evidence", "related_topics": ["ai-profit-migration"], "source_layer": "official_evidence"}
+    ]), encoding="utf-8")
+    (inputs / "observation-2026-07-16-research-topics.json").write_text(json.dumps([
+        {"topic_id": "ai-profit-migration", "title": "AI 利润迁移"}
+    ]), encoding="utf-8")
+    (inputs / "tracked-metrics.json").write_text(json.dumps({
+        "dataset_id": "mvd-core",
+        "metrics": [{"metric_id": "gpu_lead_time", "status": "pending"}]
+    }), encoding="utf-8")
+
+    session = {
+        "session_id": "observation-2026-07-16",
+        "session_type": "observation",
+        "state": "STAGE0_READY",
+        "market_date": "2026-07-16",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["research_database"]["main_report"]["exists"] is True
+    assert payload["research_database"]["primary_topics"] == ["ai-profit-migration"]
+    assert payload["research_database"]["cards"][0]["source_layer"] == "official_evidence"
+    assert payload["research_database"]["tracked_metrics"]["dataset_id"] == "mvd-core"
+
+
 def test_bootstrap_current_task_outputs_creates_stage0_discussion_templates(tmp_path, monkeypatch):
     from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
 

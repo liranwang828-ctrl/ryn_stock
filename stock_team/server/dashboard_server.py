@@ -195,6 +195,71 @@ def _coordinator_packets_dir(base_dir: str) -> str:
     return os.path.join(investing_os_home(base_dir), "system", "runtime", "packets")
 
 
+def _extract_primary_topics_from_report(report_text: str) -> list[str]:
+    lines = report_text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return []
+    topics: list[str] = []
+    in_primary_topics = False
+    for line in lines[1:]:
+        stripped = line.strip()
+        if stripped == "---":
+            break
+        if stripped == "primary_topics:":
+            in_primary_topics = True
+            continue
+        if not in_primary_topics:
+            continue
+        if not stripped:
+            continue
+        if line.startswith("  - "):
+            topic = stripped[2:].strip()
+            if topic:
+                topics.append(topic)
+            continue
+        break
+    return topics
+
+
+def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
+    inputs_dir = _coordinator_inputs_dir(base_dir)
+    session_id = session.get("session_id", "current")
+    report_path = os.path.join(inputs_dir, f"{session_id}-daily-main-report.md")
+    cards_path = os.path.join(inputs_dir, f"{session_id}-research-cards.json")
+    topics_path = os.path.join(inputs_dir, f"{session_id}-research-topics.json")
+    metrics_path = os.path.join(inputs_dir, "tracked-metrics.json")
+
+    report_exists = os.path.exists(report_path)
+    primary_topics = []
+    if report_exists:
+        try:
+            report_text = Path(report_path).read_text(encoding="utf-8")
+        except Exception:
+            report_text = ""
+        primary_topics = _extract_primary_topics_from_report(report_text)
+
+    cards = _load_json_any(cards_path, [])
+    if not isinstance(cards, list):
+        cards = []
+    topics = _load_json_any(topics_path, [])
+    if not isinstance(topics, list):
+        topics = []
+    tracked_metrics = _load_json_any(metrics_path, {"dataset_id": "mvd-core", "metrics": []})
+    if not isinstance(tracked_metrics, dict):
+        tracked_metrics = {"dataset_id": "mvd-core", "metrics": []}
+
+    return {
+        "main_report": {
+            "exists": report_exists,
+            "path": report_path,
+        },
+        "primary_topics": primary_topics,
+        "cards": cards,
+        "topics": topics,
+        "tracked_metrics": tracked_metrics,
+    }
+
+
 def _latest_journal_path(base_dir: str) -> str:
     journals_dir = os.path.join(investing_os_home(base_dir), "wiki", "journals")
     if not os.path.isdir(journals_dir):
@@ -944,6 +1009,7 @@ def _coordinator_summary_payload(
         "entry_state": entry_state,
         "daily_status": daily_status,
         "premarket_tape": premarket_tape,
+        "research_database": _load_research_database_bundle(base_dir, session),
         "trading_date_context": trading_date_context or {},
         "session_kind": session_kind,
         "cross_day": {
