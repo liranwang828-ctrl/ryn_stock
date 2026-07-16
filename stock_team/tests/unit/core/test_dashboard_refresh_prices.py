@@ -364,6 +364,32 @@ def test_extract_report_section_lines_supports_template_style_labels_and_inline_
     ]
 
 
+def test_extract_report_section_lines_aggregates_later_template_sections_when_first_is_empty():
+    from stock_team.server.dashboard_server import _extract_report_section_lines
+
+    report_text = (
+        "## Pre-Market / 盘前\n\n"
+        "- Questions:\n"
+        "- Evidence:\n"
+        "  - first block is intentionally empty for questions\n\n"
+        "## Intraday / 盘中\n\n"
+        "- Questions:\n"
+        "  - Why did software hold while semis faded?\n"
+        "- Hypotheses:\n"
+        "  - Intraday leadership is narrowing\n\n"
+        "## Review / 复盘\n\n"
+        "- Questions:\n"
+        "  - Did closing breadth confirm the rotation?\n"
+        "- Questions:\n"
+        "  - Why did software hold while semis faded?\n"
+    )
+
+    assert _extract_report_section_lines(report_text, ("questions",)) == [
+        "Why did software hold while semis faded?",
+        "Did closing breadth confirm the rotation?",
+    ]
+
+
 def test_coordinator_summary_payload_research_database_summary_uses_safe_defaults_when_artifacts_missing(tmp_path, monkeypatch):
     from stock_team.server.dashboard_server import _coordinator_summary_payload
 

@@ -259,6 +259,7 @@ def _extract_report_section_lines(report_text: str, headings: tuple[str, ...]) -
     normalized_targets = {_normalize_research_section_key(heading) for heading in headings}
     lines = report_text.splitlines()
     collected: list[str] = []
+    seen: set[str] = set()
     collecting = False
     for raw_line in lines:
         stripped = raw_line.strip()
@@ -279,15 +280,17 @@ def _extract_report_section_lines(report_text: str, headings: tuple[str, ...]) -
             if normalized_label in normalized_targets:
                 collecting = True
                 normalized_inline = _normalize_research_summary_line(inline_value)
-                if normalized_inline:
+                if normalized_inline and normalized_inline not in seen:
+                    seen.add(normalized_inline)
                     collected.append(normalized_inline)
                 continue
             if collecting:
-                break
+                collecting = False
         if not collecting:
             continue
         normalized = _normalize_research_summary_line(stripped)
-        if normalized:
+        if normalized and normalized not in seen:
+            seen.add(normalized)
             collected.append(normalized)
     return collected
 
