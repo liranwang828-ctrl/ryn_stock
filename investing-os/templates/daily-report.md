@@ -1,47 +1,46 @@
 ---
-date:
-report_id:
+session_id:
+trading_date:
+session_mode:
 status: draft
-market_session:
 primary_topics:
   - topic_id:
     topic_name:
-    priority:
-permission_state_start:
-permission_state_end:
+    priority: primary
+current_structural_context:
+allowed_actions:
+  - observe_only
+forbidden_actions:
+  - revenge_trade
 ---
 
 # Daily Report Template
 
 ## Pre-Market / 盘前
 
-- Primary Topics:
-- Market Regime:
-- Key Drivers:
-- Planned Focus:
+- Questions:
+- Evidence:
+- Counter Evidence:
+- Hypotheses:
+- Confidence:
+- Next Validation:
 
-## Questions
+## Intraday / 盘中
 
 - Questions:
-
-## Evidence
-
 - Evidence:
-
-## Counter Evidence
-
 - Counter Evidence:
-
-## Hypotheses
-
 - Hypotheses:
-
-## Confidence
-
 - Confidence:
+- Next Validation:
 
-## Next Validation
+## Review / 复盘
 
+- Questions:
+- Evidence:
+- Counter Evidence:
+- Hypotheses:
+- Confidence:
 - Next Validation:
 
 ## Trade Log

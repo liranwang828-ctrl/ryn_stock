@@ -1,30 +1,33 @@
 ---
 card_id:
 topic_id:
+question:
+evidence:
+source:
+source_date:
+supports:
+weakens:
+reliability_level:
 status: draft
-source_type:
-captured_at:
 ---
 
 # Evidence Card
 
 ## Claim
 
+- Question:
 - Evidence:
 
 ## Source
 
-- Source name:
-- Source link:
-- Source layer:
+- Source:
+- Source Date:
 
 ## Relevance
 
 - Supports:
-- Risks:
+- Weakens:
 
-## Quality Check
+## Reliability
 
-- Freshness:
-- Reliability:
-- Notes:
+- Reliability Level:

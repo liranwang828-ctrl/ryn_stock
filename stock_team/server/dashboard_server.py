@@ -209,6 +209,7 @@ def _extract_primary_topics_from_report(report_text: str) -> list[str]:
         return []
     topics: list[str] = []
     in_primary_topics = False
+    expecting_topic_fields = False
     for line in lines[1:]:
         stripped = line.strip()
         if stripped == "---":
@@ -220,10 +221,19 @@ def _extract_primary_topics_from_report(report_text: str) -> list[str]:
             continue
         if not stripped:
             continue
+        if line.startswith("  - topic_id:"):
+            topic_id = stripped.split(":", 1)[1].strip()
+            if topic_id:
+                topics.append(topic_id)
+            expecting_topic_fields = True
+            continue
         if line.startswith("  - "):
             topic = stripped[2:].strip()
             if topic:
                 topics.append(topic)
+            expecting_topic_fields = False
+            continue
+        if expecting_topic_fields and line.startswith("    "):
             continue
         break
     return topics

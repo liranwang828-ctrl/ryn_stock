@@ -1282,3 +1282,85 @@ def test_daily_report_workflow_references_main_report_and_cards():
     assert "research topics" in text.lower()
     assert "counter evidence" in text.lower()
     assert "next validation" in text.lower()
+
+
+def test_daily_report_template_contains_mvp_contract_sections():
+    from pathlib import Path
+
+    text = Path("investing-os/templates/daily-report.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "session_id:",
+        "trading_date:",
+        "session_mode:",
+        "primary_topics:",
+        "current_structural_context:",
+        "allowed_actions:",
+        "forbidden_actions:",
+        "## Pre-Market / 盘前",
+        "## Intraday / 盘中",
+        "## Review / 复盘",
+    ):
+        assert marker in text
+
+    assert text.count("Questions:") >= 3
+    assert text.count("Evidence:") >= 3
+    assert text.count("Counter Evidence:") >= 3
+    assert text.count("Hypotheses:") >= 3
+    assert text.count("Confidence:") >= 3
+    assert text.count("Next Validation:") >= 3
+
+
+def test_extract_primary_topics_parses_structured_topic_ids_from_report_front_matter():
+    from stock_team.server.dashboard_server import _extract_primary_topics_from_report
+
+    report = """---
+primary_topics:
+  - topic_id: ai-profit-migration
+    topic_name: AI 利润迁移
+    priority: primary
+  - topic_id: ai-monetization
+    topic_name: AI 商业化
+    priority: secondary
+---
+"""
+
+    assert _extract_primary_topics_from_report(report) == [
+        "ai-profit-migration",
+        "ai-monetization",
+    ]
+
+
+def test_research_topic_template_contains_required_mvp_fields():
+    from pathlib import Path
+
+    text = Path("investing-os/templates/research-topic.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "topic_id:",
+        "title:",
+        "question:",
+        "current_hypothesis:",
+        "current_confidence:",
+        "key_evidence_refs:",
+        "next_validation:",
+        "status:",
+    ):
+        assert marker in text
+
+
+def test_evidence_card_template_contains_required_mvp_fields():
+    from pathlib import Path
+
+    text = Path("investing-os/templates/evidence-card.md").read_text(encoding="utf-8")
+
+    for marker in (
+        "question:",
+        "evidence:",
+        "source:",
+        "source_date:",
+        "supports:",
+        "weakens:",
+        "reliability_level:",
+    ):
+        assert marker in text

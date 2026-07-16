@@ -1,10 +1,13 @@
 ---
 topic_id:
-topic_name:
+title:
+question:
+current_hypothesis:
+current_confidence:
+key_evidence_refs:
+  - 
+next_validation:
 status: active
-owner:
-market_date:
-priority:
 ---
 
 # Research Topic
@@ -13,22 +16,15 @@ priority:
 
 - Question:
 
-## Why It Matters
+## Current Thesis
 
-- Decision linkage:
-- Position linkage:
+- Current Hypothesis:
+- Current Confidence:
 
-## Current Evidence Map
+## Evidence Map
 
-- Evidence cards:
-- Counter evidence cards:
-- Observation cards:
-
-## Working Hypotheses
-
-- Hypothesis cards:
+- Key Evidence Refs:
 
 ## Next Validation
 
-- Next step:
-- Trigger for update:
+- Next Validation:
