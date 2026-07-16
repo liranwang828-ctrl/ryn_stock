@@ -1043,3 +1043,16 @@ def test_tracked_metrics_template_starts_with_mvd_structure():
     path = Path("investing-os/templates/tracked-metrics-index.json")
     text = path.read_text(encoding="utf-8")
 
+
+
+def test_pre_market_plan_template_preserves_guardrails():
+    from pathlib import Path
+
+    path = Path("investing-os/templates/pre-market-plan.md")
+    text = path.read_text(encoding="utf-8")
+
+    assert "Trigger Window" in text
+    assert "Stale Data Limit" in text
+    assert "Slippage Limit" in text
+    assert "Intraday Exception Rules" in text
+    assert "No-Trade Conditions" in text

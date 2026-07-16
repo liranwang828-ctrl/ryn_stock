@@ -37,9 +37,9 @@ primary_topics:
 
 These are not orders. They define what may be considered intraday if every condition remains true.
 
-| Symbol | Topic | Scope | Tactic | Max Loss | Position Cap | Stale Data Limit | Slippage Limit | Manual Confirm |
-|---|---|---|---|---:|---:|---:|---:|---|
-|  |  | evidence_only / one_preplanned_entry / staged_swing_entry / preplanned_reduce_risk |  |  |  |  |  | yes |
+| Symbol | Topic | Scope | Tactic | Max Loss | Position Cap | Trigger Window | Stale Data Limit | Slippage Limit | Manual Confirm |
+|---|---|---|---|---:|---:|---:|---:|---:|---|
+|  |  | evidence_only / one_preplanned_entry / staged_swing_entry / preplanned_reduce_risk |  |  |  |  |  |  | yes |
 
 ## Fast Consistency Check
 
