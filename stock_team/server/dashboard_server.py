@@ -195,6 +195,14 @@ def _coordinator_packets_dir(base_dir: str) -> str:
     return os.path.join(investing_os_home(base_dir), "system", "runtime", "packets")
 
 
+def _investing_os_template_path(base_dir: str, name: str) -> str:
+    candidate = os.path.join(investing_os_home(base_dir), "templates", name)
+    if os.path.exists(candidate):
+        return candidate
+    repo_root = Path(__file__).resolve().parents[2]
+    return str(repo_root / "investing-os" / "templates" / name)
+
+
 def _extract_primary_topics_from_report(report_text: str) -> list[str]:
     lines = report_text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -782,6 +790,9 @@ def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_d
         discussion_notes = _runtime_path(base_dir, "inputs", session_id, "stage0-discussion-notes.md")
         decision_sheet = _runtime_path(base_dir, "inputs", session_id, "stage1-decision-sheet.json")
         stage0_packet = _runtime_path(base_dir, "packets", session_id, "stage0-market-context.md")
+        main_report_path = _runtime_path(base_dir, "inputs", session_id, "daily-main-report.md")
+        cards_path = _runtime_path(base_dir, "inputs", session_id, "research-cards.json")
+        topics_path = _runtime_path(base_dir, "inputs", session_id, "research-topics.json")
         if not os.path.exists(discussion_notes):
             created_paths.append(_save_text(discussion_notes, "\n".join([
                 f"# Stage 0 Discussion Notes ({market_date})",
@@ -822,6 +833,13 @@ def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_d
                 "user_confirmed": False,
                 "notes": "",
             }))
+        if not os.path.exists(main_report_path):
+            report_template = Path(_investing_os_template_path(base_dir, "daily-report.md")).read_text(encoding="utf-8")
+            created_paths.append(_save_text(main_report_path, report_template))
+        if not os.path.exists(cards_path):
+            created_paths.append(_save_json(cards_path, []))
+        if not os.path.exists(topics_path):
+            created_paths.append(_save_json(topics_path, []))
     elif task.get("id") == "plan_approval":
         trading_plan = _runtime_path(base_dir, "inputs", session_id, "trading-plan.json")
         intraday_guidance = _runtime_path(base_dir, "inputs", session_id, "intraday-guidance.json")

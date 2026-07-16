@@ -338,6 +338,30 @@ def test_bootstrap_current_task_outputs_creates_stage0_discussion_templates(tmp_
     assert decision_sheet["user_confirmed"] is False
 
 
+def test_bootstrap_current_task_outputs_creates_research_database_placeholders(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "packets").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "packets" / "observation-2026-07-16-stage0-market-context.md").write_text("# Stage 0", encoding="utf-8")
+
+    session = {
+        "session_id": "observation-2026-07-16",
+        "state": "STAGE0_READY",
+        "market_date": "2026-07-16",
+        "session_type": "observation",
+    }
+
+    result = _bootstrap_current_task_outputs(session, None, str(stock_team_home))
+    created = "\n".join(result["created_paths"])
+
+    assert "daily-main-report" in created
+    assert "research-cards" in created
+    assert "research-topics" in created
+
+
 def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path, monkeypatch):
     from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
 
