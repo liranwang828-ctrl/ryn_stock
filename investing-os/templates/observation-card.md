@@ -1,6 +1,6 @@
 ---
 card_id:
-topic_id:
+related_topics:
 status: draft
 observed_at:
 observation_type:

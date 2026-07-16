@@ -1,6 +1,7 @@
 ---
 card_id:
-topic_id:
+related_topics:
+source_layer:
 question:
 evidence:
 source:
@@ -20,6 +21,7 @@ status: draft
 
 ## Source
 
+- Source Layer:
 - Source:
 - Source Date:
 

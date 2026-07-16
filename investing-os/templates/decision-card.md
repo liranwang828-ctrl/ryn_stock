@@ -1,6 +1,6 @@
 ---
 card_id:
-topic_id:
+related_topics:
 status: draft
 decision_type:
 decided_at:

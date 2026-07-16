@@ -1,6 +1,6 @@
 ---
 card_id:
-topic_id:
+related_topics:
 status: draft
 confidence:
 updated_at:

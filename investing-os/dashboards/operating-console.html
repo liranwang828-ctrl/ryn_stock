@@ -40,6 +40,10 @@
     .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     .warning { border-left:4px solid var(--amber); }
     .empty { color:var(--muted); padding:10px 0; }
+    .research-card-list { display:grid; gap:8px; margin-top:12px; }
+    .research-card-item { border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fbfcfe; }
+    .research-card-item strong { display:block; margin-bottom:4px; }
+    .research-card-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     table { width:100%; border-collapse:collapse; }
     th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
     th { color:var(--muted); font-size:12px; }
@@ -98,6 +102,7 @@
           <p id="researchEvidenceLayers" class="empty">Evidence Layers: 暂无卡片统计</p>
           <p id="researchMissingFields" class="empty">Readiness Notes: 暂无缺口</p>
           <p id="trackedMetricsSummary" class="empty">Tracked Metrics: 暂无 MVD</p>
+          <div id="researchCardsList" class="research-card-list empty">Research Cards: 暂无卡片</div>
         </article>
         <article class="card"><h3>Premarket Tape</h3><div id="premarketTape" class="empty">盘前跨资产数据尚未生成。</div></article>
         <article class="card"><h3>Artifact Readiness</h3><div style="overflow:auto"><table><thead><tr><th>产物</th><th>存在</th><th>有效</th><th>确认</th><th>新鲜度</th><th>问题</th></tr></thead><tbody id="artifactRows"></tbody></table></div></article>
@@ -180,6 +185,7 @@
       const missingFields = researchDb.missing_fields || [];
       const readinessNotes = researchDb.readiness_notes || [];
       const trackedMetrics = (researchDb.tracked_metrics || {}).metrics || [];
+      const relatedTopicsText = (value) => Array.isArray(value) && value.length ? value.join(", ") : "unlinked";
       document.getElementById("productTask").innerHTML = task.title ? `<strong>${html(task.title)}</strong><p>${html(task.summary || "")}</p>` : "暂无当前产物任务。";
       document.getElementById("researchReportStatus").textContent = mainReport.exists
         ? `Main Report: ready · ${mainReport.path || "path unavailable"}`
@@ -208,6 +214,16 @@
       document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length
         ? `Tracked Metrics: ${trackedMetrics.map(item => `${item.metric_id || "unknown"}: ${item.status || "unknown"}`).join(" · ")}`
         : "Tracked Metrics: 暂无 MVD";
+      document.getElementById("researchCardsList").innerHTML = cards.length
+        ? cards.map(card => {
+            const cardLabel = card.card_id || card.title || "untitled-card";
+            const cardType = card.type || "unknown";
+            const relatedTopics = relatedTopicsText(card.related_topics);
+            const sourceLayer = card.source_layer || "n/a";
+            const statusText = card.status || "n/a";
+            return `<div class="research-card-item"><strong>${html(cardLabel)}</strong><div>${html(cardType)}</div><div class="research-card-meta">${badge(`Topics: ${relatedTopics}`)}${badge(`Layer: ${sourceLayer}`)}${badge(`Status: ${statusText}`)}</div></div>`;
+          }).join("")
+        : "Research Cards: 暂无卡片";
       const tape = manifest.premarket_tape || {};
       const groupLabels = {index_futures:"指数期货",etf_premarket:"ETF盘前",crypto_macro:"24小时与宏观",focus_equities:"焦点标的"};
       const tapeGroups = Object.entries(tape.groups || {}).map(([name, records]) => `<details open><summary>${html(groupLabels[name] || name)}</summary><div class="meta">${(records || []).map(item => badge(`${item.symbol} ${item.last ?? "--"} · ${item.change_pct == null ? "--" : `${item.change_pct}%`} · ${item.freshness || "unknown"}`,item.quality === "usable_observation" ? "green" : "amber")).join("")}</div></details>`).join("");

@@ -905,6 +905,7 @@ def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_d
         main_report_path = _runtime_path(base_dir, "inputs", session_id, "daily-main-report.md")
         cards_path = _runtime_path(base_dir, "inputs", session_id, "research-cards.json")
         topics_path = _runtime_path(base_dir, "inputs", session_id, "research-topics.json")
+        tracked_metrics_path = os.path.join(_coordinator_inputs_dir(base_dir), "tracked-metrics.json")
         if not os.path.exists(discussion_notes):
             created_paths.append(_save_text(discussion_notes, "\n".join([
                 f"# Stage 0 Discussion Notes ({market_date})",
@@ -952,6 +953,12 @@ def _bootstrap_current_task_outputs(session: dict, decision: dict | None, base_d
             created_paths.append(_save_json(cards_path, []))
         if not os.path.exists(topics_path):
             created_paths.append(_save_json(topics_path, []))
+        if not os.path.exists(tracked_metrics_path):
+            tracked_metrics_template = _load_json_any(
+                _investing_os_template_path(base_dir, "tracked-metrics-index.json"),
+                {"dataset_id": "mvd-core", "metrics": []},
+            )
+            created_paths.append(_save_json(tracked_metrics_path, tracked_metrics_template))
     elif task.get("id") == "plan_approval":
         trading_plan = _runtime_path(base_dir, "inputs", session_id, "trading-plan.json")
         intraday_guidance = _runtime_path(base_dir, "inputs", session_id, "intraday-guidance.json")

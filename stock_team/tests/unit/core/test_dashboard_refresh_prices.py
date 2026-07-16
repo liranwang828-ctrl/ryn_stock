@@ -485,17 +485,23 @@ def test_bootstrap_current_task_outputs_creates_research_database_placeholders(t
     main_report_path = next(path for path in created_paths if path.endswith("daily-main-report.md"))
     cards_path = next(path for path in created_paths if path.endswith("research-cards.json"))
     topics_path = next(path for path in created_paths if path.endswith("research-topics.json"))
+    tracked_metrics_path = next(path for path in created_paths if path.endswith("tracked-metrics.json"))
 
     assert "daily-main-report" in created
     assert "research-cards" in created
     assert "research-topics" in created
+    assert "tracked-metrics" in created
     assert os.path.exists(main_report_path)
     assert os.path.exists(cards_path)
     assert os.path.exists(topics_path)
+    assert os.path.exists(tracked_metrics_path)
     assert "primary_topics:" in open(main_report_path, encoding="utf-8").read()
     assert "## Pre-Market / 盘前" in open(main_report_path, encoding="utf-8").read()
     assert json.loads(open(cards_path, encoding="utf-8").read()) == []
     assert json.loads(open(topics_path, encoding="utf-8").read()) == []
+    tracked_metrics = json.loads(open(tracked_metrics_path, encoding="utf-8").read())
+    assert tracked_metrics["dataset_id"] == "mvd-core"
+    assert tracked_metrics["metrics"][0]["metric_id"] == "gpu_lead_time"
 
 
 def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path, monkeypatch):
@@ -1076,6 +1082,7 @@ def test_operating_console_renders_research_database_sections():
     assert 'id="researchEvidenceLayers"' in page
     assert 'id="researchMissingFields"' in page
     assert 'id="trackedMetricsSummary"' in page
+    assert 'id="researchCardsList"' in page
     assert "manifest.research_database" in page
     assert "const researchDb = manifest.research_database || {};" in page
     assert "const mainReport = researchDb.main_report || {};" in page
@@ -1088,6 +1095,9 @@ def test_operating_console_renders_research_database_sections():
     assert "const evidenceLayers = researchDb.evidence_layers || {};" in page
     assert "const missingFields = researchDb.missing_fields || [];" in page
     assert "const readinessNotes = researchDb.readiness_notes || [];" in page
+    assert "researchDb.cards" in page
+    assert "related_topics" in page
+    assert "source_layer" in page
     assert 'document.getElementById("researchReportStatus").textContent' in page
     assert 'document.getElementById("researchPrimaryTopics").textContent' in page
     assert 'document.getElementById("researchTopicDetails").textContent' in page
@@ -1097,6 +1107,7 @@ def test_operating_console_renders_research_database_sections():
     assert 'document.getElementById("researchEvidenceLayers").textContent' in page
     assert 'document.getElementById("researchMissingFields").textContent = readinessNotes.length' in page
     assert 'document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length' in page
+    assert 'document.getElementById("researchCardsList").innerHTML = cards.length' in page
     assert 'Primary Topics: 未挂载' in page or 'Primary Topics: 鏈寕杞?' in page
     assert 'Questions: 暂无摘要' in page or 'Questions: 鏆傛棤鎽樿' in page
     assert 'Hypotheses: 暂无摘要' in page or 'Hypotheses: 鏆傛棤鎽樿' in page
@@ -1502,6 +1513,8 @@ def test_evidence_card_template_contains_required_mvp_fields():
     text = Path("investing-os/templates/evidence-card.md").read_text(encoding="utf-8")
 
     for marker in (
+        "related_topics:",
+        "source_layer:",
         "question:",
         "evidence:",
         "source:",
@@ -1511,6 +1524,22 @@ def test_evidence_card_template_contains_required_mvp_fields():
         "reliability_level:",
     ):
         assert marker in text
+
+
+def test_research_card_templates_use_related_topics_linkage():
+    from pathlib import Path
+
+    template_paths = [
+        "investing-os/templates/evidence-card.md",
+        "investing-os/templates/observation-card.md",
+        "investing-os/templates/hypothesis-card.md",
+        "investing-os/templates/decision-card.md",
+    ]
+
+    for template_path in template_paths:
+        text = Path(template_path).read_text(encoding="utf-8")
+        assert "related_topics:" in text
+        assert "topic_id:" not in text
 
 
 def test_daily_report_template_contains_structured_primary_topic_markers():
