@@ -855,6 +855,17 @@ def test_operating_console_renders_research_database_sections():
     assert 'id="researchCardsList"' in page
     assert 'id="trackedMetricsSummary"' in page
     assert "manifest.research_database" in page
+    assert "const researchDb = manifest.research_database || {};" in page
+    assert "const primaryTopics = researchDb.primary_topics || [];" in page
+    assert "const cards = researchDb.cards || [];" in page
+    assert 'document.getElementById("researchPrimaryTopics").textContent' in page
+    assert 'document.getElementById("researchCardsList").textContent = cards.length' in page
+    assert 'document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length' in page
+    assert 'Primary Topics: 未挂载' in page or 'Primary Topics: 鏈寕杞?' in page
+    assert 'Tracked Metrics: 暂无 MVD' in page or 'Tracked Metrics: 鏆傛棤 MVD' in page
+    assert 'Cards: 暂无研究卡片' in page or 'Cards: 鏆傛棤鐮旂┒鍗＄墖' in page
+    assert 'cards.map(item => item.card_id || item.topic_id || item.title || "untitled")' in page
+    assert '.join(" · ")' in page or '.join(" 路 ")' in page
 
 
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():
