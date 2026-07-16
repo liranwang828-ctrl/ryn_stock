@@ -258,11 +258,24 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
     inputs.mkdir(parents=True)
 
     (inputs / "observation-2026-07-16-daily-main-report.md").write_text(
-        "---\nprimary_topics:\n  - ai-profit-migration\n---\n## Pre-Market / 盘前\n- Questions:\n",
+        (
+            "---\n"
+            "primary_topics:\n"
+            "  - ai-profit-migration\n"
+            "---\n"
+            "## Questions\n"
+            "- Which AI workload owners are showing pricing power?\n"
+            "- What evidence confirms durable margin migration?\n\n"
+            "## Hypotheses\n"
+            "- Margin power is shifting toward model infrastructure.\n\n"
+            "## Next Validation\n"
+            "- Check hyperscaler capex callouts against backlog commentary.\n"
+        ),
         encoding="utf-8",
     )
     (inputs / "observation-2026-07-16-research-cards.json").write_text(json.dumps([
-        {"card_id": "card-1", "type": "evidence", "related_topics": ["ai-profit-migration"], "source_layer": "official_evidence"}
+        {"card_id": "card-1", "type": "evidence", "related_topics": ["ai-profit-migration"], "source_layer": "official_evidence"},
+        {"card_id": "card-2", "type": "evidence", "related_topics": ["ai-profit-migration"], "source_layer": "industry_evidence", "reliability": "medium"}
     ]), encoding="utf-8")
     (inputs / "observation-2026-07-16-research-topics.json").write_text(json.dumps([
         {"topic_id": "ai-profit-migration", "title": "AI 利润迁移"}
@@ -283,8 +296,23 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
     payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
 
     assert payload["research_database"]["main_report"]["exists"] is True
+    assert payload["research_database"]["main_report"]["questions"] == [
+        "Which AI workload owners are showing pricing power?",
+        "What evidence confirms durable margin migration?",
+    ]
+    assert payload["research_database"]["main_report"]["hypotheses"] == [
+        "Margin power is shifting toward model infrastructure."
+    ]
+    assert payload["research_database"]["main_report"]["next_validation"] == [
+        "Check hyperscaler capex callouts against backlog commentary."
+    ]
     assert payload["research_database"]["primary_topics"] == ["ai-profit-migration"]
     assert payload["research_database"]["cards"][0]["source_layer"] == "official_evidence"
+    assert payload["research_database"]["evidence_layers"] == {
+        "official_evidence": 1,
+        "industry_evidence": 1,
+    }
+    assert payload["research_database"]["missing_fields"] == []
     assert payload["research_database"]["tracked_metrics"]["dataset_id"] == "mvd-core"
 
 
@@ -307,9 +335,19 @@ def test_coordinator_summary_payload_research_database_summary_uses_safe_default
     payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
 
     assert payload["research_database"]["main_report"]["exists"] is False
+    assert payload["research_database"]["main_report"]["questions"] == []
+    assert payload["research_database"]["main_report"]["hypotheses"] == []
+    assert payload["research_database"]["main_report"]["next_validation"] == []
     assert payload["research_database"]["primary_topics"] == []
     assert payload["research_database"]["cards"] == []
     assert payload["research_database"]["topics"] == []
+    assert payload["research_database"]["evidence_layers"] == {}
+    assert payload["research_database"]["missing_fields"] == [
+        "missing main report",
+        "missing topics",
+        "missing cards",
+        "no next validation found",
+    ]
     assert payload["research_database"]["tracked_metrics"] == {"dataset_id": "mvd-core", "metrics": []}
 
 
@@ -943,21 +981,43 @@ def test_operating_console_renders_research_database_sections():
     page = Path("investing-os/dashboards/operating-console.html").read_text(encoding="utf-8")
 
     assert 'id="researchDatabaseSummary"' in page
+    assert 'id="researchReportStatus"' in page
     assert 'id="researchPrimaryTopics"' in page
-    assert 'id="researchCardsList"' in page
+    assert 'id="researchTopicDetails"' in page
+    assert 'id="researchQuestionsSummary"' in page
+    assert 'id="researchHypothesesSummary"' in page
+    assert 'id="researchNextValidationSummary"' in page
+    assert 'id="researchEvidenceLayers"' in page
+    assert 'id="researchMissingFields"' in page
     assert 'id="trackedMetricsSummary"' in page
     assert "manifest.research_database" in page
     assert "const researchDb = manifest.research_database || {};" in page
+    assert "const mainReport = researchDb.main_report || {};" in page
     assert "const primaryTopics = researchDb.primary_topics || [];" in page
+    assert "const topicDetails = researchDb.topics || [];" in page
     assert "const cards = researchDb.cards || [];" in page
+    assert "const questions = mainReport.questions || [];" in page
+    assert "const hypotheses = mainReport.hypotheses || [];" in page
+    assert "const nextValidation = mainReport.next_validation || [];" in page
+    assert "const evidenceLayers = researchDb.evidence_layers || {};" in page
+    assert "const missingFields = researchDb.missing_fields || [];" in page
+    assert 'document.getElementById("researchReportStatus").textContent' in page
     assert 'document.getElementById("researchPrimaryTopics").textContent' in page
-    assert 'document.getElementById("researchCardsList").textContent = cards.length' in page
+    assert 'document.getElementById("researchTopicDetails").textContent' in page
+    assert 'document.getElementById("researchQuestionsSummary").textContent = questions.length' in page
+    assert 'document.getElementById("researchHypothesesSummary").textContent = hypotheses.length' in page
+    assert 'document.getElementById("researchNextValidationSummary").textContent = nextValidation.length' in page
+    assert 'document.getElementById("researchEvidenceLayers").textContent' in page
+    assert 'document.getElementById("researchMissingFields").textContent = missingFields.length' in page
     assert 'document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length' in page
     assert 'Primary Topics: 未挂载' in page or 'Primary Topics: 鏈寕杞?' in page
+    assert 'Questions: 暂无摘要' in page or 'Questions: 鏆傛棤鎽樿' in page
+    assert 'Hypotheses: 暂无摘要' in page or 'Hypotheses: 鏆傛棤鎽樿' in page
+    assert 'Next Validation: 暂无摘要' in page or 'Next Validation: 鏆傛棤鎽樿' in page
+    assert 'Evidence Layers: 暂无卡片统计' in page or 'Evidence Layers: 鏆傛棤鍗＄墖缁熻' in page
+    assert 'Readiness Notes: 暂无缺口' in page or 'Readiness Notes: 鏆傛棤缂哄彛' in page
     assert 'Tracked Metrics: 暂无 MVD' in page or 'Tracked Metrics: 鏆傛棤 MVD' in page
-    assert 'Cards: 暂无研究卡片' in page or 'Cards: 鏆傛棤鐮旂┒鍗＄墖' in page
-    assert 'cards.map(item => item.card_id || item.topic_id || item.title || "untitled")' in page
-    assert '.join(" · ")' in page or '.join(" 路 ")' in page
+    assert 'Topics: 暂无研究主题' in page or 'Topics: 鏆傛棤鐮旂┒涓婚' in page
 
 
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():

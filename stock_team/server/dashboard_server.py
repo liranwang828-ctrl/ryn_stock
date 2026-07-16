@@ -21,6 +21,7 @@ import threading
 import time
 import uuid
 import urllib.parse
+from collections import Counter
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as HTTPServer
 from datetime import datetime, date as _date, timedelta, timezone
@@ -239,6 +240,72 @@ def _extract_primary_topics_from_report(report_text: str) -> list[str]:
     return topics
 
 
+def _normalize_research_summary_line(value: str) -> str:
+    text = str(value or "").strip()
+    while text[:2] in {"- ", "* "}:
+        text = text[2:].strip()
+    if len(text) > 3 and text[0].isdigit() and text[1:].lstrip().startswith("."):
+        parts = text.split(".", 1)
+        if len(parts) == 2 and parts[0].isdigit():
+            text = parts[1].strip()
+    return text
+
+
+def _extract_report_section_lines(report_text: str, headings: tuple[str, ...]) -> list[str]:
+    normalized_targets = {heading.strip().lower() for heading in headings}
+    lines = report_text.splitlines()
+    collected: list[str] = []
+    collecting = False
+    nested_after_label = False
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        lower = stripped.lower()
+        if stripped.startswith("#"):
+            heading_text = stripped.lstrip("#").strip().rstrip(":").strip().lower()
+            if collecting and heading_text not in normalized_targets:
+                break
+            collecting = heading_text in normalized_targets
+            nested_after_label = False
+            continue
+        label_candidate = lower
+        if label_candidate.startswith(("- ", "* ")):
+            label_candidate = label_candidate[2:].strip()
+        label_candidate = label_candidate.rstrip(":").strip()
+        if label_candidate in normalized_targets:
+            collecting = True
+            nested_after_label = True
+            continue
+        if not collecting:
+            continue
+        if not stripped:
+            if collected:
+                nested_after_label = False
+            continue
+        if nested_after_label and not raw_line.startswith(("  ", "\t", "    ")):
+            collecting = False
+            nested_after_label = False
+            continue
+        if stripped.startswith("#"):
+            break
+        if ":" in stripped and not raw_line.startswith(("  ", "\t")) and _normalize_research_summary_line(stripped).lower() in normalized_targets:
+            continue
+        normalized = _normalize_research_summary_line(stripped)
+        if normalized:
+            collected.append(normalized)
+    return collected
+
+
+def _summarize_evidence_layers(cards: list[dict]) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+        layer = str(card.get("source_layer") or "").strip()
+        if layer:
+            counts[layer] += 1
+    return dict(counts)
+
+
 def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
     inputs_dir = _coordinator_inputs_dir(base_dir)
     session_id = session.get("session_id", "current")
@@ -249,12 +316,16 @@ def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
 
     report_exists = os.path.exists(report_path)
     primary_topics = []
+    report_text = ""
     if report_exists:
         try:
             report_text = Path(report_path).read_text(encoding="utf-8")
         except Exception:
             report_text = ""
         primary_topics = _extract_primary_topics_from_report(report_text)
+    questions = _extract_report_section_lines(report_text, ("questions",))
+    hypotheses = _extract_report_section_lines(report_text, ("hypotheses",))
+    next_validation = _extract_report_section_lines(report_text, ("next validation", "next_validation"))
 
     cards = _load_json_any(cards_path, [])
     if not isinstance(cards, list):

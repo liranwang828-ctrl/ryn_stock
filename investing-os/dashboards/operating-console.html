@@ -89,8 +89,14 @@
         <article class="card"><h3>当前产物任务</h3><div id="productTask" class="empty">暂无当前产物任务。</div></article>
         <article class="card" id="researchDatabaseSummary">
           <h3>Research Database</h3>
+          <p id="researchReportStatus" class="empty">Main Report: not found</p>
           <p id="researchPrimaryTopics" class="empty">Primary Topics: 未挂载</p>
-          <p id="researchCardsList" class="empty">Cards: 暂无研究卡片</p>
+          <p id="researchTopicDetails" class="empty">Topics: 暂无研究主题</p>
+          <p id="researchQuestionsSummary" class="empty">Questions: 暂无摘要</p>
+          <p id="researchHypothesesSummary" class="empty">Hypotheses: 暂无摘要</p>
+          <p id="researchNextValidationSummary" class="empty">Next Validation: 暂无摘要</p>
+          <p id="researchEvidenceLayers" class="empty">Evidence Layers: 暂无卡片统计</p>
+          <p id="researchMissingFields" class="empty">Readiness Notes: 暂无缺口</p>
           <p id="trackedMetricsSummary" class="empty">Tracked Metrics: 暂无 MVD</p>
         </article>
         <article class="card"><h3>Premarket Tape</h3><div id="premarketTape" class="empty">盘前跨资产数据尚未生成。</div></article>
@@ -163,14 +169,39 @@
     function renderEvidence(status, manifest) {
       const task = manifest.current_task || {};
       const researchDb = manifest.research_database || {};
+      const mainReport = researchDb.main_report || {};
       const primaryTopics = researchDb.primary_topics || [];
+      const topicDetails = researchDb.topics || [];
       const cards = researchDb.cards || [];
+      const questions = mainReport.questions || [];
+      const hypotheses = mainReport.hypotheses || [];
+      const nextValidation = mainReport.next_validation || [];
+      const evidenceLayers = researchDb.evidence_layers || {};
+      const missingFields = researchDb.missing_fields || [];
       const trackedMetrics = (researchDb.tracked_metrics || {}).metrics || [];
       document.getElementById("productTask").innerHTML = task.title ? `<strong>${html(task.title)}</strong><p>${html(task.summary || "")}</p>` : "暂无当前产物任务。";
+      document.getElementById("researchReportStatus").textContent = mainReport.exists
+        ? `Main Report: ready · ${mainReport.path || "path unavailable"}`
+        : "Main Report: not found";
       document.getElementById("researchPrimaryTopics").textContent = primaryTopics.length ? `Primary Topics: ${primaryTopics.join(", ")}` : "Primary Topics: 未挂载";
-      document.getElementById("researchCardsList").textContent = cards.length
-        ? `Cards: ${cards.map(item => item.card_id || item.topic_id || item.title || "untitled").join(" · ")}`
-        : "Cards: 暂无研究卡片";
+      document.getElementById("researchTopicDetails").textContent = topicDetails.length
+        ? `Topics: ${topicDetails.map(item => item.topic_id || item.title || item.name || "untitled").join(" · ")}`
+        : "Topics: 暂无研究主题";
+      document.getElementById("researchQuestionsSummary").textContent = questions.length
+        ? `Questions: ${questions.join(" · ")}`
+        : "Questions: 暂无摘要";
+      document.getElementById("researchHypothesesSummary").textContent = hypotheses.length
+        ? `Hypotheses: ${hypotheses.join(" · ")}`
+        : "Hypotheses: 暂无摘要";
+      document.getElementById("researchNextValidationSummary").textContent = nextValidation.length
+        ? `Next Validation: ${nextValidation.join(" · ")}`
+        : "Next Validation: 暂无摘要";
+      document.getElementById("researchEvidenceLayers").textContent = cards.length && Object.keys(evidenceLayers).length
+        ? `Evidence Layers: ${Object.entries(evidenceLayers).map(([layer, count]) => `${layer}: ${count}`).join(" · ")}`
+        : "Evidence Layers: 暂无卡片统计";
+      document.getElementById("researchMissingFields").textContent = missingFields.length
+        ? `Readiness Notes: ${missingFields.join(" · ")}`
+        : "Readiness Notes: 暂无缺口";
       document.getElementById("trackedMetricsSummary").textContent = trackedMetrics.length
         ? `Tracked Metrics: ${trackedMetrics.map(item => `${item.metric_id || "unknown"}: ${item.status || "unknown"}`).join(" · ")}`
         : "Tracked Metrics: 暂无 MVD";
