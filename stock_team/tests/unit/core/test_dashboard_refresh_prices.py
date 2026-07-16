@@ -303,10 +303,20 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
         "Which AI workload owners are showing pricing power?",
         "What evidence confirms durable margin migration?",
     ]
+    assert payload["research_database"]["questions"] == [
+        "Which AI workload owners are showing pricing power?",
+        "What evidence confirms durable margin migration?",
+    ]
     assert payload["research_database"]["main_report"]["hypotheses"] == [
         "Margin power is shifting toward model infrastructure."
     ]
+    assert payload["research_database"]["hypotheses"] == [
+        "Margin power is shifting toward model infrastructure."
+    ]
     assert payload["research_database"]["main_report"]["next_validation"] == [
+        "Check hyperscaler capex callouts against backlog commentary."
+    ]
+    assert payload["research_database"]["next_validation"] == [
         "Check hyperscaler capex callouts against backlog commentary."
     ]
     assert payload["research_database"]["primary_topics"] == ["ai-profit-migration"]
@@ -343,8 +353,11 @@ def test_coordinator_summary_payload_research_database_summary_uses_safe_default
         "observation-2026-07-16-daily-main-report.md"
     )
     assert payload["research_database"]["main_report"]["questions"] == []
+    assert payload["research_database"]["questions"] == []
     assert payload["research_database"]["main_report"]["hypotheses"] == []
+    assert payload["research_database"]["hypotheses"] == []
     assert payload["research_database"]["main_report"]["next_validation"] == []
+    assert payload["research_database"]["next_validation"] == []
     assert payload["research_database"]["primary_topics"] == []
     assert payload["research_database"]["cards"] == []
     assert payload["research_database"]["topics"] == []
@@ -1009,9 +1022,9 @@ def test_operating_console_renders_research_database_sections():
     assert "const primaryTopics = researchDb.primary_topics || [];" in page
     assert "const topicDetails = researchDb.topics || [];" in page
     assert "const cards = researchDb.cards || [];" in page
-    assert "const questions = mainReport.questions || [];" in page
-    assert "const hypotheses = mainReport.hypotheses || [];" in page
-    assert "const nextValidation = mainReport.next_validation || [];" in page
+    assert "const questions = researchDb.questions || [];" in page
+    assert "const hypotheses = researchDb.hypotheses || [];" in page
+    assert "const nextValidation = researchDb.next_validation || [];" in page
     assert "const evidenceLayers = researchDb.evidence_layers || {};" in page
     assert "const missingFields = researchDb.missing_fields || [];" in page
     assert "const readinessNotes = researchDb.readiness_notes || [];" in page

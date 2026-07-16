@@ -173,9 +173,9 @@
       const primaryTopics = researchDb.primary_topics || [];
       const topicDetails = researchDb.topics || [];
       const cards = researchDb.cards || [];
-      const questions = mainReport.questions || [];
-      const hypotheses = mainReport.hypotheses || [];
-      const nextValidation = mainReport.next_validation || [];
+      const questions = researchDb.questions || [];
+      const hypotheses = researchDb.hypotheses || [];
+      const nextValidation = researchDb.next_validation || [];
       const evidenceLayers = researchDb.evidence_layers || {};
       const missingFields = researchDb.missing_fields || [];
       const readinessNotes = researchDb.readiness_notes || [];

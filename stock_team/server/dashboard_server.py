@@ -336,16 +336,35 @@ def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
     tracked_metrics = _load_json_any(metrics_path, {"dataset_id": "mvd-core", "metrics": []})
     if not isinstance(tracked_metrics, dict):
         tracked_metrics = {"dataset_id": "mvd-core", "metrics": []}
+    evidence_layers = _summarize_evidence_layers(cards)
+    missing_fields: list[str] = []
+    if not report_exists:
+        missing_fields.append("missing main report")
+    if not topics:
+        missing_fields.append("missing topics")
+    if not cards:
+        missing_fields.append("missing cards")
+    if not next_validation:
+        missing_fields.append("no next validation found")
 
     return {
         "main_report": {
             "exists": report_exists,
             "path": report_path,
+            "questions": questions,
+            "hypotheses": hypotheses,
+            "next_validation": next_validation,
         },
+        "questions": questions,
+        "hypotheses": hypotheses,
+        "next_validation": next_validation,
         "primary_topics": primary_topics,
         "cards": cards,
         "topics": topics,
         "tracked_metrics": tracked_metrics,
+        "evidence_layers": evidence_layers,
+        "missing_fields": missing_fields,
+        "readiness_notes": missing_fields,
     }
 
 
