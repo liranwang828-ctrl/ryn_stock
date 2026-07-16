@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 
 
@@ -356,10 +357,21 @@ def test_bootstrap_current_task_outputs_creates_research_database_placeholders(t
 
     result = _bootstrap_current_task_outputs(session, None, str(stock_team_home))
     created = "\n".join(result["created_paths"])
+    created_paths = result["created_paths"]
+    main_report_path = next(path for path in created_paths if path.endswith("daily-main-report.md"))
+    cards_path = next(path for path in created_paths if path.endswith("research-cards.json"))
+    topics_path = next(path for path in created_paths if path.endswith("research-topics.json"))
 
     assert "daily-main-report" in created
     assert "research-cards" in created
     assert "research-topics" in created
+    assert os.path.exists(main_report_path)
+    assert os.path.exists(cards_path)
+    assert os.path.exists(topics_path)
+    assert "primary_topics:" in open(main_report_path, encoding="utf-8").read()
+    assert "## Pre-Market / 盘前" in open(main_report_path, encoding="utf-8").read()
+    assert json.loads(open(cards_path, encoding="utf-8").read()) == []
+    assert json.loads(open(topics_path, encoding="utf-8").read()) == []
 
 
 def test_bootstrap_current_task_outputs_creates_plan_approval_templates(tmp_path, monkeypatch):
@@ -408,6 +420,33 @@ def test_default_stage1_action_passes_market_date_to_cli_adapter(tmp_path, monke
     action = _default_stage1_action(str(tmp_path / "stock_team"), session, task)
 
     assert action["parameters"]["date"] == "2026-07-13"
+
+
+def test_default_stage0_action_uses_observation_intent_for_observation_session(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _default_stage0_action
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+
+    (stock_team_home / "config").mkdir(parents=True)
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    (investing_os_home / "wiki" / "journals").mkdir(parents=True)
+    (stock_team_home / "config" / "positions.json").write_text(json.dumps({"positions": {}}), encoding="utf-8")
+
+    session = {
+        "session_id": "observation-2026-07-15",
+        "session_type": "observation",
+        "state": "DAY_INITIALIZED",
+        "market_date": "2026-07-15",
+    }
+
+    bundle = _default_stage0_action(str(stock_team_home), session)
+
+    assert bundle["action"]["intent"] == "start_stage0_observation"
+    assert bundle["action"]["parameters"]["snapshot_out"].endswith("observation-2026-07-15-pre-market-snapshot.json")
+    assert bundle["action"]["parameters"]["tape_out"].endswith("observation-2026-07-15-premarket-tape.json")
+    assert bundle["context"]["snapshot_source_kind"] == "observation_runtime_generation"
 
 
 def test_dashboard_reads_from_runtime_manifest(tmp_path, monkeypatch):
@@ -682,6 +721,35 @@ def test_coordinator_summary_payload_exposes_read_only_daily_status(tmp_path, mo
     assert payload["daily_status"]["current_node"] == "DAILY-0"
     assert payload["daily_status"]["overall_status"] == "waiting_user"
     assert session.get("daily0_confirmation") is None
+
+
+def test_coordinator_summary_payload_prefers_observation_stage0_action_for_observation_session(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+    session = {
+        "session_id": "observation-2026-07-15",
+        "session_type": "observation",
+        "state": "DAY_INITIALIZED",
+        "market_date": "2026-07-15",
+        "mode": "observation",
+        "daily0_confirmation": {
+            "confirmed_at": "2026-07-15T08:01:00-04:00",
+            "activity_mode": "observation",
+            "account_fact_status": "stale_unverified",
+            "account_snapshot_ref": "",
+            "analysis_scope_ref": "",
+            "user_confirmed": True,
+        },
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["first_action"] == "start_stage0_observation"
+    assert payload["session"]["session_type"] == "observation"
 
 
 def test_coordinator_summary_payload_exposes_read_only_premarket_tape(tmp_path, monkeypatch):
@@ -1140,7 +1208,7 @@ def test_daily_report_template_contains_research_database_fields():
     text = path.read_text(encoding="utf-8")
 
     assert "primary_topics:" in text
-    assert "## Pre-Market / \u76d8\u524d" in text
+    assert "## Pre-Market / 盘前" in text
     assert "- Questions:" in text
     assert "- Evidence:" in text
     assert "- Counter Evidence:" in text
