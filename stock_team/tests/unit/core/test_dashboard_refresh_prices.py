@@ -287,6 +287,31 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
     assert payload["research_database"]["tracked_metrics"]["dataset_id"] == "mvd-core"
 
 
+def test_coordinator_summary_payload_research_database_summary_uses_safe_defaults_when_artifacts_missing(tmp_path, monkeypatch):
+    from stock_team.server.dashboard_server import _coordinator_summary_payload
+
+    stock_team_home = tmp_path / "stock_team"
+    investing_os_home = tmp_path / "investing-os"
+    monkeypatch.setenv("INVESTING_OS_HOME", str(investing_os_home))
+    (investing_os_home / "system" / "runtime" / "inputs").mkdir(parents=True)
+
+    session = {
+        "session_id": "observation-2026-07-16",
+        "session_type": "observation",
+        "state": "STAGE0_READY",
+        "market_date": "2026-07-16",
+        "mode": "observation",
+    }
+
+    payload = _coordinator_summary_payload(session, None, base_dir=str(stock_team_home))
+
+    assert payload["research_database"]["main_report"]["exists"] is False
+    assert payload["research_database"]["primary_topics"] == []
+    assert payload["research_database"]["cards"] == []
+    assert payload["research_database"]["topics"] == []
+    assert payload["research_database"]["tracked_metrics"] == {"dataset_id": "mvd-core", "metrics": []}
+
+
 def test_bootstrap_current_task_outputs_creates_stage0_discussion_templates(tmp_path, monkeypatch):
     from stock_team.server.dashboard_server import _bootstrap_current_task_outputs
 
