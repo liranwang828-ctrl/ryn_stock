@@ -1364,3 +1364,26 @@ def test_evidence_card_template_contains_required_mvp_fields():
         "reliability_level:",
     ):
         assert marker in text
+
+
+def test_daily_report_template_contains_structured_primary_topic_markers():
+    from pathlib import Path
+
+    text = Path("investing-os/templates/daily-report.md").read_text(encoding="utf-8")
+
+    assert "primary_topics:" in text
+    assert "topic_id:" in text
+    assert "topic_name:" in text
+    assert "priority:" in text
+
+
+def test_extract_primary_topics_ignores_non_topic_id_structured_entries():
+    from stock_team.server.dashboard_server import _extract_primary_topics_from_report
+
+    report = """---
+primary_topics:
+  - topic_name: AI
+---
+"""
+
+    assert _extract_primary_topics_from_report(report) == []

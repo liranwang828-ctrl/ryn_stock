@@ -229,7 +229,7 @@ def _extract_primary_topics_from_report(report_text: str) -> list[str]:
             continue
         if line.startswith("  - "):
             topic = stripped[2:].strip()
-            if topic:
+            if topic and ":" not in topic:
                 topics.append(topic)
             expecting_topic_fields = False
             continue
