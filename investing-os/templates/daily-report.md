@@ -1,74 +1,60 @@
-# Daily Report Template
-
-```yaml
+---
 date:
 report_id:
-status: draft / reviewed / absorbed
+status: draft
 market_session:
-has_trades: true / false
-has_research: true / false
-has_system_update: true / false
+primary_topics:
+  - topic_id:
+    topic_name:
+    priority:
 permission_state_start:
 permission_state_end:
-```
+---
 
-## 1. Daily Summary / 当日摘要
+# Daily Report Template
 
-- Market regime:
-- Portfolio state:
-- Main action:
-- Main lesson:
-- Next required decision:
+## Pre-Market / 盘前
 
-## 2. Market Context / 市场背景
+- Primary Topics:
+- Market Regime:
+- Key Drivers:
+- Planned Focus:
 
-- QQQ:
-- SPY:
-- VIX:
-- Sector / theme:
-- Important external events:
-- Data source / missing data:
+## Questions
 
-## 3. Trade Log / 交易日志
+- Questions:
+
+## Evidence
+
+- Evidence:
+
+## Counter Evidence
+
+- Counter Evidence:
+
+## Hypotheses
+
+- Hypotheses:
+
+## Confidence
+
+- Confidence:
+
+## Next Validation
+
+- Next Validation:
+
+## Trade Log
 
 Use this section only if there were trades.
 
-| Time | Symbol | Action | Qty | Price | Intent | Plan Link | Evidence |
-|---|---|---:|---:|---:|---|---|---|
+| Time | Symbol | Action | Qty | Price | Intent | Evidence Ref |
+|---|---|---:|---:|---:|---|---|
 
-## 4. Execution Review / 执行复盘
+## Research Links
 
-- What followed plan:
-- What deviated:
-- Was deviation justified:
-- Position / attention / sleep impact:
-
-## 5. Research Log / 研究日志
-
-Use this section only if research happened.
-
-| Topic | Type | Output | Used In | Next |
-|---|---|---|---|---|
-
-## 6. Lessons Extracted / 提取经验
-
-| Lesson ID | Lesson | Status | Landing | User Decision |
-|---|---|---|---|---|
-
-## 7. System Absorption / 系统吸收
-
-- cognition:
-- decision:
-- execution:
-- evolution:
-- wiki:
-- checklist:
-- no_update_reason:
-
-## 8. Links / 链接
-
-- Source evidence packets:
-- Trade review reports:
-- Company / industry reports:
-- Lesson lineage:
-- Dashboard index update:
+- Evidence Cards:
+- Observation Cards:
+- Hypothesis Cards:
+- Decision Cards:
+- Metrics Updated:

@@ -1019,3 +1019,27 @@ def test_operating_console_has_four_hash_pages_without_duplicate_legacy_summarie
         "Minimal Entry State", "Daily Routes",
     ):
         assert removed not in page
+
+
+def test_daily_report_template_contains_research_database_fields():
+    from pathlib import Path
+
+    path = Path("investing-os/templates/daily-report.md")
+    text = path.read_text(encoding="utf-8")
+
+    assert "primary_topics:" in text
+    assert "## Pre-Market / \u76d8\u524d" in text
+    assert "- Questions:" in text
+    assert "- Evidence:" in text
+    assert "- Counter Evidence:" in text
+    assert "- Hypotheses:" in text
+    assert "- Confidence:" in text
+    assert "- Next Validation:" in text
+
+
+def test_tracked_metrics_template_starts_with_mvd_structure():
+    from pathlib import Path
+
+    path = Path("investing-os/templates/tracked-metrics-index.json")
+    text = path.read_text(encoding="utf-8")
+

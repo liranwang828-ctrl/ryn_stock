@@ -1,0 +1,12 @@
+{
+  "dataset_id": "mvd-core",
+  "status": "placeholder",
+  "metrics": [
+    {
+      "metric_id": "gpu_lead_time",
+      "label": "GPU Lead Time",
+      "source_layer": "alternative_evidence",
+      "status": "pending"
+    }
+  ]
+}
