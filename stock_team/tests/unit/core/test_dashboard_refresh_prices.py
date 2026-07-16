@@ -262,14 +262,20 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
             "---\n"
             "primary_topics:\n"
             "  - ai-profit-migration\n"
-            "---\n"
-            "## Questions\n"
-            "- Which AI workload owners are showing pricing power?\n"
-            "- What evidence confirms durable margin migration?\n\n"
-            "## Hypotheses\n"
-            "- Margin power is shifting toward model infrastructure.\n\n"
-            "## Next Validation\n"
-            "- Check hyperscaler capex callouts against backlog commentary.\n"
+            "---\n\n"
+            "## Pre-Market / 盘前\n\n"
+            "- Questions:\n"
+            "  - Why is software stronger than semis?\n"
+            "- Evidence:\n"
+            "  - NOW relative strength vs SOXX weakness\n"
+            "- Counter Evidence:\n"
+            "  - NVDA recovered intraday yesterday\n"
+            "- Hypotheses:\n"
+            "  - Software strength is consensus expansion, not reality expansion\n"
+            "- Confidence:\n"
+            "  - medium\n"
+            "- Next Validation:\n"
+            "  - check next earnings cycle\n"
         ),
         encoding="utf-8",
     )
@@ -300,24 +306,22 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
         "observation-2026-07-16-daily-main-report.md"
     )
     assert payload["research_database"]["main_report"]["questions"] == [
-        "Which AI workload owners are showing pricing power?",
-        "What evidence confirms durable margin migration?",
+        "Why is software stronger than semis?",
     ]
     assert payload["research_database"]["questions"] == [
-        "Which AI workload owners are showing pricing power?",
-        "What evidence confirms durable margin migration?",
+        "Why is software stronger than semis?",
     ]
     assert payload["research_database"]["main_report"]["hypotheses"] == [
-        "Margin power is shifting toward model infrastructure."
+        "Software strength is consensus expansion, not reality expansion"
     ]
     assert payload["research_database"]["hypotheses"] == [
-        "Margin power is shifting toward model infrastructure."
+        "Software strength is consensus expansion, not reality expansion"
     ]
     assert payload["research_database"]["main_report"]["next_validation"] == [
-        "Check hyperscaler capex callouts against backlog commentary."
+        "check next earnings cycle"
     ]
     assert payload["research_database"]["next_validation"] == [
-        "Check hyperscaler capex callouts against backlog commentary."
+        "check next earnings cycle"
     ]
     assert payload["research_database"]["primary_topics"] == ["ai-profit-migration"]
     assert payload["research_database"]["cards"][0]["source_layer"] == "official_evidence"
@@ -328,6 +332,36 @@ def test_coordinator_summary_payload_exposes_research_database_summary(tmp_path,
     assert payload["research_database"]["missing_fields"] == []
     assert payload["research_database"]["readiness_notes"] == []
     assert payload["research_database"]["tracked_metrics"]["dataset_id"] == "mvd-core"
+
+
+def test_extract_report_section_lines_supports_template_style_labels_and_inline_content():
+    from stock_team.server.dashboard_server import _extract_report_section_lines
+
+    report_text = (
+        "## Pre-Market / 盘前\n\n"
+        "- Questions: Why is software stronger?\n"
+        "  - Which bid is durable?\n"
+        "- Evidence:\n"
+        "  - NOW relative strength vs SOXX weakness\n"
+        "- Hypotheses: Software strength is consensus expansion\n"
+        "  - not reality expansion\n"
+        "- Next Validation:\n"
+        "  - check next earnings cycle\n"
+        "  - watch software guide resets\n"
+    )
+
+    assert _extract_report_section_lines(report_text, ("questions",)) == [
+        "Why is software stronger?",
+        "Which bid is durable?",
+    ]
+    assert _extract_report_section_lines(report_text, ("hypotheses",)) == [
+        "Software strength is consensus expansion",
+        "not reality expansion",
+    ]
+    assert _extract_report_section_lines(report_text, ("next validation", "next_validation")) == [
+        "check next earnings cycle",
+        "watch software guide resets",
+    ]
 
 
 def test_coordinator_summary_payload_research_database_summary_uses_safe_defaults_when_artifacts_missing(tmp_path, monkeypatch):

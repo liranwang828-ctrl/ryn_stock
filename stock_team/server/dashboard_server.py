@@ -251,43 +251,40 @@ def _normalize_research_summary_line(value: str) -> str:
     return text
 
 
+def _normalize_research_section_key(value: str) -> str:
+    return str(value or "").strip().lower().replace("_", " ")
+
+
 def _extract_report_section_lines(report_text: str, headings: tuple[str, ...]) -> list[str]:
-    normalized_targets = {heading.strip().lower() for heading in headings}
+    normalized_targets = {_normalize_research_section_key(heading) for heading in headings}
     lines = report_text.splitlines()
     collected: list[str] = []
     collecting = False
-    nested_after_label = False
     for raw_line in lines:
         stripped = raw_line.strip()
-        lower = stripped.lower()
+        if not stripped:
+            continue
         if stripped.startswith("#"):
-            heading_text = stripped.lstrip("#").strip().rstrip(":").strip().lower()
+            heading_text = _normalize_research_section_key(stripped.lstrip("#").strip().rstrip(":"))
             if collecting and heading_text not in normalized_targets:
                 break
             collecting = heading_text in normalized_targets
-            nested_after_label = False
             continue
-        label_candidate = lower
+        label_candidate = stripped
         if label_candidate.startswith(("- ", "* ")):
             label_candidate = label_candidate[2:].strip()
-        label_candidate = label_candidate.rstrip(":").strip()
-        if label_candidate in normalized_targets:
-            collecting = True
-            nested_after_label = True
-            continue
+        if ":" in label_candidate:
+            label_name, inline_value = label_candidate.split(":", 1)
+            normalized_label = _normalize_research_section_key(label_name)
+            if normalized_label in normalized_targets:
+                collecting = True
+                normalized_inline = _normalize_research_summary_line(inline_value)
+                if normalized_inline:
+                    collected.append(normalized_inline)
+                continue
+            if collecting:
+                break
         if not collecting:
-            continue
-        if not stripped:
-            if collected:
-                nested_after_label = False
-            continue
-        if nested_after_label and not raw_line.startswith(("  ", "\t", "    ")):
-            collecting = False
-            nested_after_label = False
-            continue
-        if stripped.startswith("#"):
-            break
-        if ":" in stripped and not raw_line.startswith(("  ", "\t")) and _normalize_research_summary_line(stripped).lower() in normalized_targets:
             continue
         normalized = _normalize_research_summary_line(stripped)
         if normalized:
