@@ -5,6 +5,7 @@ Repeatable workflows for the investing operating system.
 ## Core Workflows
 
 - Pre-market planning
+- Pre-market planning should produce topic-driven evidence that carries forward primary topics, questions, evidence layers, counter evidence, hypotheses, and next validation
 - Intraday monitoring
 - Intraday guidance protocol
 - Post-market review
@@ -22,6 +23,7 @@ Repeatable workflows for the investing operating system.
 - Industry dossier lifecycle
 - Journal to principle promotion
 - Daily report
+- Daily reports act as the main report layer while cards and topic links stay as separate research database artifacts
 - Industry research
 - Valuation
 - Thesis falsification
@@ -29,6 +31,7 @@ Repeatable workflows for the investing operating system.
 
 ## Recommended Starting Points
 
+- `pre-market.md`
 - `trading-day.md`
 - `weekend-review.md`
 - `signal-processing.md`

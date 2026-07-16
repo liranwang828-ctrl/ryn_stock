@@ -16,9 +16,16 @@ Run:
 
 ## Rule
 
-Daily reports are the archive layer.
+Daily reports are now the main report layer.
 
-Detailed journals, trade reviews, company research, and evidence packets can remain separate, but the daily report links them together by date.
+Detailed journals, trade reviews, company research, research topics, and evidence packets can remain separate, but the daily report links them together by date.
+
+Cards and topic links remain separate artifacts, but the daily report must summarize:
+
+- primary topics
+- key questions
+- evidence and counter evidence
+- next validation
 
 ## Flow
 
@@ -30,6 +37,8 @@ collect market context if trading or market analysis happened
 collect trade log if trades happened
 |
 collect research log if research happened
+|
+link the main report to the relevant cards and research topics
 |
 extract candidate lessons
 |

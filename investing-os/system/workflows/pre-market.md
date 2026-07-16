@@ -27,12 +27,22 @@ If these inputs are missing, the system may still collect or display partial fac
 6. Discuss permission state and focus pool with the user.
 7. Create the Stage 1 decision sheet only for the confirmed focus pool.
 8. Request symbol-level plan evidence from stock_team.
-9. Write planned actions, key levels, forbidden actions, and no-trade conditions.
-10. If any symbol may have intraday action, define pre-authorized actions, fast consistency checks, and exception rules.
-11. Stop adding new intraday narratives.
+9. Write the pre-market section around the confirmed primary topics.
+10. For each primary topic, record:
+   - key questions
+   - evidence with source layers in the evidence layer
+   - counter evidence
+   - hypotheses, including the current lead hypothesis
+   - confidence
+   - next validation
+11. Write planned actions, key levels, forbidden actions, and no-trade conditions only after the topic-driven evidence view is clear.
+12. If any symbol may have intraday action, define pre-authorized actions, fast consistency checks, and exception rules.
+13. Stop adding new intraday narratives.
 
 ## Output
 
 Use `templates/pre-market-plan.md`.
+
+The output should also make the evidence layer legible by topic so later daily reports can reuse the same questions, evidence, counter evidence, hypotheses, and next validation items without rewriting them from scratch.
 
 If the plan does not define `pre_authorized_actions`, then intraday guidance must default to observe-only or reduce-risk-only.

@@ -1078,3 +1078,22 @@ def test_research_card_templates_exist():
         text = path.read_text(encoding="utf-8")
         for marker in markers:
             assert marker in text
+
+
+def test_pre_market_workflow_requires_topic_driven_evidence_output():
+    from pathlib import Path
+
+    text = Path("investing-os/system/workflows/pre-market.md").read_text(encoding="utf-8")
+    assert "primary topics" in text.lower()
+    assert "evidence layer" in text.lower()
+    assert "question" in text.lower()
+    assert "hypothesis" in text.lower()
+
+
+def test_daily_report_workflow_references_main_report_and_cards():
+    from pathlib import Path
+
+    text = Path("investing-os/system/workflows/daily-report.md").read_text(encoding="utf-8")
+    assert "main report" in text.lower()
+    assert "cards" in text.lower()
+    assert "research topics" in text.lower()
