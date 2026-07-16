@@ -845,6 +845,18 @@ def test_operating_console_uses_daily_status_as_read_only_workflow_view():
     assert "manifest.premarket_tape" in page
 
 
+def test_operating_console_renders_research_database_sections():
+    from pathlib import Path
+
+    page = Path("investing-os/dashboards/operating-console.html").read_text(encoding="utf-8")
+
+    assert 'id="researchDatabaseSummary"' in page
+    assert 'id="researchPrimaryTopics"' in page
+    assert 'id="researchCardsList"' in page
+    assert 'id="trackedMetricsSummary"' in page
+    assert "manifest.research_database" in page
+
+
 def test_dashboard_session_selection_prefers_current_open_session_over_terminal_history():
     from stock_team.server.dashboard_server import _select_dashboard_session
 
