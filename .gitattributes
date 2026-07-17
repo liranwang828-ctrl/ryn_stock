@@ -1,0 +1,8 @@
+* text=auto
+
+*.md text
+*.txt text
+*.json text
+*.yml text
+*.yaml text
+*.ps1 text
