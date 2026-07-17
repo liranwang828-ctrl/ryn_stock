@@ -4,8 +4,11 @@ Repeatable workflows for the investing operating system.
 
 ## Core Workflows
 
-- Pre-market planning
+- Pre-market planning must compare against an active near-term operating plan
 - Pre-market planning should produce topic-driven evidence that carries forward primary topics, questions, evidence layers, counter evidence, hypotheses, and next validation
+- Daily reports in V3 Alpha must attach to one to three active Alpha questions
+- Daily reports must explicitly compare day evidence against the active near-term operating plan
+- Pre-market planning
 - Intraday monitoring
 - Intraday guidance protocol
 - Post-market review
@@ -46,3 +49,4 @@ Repeatable workflows for the investing operating system.
 - `industry-dossier-lifecycle.md`
 - `journal-to-principle-promotion.md`
 - `daily-report.md`
+- `alpha-question-attached-daily.md`

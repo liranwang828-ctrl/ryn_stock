@@ -27,6 +27,25 @@ Cards and topic links remain separate artifacts, but the daily report must summa
 - evidence and counter evidence
 - next validation
 
+For V3 Alpha mainline daily reports, the report must also:
+
+- attach to at least one active Alpha question
+- reference the active near-term operating plan explicitly
+- state whether today's work supports, weakens, mixes, or does not inform the attached questions
+
+## Alpha Mainline Constraint
+
+If a daily report cannot attach to at least one active Alpha question, it may still exist as a daily record, but it does not count as progress on the V3 Alpha research mainline.
+
+Pre-market, intraday, and review sections should not behave like isolated note buckets.
+
+Each section should clarify:
+
+- what evidence appeared
+- which attached question it affects
+- whether it supports or weakens the current working hypothesis
+- whether the active near-term plan remains valid
+
 ## Flow
 
 ```text
