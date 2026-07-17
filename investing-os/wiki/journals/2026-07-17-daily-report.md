@@ -112,23 +112,59 @@ forbidden_actions:
 - Questions:
   - 今天的产出是否真的推进了 V3 Alpha，而不是只新增了一份文档？
   - 这份 daily 是否已经开始体现“Question → Evidence → Hypothesis → Validation”？
+  - 今天这次反弹，究竟是趋势反转，还是恐慌后的结构性修复？
 - Evidence:
   - V3 Alpha 阶段总结、Alpha Questions Ledger、Daily Design、Implementation Plan、以及正式 workflow 接线都已写入 git。
   - 今日 daily 已显式绑定 Q1/Q2/Q3，并显式引用 active near-term plan。
   - 这让以后每天都必须回答：今天的 evidence 是支持、削弱，还是与主问题无关。
+  - 指数层面出现了明显盘中修复，但更像“先杀再拉”，不是全面重新转强：SPY、QQQ 都从盘中低位明显反弹，SOXX/SMH 修复更强。
+  - 板块层面，半导体和 AI 链条的修复强于软件对照组，说明市场没有继续单边强化“软件强、硬件弱”的旧结构。
+  - 个股分层已经比较清楚：
+    - MU：最像高质量硬件修复
+    - COHR / NBIS / BE：高弹性风险偏好修复明显
+    - AMAT / VRT：核心资产稳住并修复，但还不是最强进攻者
+    - NVDA：更像止跌稳锚，不像重新带队
+    - MSFT / NOW：今天没有证明软件重新全面接管
 - Counter Evidence:
-  - 目前仍然是 research draft，不是完整交易日运行结果。
+  - 这次反弹的主要性质仍然更接近超跌修复，还不能据此确认半导体链重新进入趋势性主升。
   - 还没有结合 dashboard、evidence cards、hypothesis cards 做端到端体验验证。
+  - 核心锚点 NVDA / AMAT / VRT 并没有全部表现出那种“明确重新领涨”的状态，因此今天更适合理解为修复确认，而不是趋势确认。
 - Hypotheses:
   - H6: Investing-OS 从 Knowledge Base 向 Research Operating System 升级的第一步，不是更多内容，而是更稳定的问题挂载和证据沉淀。
+  - H7: 当前市场更像在快速修正 Price，而不是快速修正 Reality；因此硬件链条的波动速度仍明显快于基本面变化速度。
+  - H8: 如果下一个交易日高质量修复票（MU、AMAT、VRT）能够延续，而软件对照组没有重新夺回相对强势，则“半导体被过度压缩”的判断会得到进一步支持。
 - Confidence:
   - H6: 80%
+  - H7: 75%
+  - H8: 60%
 - Next Validation:
+  - 下一个交易日重点观察：
+    - 核心锚：NVDA / AMAT / VRT 能否继续稳住
+    - 高质量修复：MU 能否延续
+    - 高弹性票：COHR / NBIS / BE 是延续还是只是一日脉冲
+    - 对照组：MSFT / NOW 是否重新夺回相对强势
   - 下一次真实盘前分析直接复用此结构
   - 再决定是否把 dashboard 也做最小接线
 - Effect on Attached Questions:
-  - Q1: 今天主要是方法论和流程层支持，没有新增产业 Reality 证据
-  - Q2/Q3: 仍属待后续市场与财报证据验证
+  - Q1: 今天的价格表现更支持“市场在重定价利润迁移路径”，而不是“软件利润 Reality 已经完全压过硬件”
+  - Q2: 今天没有新证据证明 hyperscaler CapEx 真正系统性放缓，反而更像市场先过度压缩了硬件链估值
+  - Q3: NBIS / COHR / BE 这类高弹性修复说明风险偏好回流到 AI 链，但仍不足以单独证明 inference 第二轮需求已经被现实验证
+
+## Post-Market Summary / 盘后总结
+
+- 大盘结论：
+  - 今天是一次不错的修复日，但更像“先杀再拉后的盘中修复”，不是已经确认的新一轮全面转强。
+- 结构结论：
+  - 半导体 / AI 链的修复强于软件对照组，说明旧的“软件单边占优”结构今天没有继续强化。
+- 个股结论：
+  - MU 最像高质量修复；
+  - COHR / NBIS / BE 最像高弹性风险偏好修复；
+  - AMAT / VRT 是核心资产稳住；
+  - NVDA 更像稳锚；
+  - MSFT / NOW 今天不是主角。
+- 操作结论：
+  - 今天没有必要为了“反弹不错”强行新增动作；
+  - 更合理的做法是保存体力，等待下一个交易日确认这次修复是否有延续性。
 
 ## Trade Log
 
