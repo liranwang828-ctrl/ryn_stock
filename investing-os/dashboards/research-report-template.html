@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Report Reading Template</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --border: #d6deea;
+      --text: #182230;
+      --muted: #667085;
+      --primary: #175cd3;
+      --primary-soft: #eef4ff;
+      --success: #067647;
+      --warning: #b54708;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+
+    .hero,
+    .section,
+    .timeline-item,
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(23, 92, 211, 0.08), transparent 34%),
+        var(--surface);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .hero h1 {
+      margin: 12px 0 8px;
+      font-size: 34px;
+      line-height: 1.2;
+    }
+
+    .hero .meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero .summary {
+      margin-top: 16px;
+      font-size: 18px;
+      line-height: 1.75;
+      max-width: 920px;
+    }
+
+    .hero .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .section {
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+    }
+
+    .section-lead {
+      margin: -4px 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .card p,
+    .card li,
+    .section li,
+    .section p {
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .card ul,
+    .section ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timeline-item {
+      padding: 16px;
+    }
+
+    .timeline-date {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .timeline-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .timeline-tag {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .coupling {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .coupling .section {
+      margin-bottom: 0;
+      height: 100%;
+    }
+
+    .full-body {
+      white-space: pre-wrap;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .full-body h3 {
+      margin: 20px 0 10px;
+      font-size: 18px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--primary);
+      background: var(--primary-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 14px 0;
+    }
+
+    @media (max-width: 900px) {
+      .cards,
+      .coupling,
+      .timeline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 { font-size: 28px; }
+      .hero .summary { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Reading Layer Template</div>
+      <h1>[Company] Research Report</h1>
+      <div class="meta">Ticker | Layer | Date</div>
+      <div class="summary">One-sentence positioning that lets the reader understand the company’s role, current stance, and what still needs to be verified.</div>
+      <div class="chips">
+        <span class="chip">Current stance</span>
+        <span class="chip">Layer classification</span>
+        <span class="chip">1–2 quarter focus</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>What the market is trading</h3>
+        <ul>
+          <li>Summarize the current narrative the market is paying for.</li>
+          <li>Separate future imagination from current evidence.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality confirmed</h3>
+        <ul>
+          <li>List what has already been validated by evidence.</li>
+          <li>Prefer concrete operating, financial, or industry proof.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality unconfirmed</h3>
+        <ul>
+          <li>List what still depends on future validation.</li>
+          <li>Highlight valuation risk versus evidence gap.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Next 1–2 quarter validation</h3>
+        <ul>
+          <li>Write the next checkpoints that can move conviction up or down.</li>
+          <li>Focus on earnings, margin, order, demand, and adoption triggers.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>Event / Price / Interpretation Timeline</h2>
+      <div class="section-lead">Use this block when the reading report needs a fast sequence of catalyst, market reaction, and interpretation.</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">YYYY-MM-DD</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>Key event summary</div>
+            <div class="timeline-label">Price</div>
+            <div>Price reaction or positioning change</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>Why it matters for Reality / Consensus / Price</div>
+          </div>
+          <span class="timeline-tag">Tag</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <p>Explain what role this company plays and how it should be evaluated.</p>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <p>Explain the surrounding industry layer, relevant peers, and the larger question this company belongs to.</p>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>Full Research Body</h2>
+      <div class="section-lead">This section keeps the long-form research and preserves markdown as the source of truth.</div>
+      <div class="full-body">Markdown-derived body or deep-reading content</div>
+    </section>
+  </main>
+</body>
+</html>

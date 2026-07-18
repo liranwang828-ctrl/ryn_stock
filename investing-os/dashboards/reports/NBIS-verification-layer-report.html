@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NBIS 研究报告（阅读版）</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --border: #d6deea;
+      --text: #182230;
+      --muted: #667085;
+      --primary: #175cd3;
+      --primary-soft: #eef4ff;
+      --success: #067647;
+      --warning: #b54708;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+
+    .hero,
+    .section,
+    .timeline-item,
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(23, 92, 211, 0.08), transparent 34%),
+        var(--surface);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .hero h1 {
+      margin: 12px 0 8px;
+      font-size: 34px;
+      line-height: 1.2;
+    }
+
+    .hero .meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero .summary {
+      margin-top: 16px;
+      font-size: 18px;
+      line-height: 1.75;
+      max-width: 940px;
+    }
+
+    .hero .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .section {
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+    }
+
+    .section-lead {
+      margin: -4px 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .card ul,
+    .section ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .card li,
+    .section li,
+    .section p,
+    .full-body p {
+      line-height: 1.75;
+      font-size: 15px;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timeline-item {
+      padding: 16px;
+    }
+
+    .timeline-date {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .timeline-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .timeline-tag {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .coupling {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .coupling .section {
+      margin-bottom: 0;
+      height: 100%;
+    }
+
+    .callout {
+      border-left: 4px solid var(--primary);
+      background: var(--primary-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 14px 0 0;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .full-body {
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .full-body h3 {
+      margin: 20px 0 10px;
+      font-size: 18px;
+    }
+
+    .full-body ul {
+      padding-left: 20px;
+      margin: 0;
+    }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .cards,
+      .coupling,
+      .timeline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 { font-size: 28px; }
+      .hero .summary { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Verification Layer Reading Report</div>
+      <h1>NBIS 研究报告（阅读版）</h1>
+      <div class="meta">Nebius Group N.V. | NBIS | AI 商业模式验证层 | 2026-07-18</div>
+      <div class="summary">
+        NBIS 目前更像是“AI 商业化验证层”的高弹性观察对象，而不是已经被验证的核心资产：市场愿意提前给它未来空间，但 Reality 仍主要停留在增长叙事和阶段性验证，接下来 1–2 个季度最重要的是利润质量、现金流和商业模式可持续性。
+      </div>
+      <div class="chips">
+        <span class="chip">Current stance：观察优先</span>
+        <span class="chip">Layer：Verification Layer</span>
+        <span class="chip">Focus：利润质量 / 商业模式</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>市场在交易什么</h3>
+        <ul>
+          <li>市场在交易“AI 云平台会承接部分 AI 基础设施与商业化需求”的未来空间。</li>
+          <li>NBIS 被当作高弹性 AI cloud / infrastructure 平台资产，而不是传统稳态软件股。</li>
+          <li>只要收入增速继续强、资本背书继续存在，市场就愿意先给估值，再等待更成熟的利润验证。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Confirmed</h3>
+        <ul>
+          <li>AI cloud 已经成为公司的核心业务方向，且阶段性收入增长很强。</li>
+          <li>2026 财年一季度的增长兑现，说明需求并非完全停留在概念层。</li>
+          <li>NVIDIA 的合作与投资为其技术与融资能力提供了重要背书。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Unconfirmed</h3>
+        <ul>
+          <li>当前仍未充分验证它能否把高增长转化为高质量利润与稳定现金流。</li>
+          <li>市场对其未来商业模式成熟度的定价，可能快于 Reality 的真正兑现速度。</li>
+          <li>它是否能从“高赔率观察对象”升级为“核心长期资产”，证据还远远不够。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>未来 1–2 季度验证重点</h3>
+        <ul>
+          <li>下一轮财报是否继续验证收入质量，而不是只维持高叙事。</li>
+          <li>利润率、现金流、运营杠杆是否开始改善。</li>
+          <li>管理层是否给出更清晰的大客户、产能利用率、商业化路径与资本开支框架。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>事件 / 价格 / 解读时间线</h2>
+      <div class="section-lead">这一层不是罗列新闻，而是把关键事件、价格反应与 RCP 解读放到一条线里。</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2024-10-21</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>完成业务剥离并重新作为独立 AI 基础设施平台被市场重新定价。</div>
+            <div class="timeline-label">Price</div>
+            <div>估值框架从旧结构切换到“新 AI 平台故事”。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这是 Narrative reset，不代表 Reality 已充分成立，但为后续弹性定价建立了起点。</div>
+          </div>
+          <span class="timeline-tag">Narrative Reset</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2025-09-08</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>与 Microsoft 相关的 AI 基础设施合作强化了“需求真实存在”的叙事。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场更愿意把它放进 AI 商业化与云基础设施受益者名单。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>需求侧验证在增强，但利润质量还没有同步被验证，因此仍是 mixed signal。</div>
+          </div>
+          <span class="timeline-tag">Mixed</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-03-11</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>NVIDIA 合作与 20 亿美元相关资本支持强化市场信心。</div>
+            <div class="timeline-label">Price</div>
+            <div>资金更愿意把它当作具备产业背书的高弹性 AI 标的。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这是 Reality + Narrative 的共同增强，但更多偏向“可被验证的潜力”，不是成熟商业模式。</div>
+          </div>
+          <span class="timeline-tag">Reality + Narrative</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-05-13</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>2026 财年 Q1 财报显示 AI cloud 相关收入高速增长。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场显著提高对其中期成长空间的定价。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>收入增长被进一步确认，但商业模式是否能沉淀长期利润，仍未被完全回答。</div>
+          </div>
+          <span class="timeline-tag">Reality Support</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-17</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>融资与股价修复延续，市场愿意继续交易其扩张能力。</div>
+            <div class="timeline-label">Price</div>
+            <div>强势修复说明筹码愿意回到高弹性 AI 平台方向。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>说明市场容忍估值前置，但并不意味着盈利模式已经完全成熟。</div>
+          </div>
+          <span class="timeline-tag">Mixed</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <ul>
+          <li>NBIS 的公司定位不是“已经成熟兑现的 AI 软件公司”，而是 AI cloud / infrastructure 的商业模式观察样本。</li>
+          <li>它最大的吸引力来自高弹性和潜在升级空间，而不是当前已经稳定沉淀的利润质量。</li>
+          <li>更适合放在“研究 + 观察 + 等待升级证据”的框架里，而不是直接视作核心确定性重仓资产。</li>
+        </ul>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <ul>
+          <li>它属于 AI 商业化验证层，和 NOW / ORCL / MSFT 的成熟商业化路径相关，但验证程度明显更低。</li>
+          <li>这一层的核心问题不是“AI 会不会增长”，而是“谁能把 AI 收入最终沉淀为高质量利润”。</li>
+          <li>因此 NBIS 的研究价值，不只在公司本身，而在于它是否能为“AI 商业化是否向新平台外溢”提供新证据。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>深读版研究正文</h2>
+      <div class="section-lead">这里保留更适合慢读的研究内容，同时把来源 markdown 明确挂回去。</div>
+      <div class="callout">
+        当前更合理的操作标签是：正式观察、可以研究、暂不直接升级为高确信核心仓。升级条件必须来自利润质量与商业模式验证，而不是单纯股价强势。
+      </div>
+      <div class="full-body">
+        <h3>当前投资看法</h3>
+        <p>NBIS 现在最大的价值，是它能否成为 AI 商业模式验证层里新的有效样本。市场已经在提前交易它未来可能拥有的平台价值，但 Reality 还没有走到“利润结构被证明”的阶段。因此它更像一个高赔率研究对象，而不是已经完成验证的核心资产。</p>
+
+        <h3>Upgrade Trigger</h3>
+        <ul>
+          <li>后续财报持续验证收入质量，而非一次性高增长。</li>
+          <li>利润率、自由现金流或经营杠杆出现明确改善迹象。</li>
+          <li>管理层对客户结构、需求持续性、商业模式与资本配置给出更可验证的框架。</li>
+        </ul>
+
+        <h3>Downgrade Trigger</h3>
+        <ul>
+          <li>财报与指引无法支撑当前扩张预期。</li>
+          <li>商业模式验证继续拖延，市场只能反复交易概念。</li>
+          <li>价格持续强，但 Reality 没有同步改善，导致估值和事实进一步脱节。</li>
+        </ul>
+
+        <h3>研究用途</h3>
+        <p>在认知系统里，NBIS 更适合承担“Verification Layer”角色：它帮助我们验证 AI 商业化是否开始从传统巨头外溢到新平台型参与者，也帮助我们判断市场当前是在提前交易正确的未来，还是过早交易了尚未兑现的未来。</p>
+
+        <div class="source-links">
+          <a href="../../wiki/companies/NBIS.zh.md">打开 NBIS 公司研究底稿</a>
+          <a href="../../wiki/industries/ai-commercialization-verification-layer.zh.md">打开 AI 商业化验证层底稿</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
