@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MU 研究报告（阅读版）</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --border: #d6deea;
+      --text: #182230;
+      --muted: #667085;
+      --primary: #175cd3;
+      --primary-soft: #eef4ff;
+      --success: #067647;
+      --warning: #b54708;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1180px; margin: 0 auto; padding: 28px 20px 56px; }
+    .hero,.section,.timeline-item,.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background: radial-gradient(circle at top right, rgba(23, 92, 211, 0.08), transparent 34%), var(--surface);
+    }
+    .eyebrow {
+      display: inline-flex; padding: 6px 10px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary);
+      font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    }
+    .hero h1 { margin: 12px 0 8px; font-size: 34px; line-height: 1.2; }
+    .hero .meta { color: var(--muted); font-size: 14px; }
+    .hero .summary { margin-top: 16px; font-size: 18px; line-height: 1.75; max-width: 940px; }
+    .hero .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .chip {
+      display: inline-flex; align-items: center; min-height: 32px; padding: 5px 12px;
+      border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft);
+      color: var(--text); font-size: 13px;
+    }
+    .section { padding: 22px; margin-bottom: 18px; }
+    .section h2 { margin: 0 0 14px; font-size: 22px; }
+    .section-lead { margin: -4px 0 16px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .card { padding: 18px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card ul,.section ul { margin: 0; padding-left: 20px; }
+    .card li,.section li,.section p,.full-body p { line-height: 1.75; font-size: 15px; }
+    .anchor-table-wrap { overflow-x: auto; }
+    .anchor-table {
+      width: 100%; border-collapse: collapse; min-width: 760px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    }
+    .anchor-table th,.anchor-table td {
+      padding: 14px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top;
+      line-height: 1.7; font-size: 14px;
+    }
+    .anchor-table th {
+      background: #f8fbff; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .anchor-table tr:last-child td { border-bottom: 0; }
+    .anchor-row-upgrade td:first-child { color: var(--success); font-weight: 700; }
+    .anchor-row-downgrade td:first-child { color: var(--danger); font-weight: 700; }
+    .timeline { display: flex; flex-direction: column; gap: 12px; }
+    .timeline-item { padding: 16px; }
+    .timeline-date { font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .timeline-grid { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
+    .timeline-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .timeline-tag {
+      display: inline-flex; margin-top: 10px; padding: 3px 8px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary); font-size: 12px; font-weight: 700;
+    }
+    .coupling { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .coupling .section { margin-bottom: 0; height: 100%; }
+    .callout {
+      border-left: 4px solid var(--primary); background: var(--primary-soft);
+      padding: 14px 16px; border-radius: 12px; margin: 14px 0 0; line-height: 1.7; font-size: 15px;
+    }
+    .full-body { line-height: 1.8; font-size: 15px; }
+    .full-body h3 { margin: 20px 0 10px; font-size: 18px; }
+    .full-body ul { padding-left: 20px; margin: 0; }
+    .source-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    @media (max-width: 900px) {
+      .cards,.coupling,.timeline-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      .hero .summary { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Demand Indicator Reading Report</div>
+      <h1>MU 研究报告（阅读版）</h1>
+      <div class="meta">Micron Technology | MU | Memory Demand Layer | 2026-07-19</div>
+      <div class="summary">
+        MU 不是验证层故事股，也不是纯设备层 Reality 资产，而是 AI 记忆体需求最直接的 Demand Indicator 之一：关键问题不是“AI 要不要用内存”，而是 HBM / DRAM 这轮强需求在被剧烈定价后，股价回撤到了什么赔率区间。
+      </div>
+      <div class="chips">
+        <span class="chip">Current stance：核心观察</span>
+        <span class="chip">Layer：Demand Indicator</span>
+        <span class="chip">Focus：HBM / DRAM 持续性</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>市场在交易什么</h3>
+        <ul>
+          <li>市场在交易 HBM、DRAM 与 AI 服务器内存需求是否继续维持供需紧平衡。</li>
+          <li>MU 被当作“AI 需求真实强不强”的最直接财务映射之一。</li>
+          <li>当前争论点不是需求有没有，而是这轮需求高景气是否已经被价格过度提前反映。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Confirmed</h3>
+        <ul>
+          <li>Micron 已经用财报和指引证明 HBM / DRAM 是 AI 周期中的核心受益环节。</li>
+          <li>市场对内存供应紧张和高利润率的判断，不只是概念，而是进入财务结果层。</li>
+          <li>MU 的价格虽然波动很大，但背后 Reality 并不是空的。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Unconfirmed</h3>
+        <ul>
+          <li>这轮高景气能持续多久，仍要看供给、价格与客户采购节奏能否继续维持。</li>
+          <li>MU 价格此前被交易得极其激进，因此短期更容易先压估值，再看事实。</li>
+          <li>如果市场开始担心明后年供给释放，MU 可能首先面对剧烈估值波动。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>未来 1–2 季度验证重点</h3>
+        <ul>
+          <li>HBM 供给是否继续紧张，价格与利润率能否保持强势。</li>
+          <li>DRAM / NAND 价格与出货节奏是否继续支撑高利润率。</li>
+          <li>管理层是否继续维持强劲的 AI 需求表述，而非开始转向谨慎。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>关键价格与操作锚点</h2>
+      <div class="section-lead">基于最近有效美股交易日 2026-07-17 的真实日线数据：收盘价 848.95，20 日均线 1023.42，50 日均线 933.69；2026-03-18 Q2 anchored VWAP 约 747.94，2026-06-24 Q3 anchored VWAP 约 1018.76，2026-07-17 反弹日 anchored VWAP 约 852.30。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>锚点</th>
+              <th>价格</th>
+              <th>为什么重要</th>
+              <th>主导证据层</th>
+              <th>动作含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前价格背景</td>
+              <td>848.95；贴近 7/17 anchored VWAP 852.30，但低于 50 日均线 933.69 与 Q3 anchored VWAP 1018.76</td>
+              <td>MU 已从 6 月高位大幅回撤，当前更像“高需求资产的再定价平衡区”，不是完整修复后的趋势股。</td>
+              <td>结构 + behavior</td>
+              <td>当前适合重新评估赔率，不适合把单日反弹误判成周期继续单边加速。</td>
+            </tr>
+            <tr>
+              <td>观察区间</td>
+              <td>850–934</td>
+              <td>下沿接近 7/17 anchored VWAP， 上沿接近 50 日均线；这是最关键的近端修复观察带。</td>
+              <td>结构 + behavior</td>
+              <td>先看能否在这一区间重新站稳，再判断是否进入更高一级修复。</td>
+            </tr>
+            <tr>
+              <td>试探仓区间</td>
+              <td>800–850</td>
+              <td>800 是整数位与近端 put OI 集中带，804 是 7/17 低点；这是更有赔率的回踩区域。</td>
+              <td>结构 + thesis</td>
+              <td>如果价格再次回踩但不破，且需求 thesis 没恶化，才适合小仓试探。</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis 升级区间</td>
+              <td>934–1020 首次升级；1100+ 才算更强确认</td>
+              <td>先收复 50 日均线，再进一步挑战 Q3 anchored VWAP 1018.76；1100 上方才说明市场重新给出更高强度需求定价。</td>
+              <td>behavior + thesis</td>
+              <td>只有价格重新回到这些区域并且后续财报继续支撑，才提升积极度。</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis 降级区间</td>
+              <td>< 800；更严格看 < 748</td>
+              <td>800 下方说明近端再平衡失败；如果进一步跌破 Q2 anchored VWAP 747.94，市场将更明显下修这轮内存高景气持续性。</td>
+              <td>structure + thesis</td>
+              <td>跌破后应从“强需求回调”切换到“周期或定价开始更系统转弱”的框架。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        MU 的关键不在于“它是不是受益 AI”，这一点市场早就知道；更关键的是，在强需求被剧烈交易后，价格现在有没有重新回到值得试错的位置。因此重点不是追强，而是观察 850–934 的修复能力，或者 800–850 回踩时的赔率。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>近端期权墙观察</h2>
+      <div class="section-lead">短期增强层，数据基于最近一期可交易到期日 2026-07-20 的 MU 期权链 open interest。这里特意忽略远离现价过多的异常深度 OTM OI，把重点放在和当前价格更相关的近端墙位。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>价位</th>
+              <th>观察</th>
+              <th>数据特征</th>
+              <th>解释方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Near Put Wall</td>
+              <td>850</td>
+              <td>最贴近现价的 put 防守位</td>
+              <td>OI 656，成交量 3,610</td>
+              <td>与现价最接近，说明 850 一带是短期最重要的多空再平衡位置。</td>
+            </tr>
+            <tr>
+              <td>Secondary Put Wall</td>
+              <td>800</td>
+              <td>更靠下的整数位防守区</td>
+              <td>OI 804，成交量 3,584</td>
+              <td>这与我们 800–850 的试探仓区间相互印证，是更关键的回踩支撑带。</td>
+            </tr>
+            <tr>
+              <td>Near Call Pressure</td>
+              <td>900–940</td>
+              <td>最近上方更现实的 call 压力带</td>
+              <td>900 call OI 856，940 call OI 1,140</td>
+              <td>如果 MU 开始修复，这一带会是先遇到的短期阻力，而不是直接一口气重返 1000。</td>
+            </tr>
+            <tr>
+              <td>Primary Call Wall</td>
+              <td>980–1000</td>
+              <td>中程最强 call wall</td>
+              <td>980 call OI 1,462，1000 call OI 1,962</td>
+              <td>只有价格真正重新逼近 980–1000，才算开始挑战更高一级的需求修复定价。</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>800 / 850 vs 900–1000</td>
+              <td>期权链显示短期更像“850 附近平衡、900 上方再遇压”</td>
+              <td>put OI 在 800 / 850，call OI 在 900–1000 分布更密集</td>
+              <td>这支持“先看修复能否建立，再看能否继续升级”的路径，而不是直接假设 V 型反转。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        MU 的期权墙读法要更谨慎：远离现价很多的深度 OTM put OI 可能更像尾部保护，不适合作为当前主结论。真正该看的，是 800 / 850 的近端防守与 900–1000 的上方压力带。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>事件 / 价格 / 解读时间线</h2>
+      <div class="section-lead">这一层把内存需求、财报和价格行为串起来，帮助区分“需求继续强”和“价格已经被交易得太满”。</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2026-03-18</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>Q2 财报强化 AI 记忆体需求与 HBM 受益逻辑。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场开始更明确地把 MU 当作 AI 需求强弱的核心代理。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这时 MU 已经从“周期股”升级为“AI demand indicator”。</div>
+          </div>
+          <span class="timeline-tag">Demand Support</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-06-24</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>Q3 财报继续强化高景气内存周期，市场把需求持续性交易得更激进。</div>
+            <div class="timeline-label">Price</div>
+            <div>价格围绕 1000 一带进入更高强度定价。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>Reality 继续强，但 Price 对未来的前置透支也在明显扩大。</div>
+          </div>
+          <span class="timeline-tag">Reality + Price Stretch</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-06-25</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>股价冲到 52 周高点 1255。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场对内存高景气进行了极度激进的定价。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这不是需求没了，而是价格对需求持续性的反应过于剧烈。</div>
+          </div>
+          <span class="timeline-tag">Price Stretch</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-17</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>深回调后出现反弹，收盘 848.95。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场开始重新寻找内存高景气在价格压缩后的新平衡点。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>当前更像“重估赔率”，不是“需求 Reality 被证伪”。</div>
+          </div>
+          <span class="timeline-tag">Repricing</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <ul>
+          <li>MU 是最直接的 AI 需求财务映射之一，因为 HBM / DRAM 的价格、供给和利润率几乎就是 demand reality 本身。</li>
+          <li>它不是单纯高 beta 票，而是需求端最具代表性的核心观察资产。</li>
+          <li>更适合用“强需求 + 强波动”的框架处理，而不是当成纯验证层或纯设备层资产。</li>
+        </ul>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <ul>
+          <li>它属于 Memory Demand Layer，和 HBM、DRAM、AI 服务器需求直接相连。</li>
+          <li>这一层的核心问题不是商业模式成立与否，而是需求持续性与价格定价是否同步。</li>
+          <li>因此 MU 更适合作为“AI 需求是否依旧强”的直接温度计。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>深读版研究正文</h2>
+      <div class="section-lead">这里保留慢读版结论，帮助把“强需求”和“价格是否过热”放在一页里看。</div>
+      <div class="callout">
+        对 MU 更合理的问题不是“它是不是好公司”，而是“在 HBM / DRAM 需求依旧很强的前提下，价格现在是不是重新回到了更值得承担波动的位置”。
+      </div>
+      <div class="full-body">
+        <h3>当前投资看法</h3>
+        <p>MU 当前更像“强需求 Reality 没变、但 Price 经历剧烈压缩后重新评估”的对象。它和 AMAT 的区别在于：AMAT 是设备 Reality 层，MU 是需求 Reality 层；它和 NBIS 的区别在于：MU 不需要先证明商业模式，而是要证明需求高景气还能持续多久。</p>
+
+        <h3>Upgrade Trigger</h3>
+        <ul>
+          <li>后续财报继续维持 HBM / DRAM 高景气与高利润率。</li>
+          <li>价格重新站回 934–1020，说明市场重新接受更高需求定价。</li>
+          <li>进一步逼近 1100，代表这轮高景气的 duration 再次被市场上修。</li>
+        </ul>
+
+        <h3>Downgrade Trigger</h3>
+        <ul>
+          <li>价格跌破 800，说明近端再平衡失败。</li>
+          <li>进一步跌破 748，意味着市场开始系统性下修这轮需求景气持续性。</li>
+          <li>管理层若转向更保守的供需表述，也会弱化 thesis。</li>
+        </ul>
+
+        <h3>研究用途</h3>
+        <p>在认知系统里，MU 是最适合与 AMAT / NBIS 形成三角对照的资产之一：NBIS 看商业模式验证，AMAT 看设备 Reality，MU 看需求 Reality。三者放在一起，才更容易分辨 AI 周期到底是需求弱了、设备定价过热了，还是商业化验证还没跟上。</p>
+
+        <div class="source-links">
+          <a href="https://investors.micron.com/">Micron Investor Relations</a>
+          <a href="https://investors.micron.com/quarterly-results">Micron Quarterly Results</a>
+          <a href="https://investors.micron.com/events-and-presentations">Micron Events &amp; Presentations</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
