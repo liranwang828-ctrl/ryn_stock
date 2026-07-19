@@ -26,6 +26,28 @@ This rule applies especially to:
 - handoff files
 - specs and plans
 
+## Local File Link Rule
+
+When referencing a local workspace file for Codex app reading:
+
+- use a direct absolute local path
+- do not prepend synthetic prefixes such as `/abs/path/`
+- do not mix markdown file-link style with browser `file:///` URL style
+
+Correct browser-openable example:
+
+- `file:///C:/Users/rriww/Documents/STOCK/investing-os/dashboards/reports/TSM-reality-layer-report.html`
+
+Incorrect example:
+
+- `file:///C:/abs/path/C:/Users/rriww/Documents/STOCK/investing-os/dashboards/reports/TSM-reality-layer-report.html`
+
+Interpretation:
+
+- markdown file links are for Codex message rendering
+- `file:///` URLs are for browser address bars
+- they are not interchangeable
+
 ## Minimal Working Practice
 
 When a Chinese document looks garbled in the terminal:
