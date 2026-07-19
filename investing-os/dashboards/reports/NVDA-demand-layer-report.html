@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NVDA 研究报告（阅读版）</title>
+  <style>
+    :root { color-scheme: light; --bg:#f4f7fb; --surface:#ffffff; --surface-soft:#f8fbff; --border:#d6deea; --text:#182230; --muted:#667085; --primary:#175cd3; --primary-soft:#eef4ff; --success:#067647; --warning:#b54708; --danger:#b42318; --shadow:0 16px 40px rgba(15,23,42,.08); }
+    *{box-sizing:border-box;} body{margin:0;font-family:Arial,"Microsoft YaHei",sans-serif;background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);color:var(--text);}
+    a{color:var(--primary);text-decoration:none;} a:hover{text-decoration:underline;}
+    .page{max-width:1180px;margin:0 auto;padding:28px 20px 56px;}
+    .hero,.section,.timeline-item,.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);}
+    .hero{padding:30px;margin-bottom:18px;background:radial-gradient(circle at top right,rgba(23,92,211,.08),transparent 34%),var(--surface);}
+    .eyebrow{display:inline-flex;padding:6px 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;letter-spacing:.02em;}
+    .hero h1{margin:12px 0 8px;font-size:34px;line-height:1.2;} .hero .meta{color:var(--muted);font-size:14px;} .hero .summary{margin-top:16px;font-size:18px;line-height:1.75;max-width:940px;}
+    .hero .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;} .chip{display:inline-flex;align-items:center;min-height:32px;padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface-soft);color:var(--text);font-size:13px;}
+    .section{padding:22px;margin-bottom:18px;} .section h2{margin:0 0 14px;font-size:22px;} .section-lead{margin:-4px 0 16px;color:var(--muted);font-size:14px;line-height:1.6;}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px;} .card{padding:18px;} .card h3{margin:0 0 10px;font-size:18px;}
+    .card ul,.section ul{margin:0;padding-left:20px;} .card li,.section li,.section p,.full-body p{line-height:1.75;font-size:15px;}
+    .anchor-table-wrap{overflow-x:auto;} .anchor-table{width:100%;border-collapse:collapse;min-width:760px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+    .anchor-table th,.anchor-table td{padding:14px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;line-height:1.7;font-size:14px;}
+    .anchor-table th{background:#f8fbff;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;} .anchor-table tr:last-child td{border-bottom:0;}
+    .anchor-row-upgrade td:first-child{color:var(--success);font-weight:700;} .anchor-row-downgrade td:first-child{color:var(--danger);font-weight:700;}
+    .timeline{display:flex;flex-direction:column;gap:12px;} .timeline-item{padding:16px;} .timeline-date{font-weight:700;color:var(--primary);margin-bottom:8px;}
+    .timeline-grid{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:start;} .timeline-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+    .timeline-tag{display:inline-flex;margin-top:10px;padding:3px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:700;}
+    .coupling{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px;} .coupling .section{margin-bottom:0;height:100%;}
+    .callout{border-left:4px solid var(--primary);background:var(--primary-soft);padding:14px 16px;border-radius:12px;margin:14px 0 0;line-height:1.7;font-size:15px;}
+    .full-body{line-height:1.8;font-size:15px;} .full-body h3{margin:20px 0 10px;font-size:18px;} .full-body ul{padding-left:20px;margin:0;}
+    .source-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px;}
+    @media (max-width:900px){.cards,.coupling,.timeline-grid{grid-template-columns:1fr;}.hero h1{font-size:28px;}.hero .summary{font-size:16px;}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Demand Layer Reading Report</div>
+      <h1>NVDA 研究报告（阅读版）</h1>
+      <div class="meta">NVIDIA | NVDA | AI Compute Demand Layer | 2026-07-19</div>
+      <div class="summary">
+        NVDA 不是等待验证的故事股，而是 AI compute demand 最核心的主锚之一：这里最重要的不是“它是不是好公司”，而是收入、数据中心业务、指引与产品节奏，是否继续证明 AI 需求仍然强到足以支撑硬件层的主导定价权。
+      </div>
+      <div class="chips">
+        <span class="chip">Current stance：核心观察</span>
+        <span class="chip">Layer：Demand Indicator</span>
+        <span class="chip">Focus：AI compute demand / Blackwell / Vera Rubin / inference</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>市场在交易什么</h3>
+        <ul>
+          <li>市场在交易 AI compute demand 是否仍在加速，而不是进入高位放缓。</li>
+          <li>NVDA 被当成 AI 平台定价权与需求强度的总锚，因为它同时连接训练、推理、网络和软件生态。</li>
+          <li>当前争论点不是需求是否存在，而是强需求还能持续多久，以及市场是否已把这种持续性交易得太满。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Confirmed</h3>
+        <ul>
+          <li>Q1 FY2027 revenue 为 $81.6B，同比增长 85%；Data Center revenue 为 $75.2B，同比增长 92%。</li>
+          <li>Q2 FY2027 revenue guidance 为 $91.0B ±2%，继续说明需求 Reality 很强。</li>
+          <li>Vera Rubin 进入 full production，Dynamo 1.0 进入生产，说明平台和推理扩张并未停留在远景阶段。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Unconfirmed</h3>
+        <ul>
+          <li>当前高景气能持续多久，仍要看 hyperscaler / AI factory / inference demand 是否继续兑现。</li>
+          <li>市场对 NVDA 的平台优势和定价权已经高度共识，因此后续难点是持续性，而不是认知发现。</li>
+          <li>价格回落首先说明 behavior 与 price compression，不应被误写成 demand reality 自动转弱。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>未来 1–2 季度验证重点</h3>
+        <ul>
+          <li>Q2 revenue 与 gross margin 是否继续支撑需求持续性。</li>
+          <li>Vera Rubin / Blackwell / inference 软件栈是否进一步推动第二轮需求扩张。</li>
+          <li>NVDA 的强事实，能否继续外溢验证 MU / TSM / AMAT / COHR / VRT。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>关键价格与操作锚点</h2>
+      <div class="section-lead">基于最近有效美股交易日 2026-07-17 的真实日线数据：收盘价 202.81，20 日均线 202.12，50 日均线 209.91；2026-02-26 Q4 anchored VWAP 约 198.19，2026-05-28 Q1 anchored VWAP 约 206.41，2026-07-17 recent anchored VWAP 约 202.48。更好的位置可能改善赔率，但不自动说明 demand reality 更强。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead><tr><th>锚点</th><th>价格</th><th>为什么重要</th><th>主导证据层</th><th>动作含义</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>当前价格背景</td>
+              <td>202.81；贴近 20DMA 202.12 与 recent anchored VWAP 202.48，但低于 206.41 与 209.91</td>
+              <td>NVDA 当前更像高景气需求资产在 earnings 后的平衡区，而不是完整右侧趋势恢复。</td>
+              <td>结构 + behavior</td>
+              <td>适合重新评估，不适合把单日稳定误判成全面再加速。</td>
+            </tr>
+            <tr>
+              <td>观察区间</td>
+              <td>200–206</td>
+              <td>下沿接近 200 整数位与近端平衡区，上沿接近 Q1 anchored VWAP。</td>
+              <td>结构 + behavior</td>
+              <td>先看价格是否能在这里建立稳定，再判断是否进入更高一级修复。</td>
+            </tr>
+            <tr>
+              <td>试探仓区间</td>
+              <td>198–202</td>
+              <td>覆盖 Q4 anchored VWAP、7/17 低点附近与 200 整数位争夺区。</td>
+              <td>结构 + thesis</td>
+              <td>如果 Reality 没坏而价格回踩不破，这里更适合小仓试探。</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis 升级区间</td>
+              <td>206–210 首次升级；212.5–215 才算更强确认</td>
+              <td>先收复 Q1 anchored VWAP 与 50DMA，再处理近端更强 call wall。</td>
+              <td>behavior + thesis</td>
+              <td>只有价格与后续事实继续支持，才提升积极度。</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis 降级区间</td>
+              <td>< 198；更严格看 < 190</td>
+              <td>198 下方说明最近平衡区失守；190 下方意味着市场更明显下修短期需求与行为结构。</td>
+              <td>structure + thesis</td>
+              <td>跌破后应从“高景气平衡观察”切换到“需要重审 demand duration”的框架。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        NVDA 这里最需要避免的误读是：高点不代表 demand reality 更弱，回落也不代表赔率一定改善。更准确地说，高点更常见的是 price stretch 与赔率压缩；回落更常见的是 behavior 转弱。只有在 Reality 没有恶化的前提下，198–202 的回踩才可能带来更合理的赔率。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>近端期权墙观察</h2>
+      <div class="section-lead">短期增强层，数据基于最近一期可交易到期日 2026-07-20 的 NVDA 期权链 open interest。它帮助解释 NVDA 为什么可能在 200–205 反复争夺，以及为什么 210–215 是第一层更现实的上方修复压力。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead><tr><th>类型</th><th>价位</th><th>观察</th><th>数据特征</th><th>解释方式</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Near Call Wall</td>
+              <td>202.5–205</td>
+              <td>最贴近现价的近端 call 压力层</td>
+              <td>202.5 call OI 9,875；205 call OI 4,537</td>
+              <td>说明 202.5–205 是最现实的近端争夺与磁吸位。</td>
+            </tr>
+            <tr>
+              <td>Primary Call Wall</td>
+              <td>210–215</td>
+              <td>更高一级的主上方压力带</td>
+              <td>210 call OI 9,243；212.5 call OI 8,555；215 call OI 10,884</td>
+              <td>只有真正逼近这里，才算开始挑战更高一级修复。</td>
+            </tr>
+            <tr>
+              <td>Near Put Support</td>
+              <td>200</td>
+              <td>最现实的近端平衡支撑位</td>
+              <td>200 put OI 4,408</td>
+              <td>200 是当前最关键的近端整数位支撑 / 争夺位。</td>
+            </tr>
+            <tr>
+              <td>Primary Put Wall</td>
+              <td>190–195</td>
+              <td>更深一层的防守带</td>
+              <td>190 put OI 5,017；195 put OI 5,210</td>
+              <td>如果价格继续下压，这一带才是更需要严肃看待的深层支撑。</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>200–205 / 210–215 / 190–195</td>
+              <td>期权链显示 NVDA 短期更像“200–205 平衡争夺，上有 210–215 压力，下有 190–195 深层支撑”</td>
+              <td>call OI 在 202.5 / 205 / 210 / 215，put OI 在 200 / 195 / 190</td>
+              <td>这支持先看平衡是否建立，再看是否有更高一级修复，而不是直接假设重新单边加速。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        对 NVDA 来说，期权墙更多是短期节奏参考，不替代长期需求判断：200 是平衡位，210–215 是第一轮修复压力，190–195 是更深层的风险观察带。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>事件 / 价格 / 解读时间线</h2>
+      <div class="section-lead">这一层把财报、Vera Rubin、平台扩张与价格行为串起来，帮助区分 Reality、Price、Behavior 与 Odds。</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2026-02-26</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>Q4 相关节点强化 AI compute demand 与平台主导地位。</div>
+            <div class="timeline-label">Price</div><div>市场继续把 NVDA 视为 AI 需求主锚。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Demand Reality 延续，而不是单纯故事强化。</div>
+          </div>
+          <span class="timeline-tag">Demand Support</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-05-20</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>Q1 FY2027 revenue 81.6B，Data Center revenue 75.2B，Q2 guidance 91.0B ±2%。</div>
+            <div class="timeline-label">Price</div><div>市场继续强化对 NVDA demand durability 的高定价。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Reality strengthened：需求与平台定价权都继续被财务事实验证。</div>
+          </div>
+          <span class="timeline-tag">Reality Confirmed</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-05-28</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>Q1 财报后的平均持仓成本区开始形成。</div>
+            <div class="timeline-label">Price</div><div>市场对 demand duration 的定价进一步提高。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Price stretch 扩大，而不是需求 Reality 自动变得更安全。</div>
+          </div>
+          <span class="timeline-tag">Price Stretch</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-06-10</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>Vera Rubin ramps into full production，agentic AI factories 叙事进一步强化。</div>
+            <div class="timeline-label">Price</div><div>平台路线图继续支撑更长期需求想象。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 demand duration evidence strengthened，但市场是否已经提前交易过多，仍需和价格分开看。</div>
+          </div>
+          <span class="timeline-tag">Reality + Duration</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-17</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>收盘 202.81，价格贴近 20DMA 与 recent anchored VWAP。</div>
+            <div class="timeline-label">Price</div><div>市场开始在高景气需求未被证伪的情况下重新找平衡。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Behavior 与 Odds 在重估：并非 demand reality 被推翻，而是价格和结构重新压缩后等待下一步确认。</div>
+          </div>
+          <span class="timeline-tag">Repricing</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <ul>
+          <li>NVDA 是 AI compute demand 最核心的公司层主锚之一，因为它直接把训练、推理、网络和平台生态转化为财务结果。</li>
+          <li>它不是纯高 beta 票，而是整个 AI 需求层的主定价器之一。</li>
+          <li>更适合用“需求 Reality 总锚”的思路来处理，而不是单纯当作最强半导体股。</li>
+        </ul>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <ul>
+          <li>它属于 AI compute / demand reality 层，与 MU、TSM、AMAT、COHR、VRT 形成链条级交叉验证。</li>
+          <li>这一层的关键问题不是商业模式是否成立，而是需求高景气还能持续多久。</li>
+          <li>因此 NVDA 更适合作为“AI 需求是否仍然强”的核心观测器。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>深读版研究正文</h2>
+      <div class="section-lead">这里保留慢读版结论，帮助把 demand reality、price compression 与正在重估的 odds 放在同一页看。</div>
+      <div class="callout">
+        对 NVDA 更合理的提问不是“它是不是仍然最强”，而是“AI compute demand 已经这么强，价格现在是不是重新回到了更值得讨论的位置”。这决定了它是继续作为行业稳锚，还是进入更主动的重估区。
+      </div>
+      <div class="full-body">
+        <h3>当前投资看法</h3>
+        <p>如果拆开看四个维度，NVDA 当前结论很清楚：Reality 依旧很强，因为收入、数据中心业务、指引与平台推进都在支持；Price 已经从高位更激进的定价状态回落；Behavior 当前贴近 20DMA 但仍弱于 50DMA 上方的更强修复状态；Odds 则比高点时期更值得重新评估，但这不代表赔率已经自动改善，只代表在 demand reality 没坏的前提下，价格重新进入可讨论区。</p>
+
+        <h3>Upgrade Trigger</h3>
+        <ul>
+          <li>后续财报继续维持超预期收入、gross margin 与平台扩张节奏。</li>
+          <li>价格重新站回 206–210，并进一步处理 212.5–215 压力层。</li>
+          <li>NVDA 的强事实继续外溢验证 MU / TSM / AMAT / COHR / VRT。</li>
+        </ul>
+
+        <h3>Downgrade Trigger</h3>
+        <ul>
+          <li>价格有效跌破 198，甚至进一步失守 190。</li>
+          <li>后续指引开始明显下修需求持续性。</li>
+          <li>市场开始把当前回落从“price / odds 重估”重新解释为“需求 duration 被下修”。</li>
+        </ul>
+
+        <h3>研究用途</h3>
+        <p>在认知系统里，NVDA 最适合与 MU、TSM、AMAT 联动阅读：NVDA 看 compute demand，MU 看 memory demand，TSM 看制造 demand，AMAT 看设备 demand。四者放在一起，才更容易判断硬件链条到底是 Reality 变了，还是 Price / Behavior 在做压缩。</p>
+
+        <div class="source-links">
+          <a href="../../wiki/companies/NVDA.zh.md">打开 NVDA 公司研究底稿</a>
+          <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-First-Quarter-Fiscal-2027/default.aspx">NVIDIA Q1 FY2027 Results</a>
+          <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Vera-Rubin-Ramps-Into-Full-Production-to-Power-Agentic-AI-Factories-Worldwide/default.aspx">Vera Rubin Full Production</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
