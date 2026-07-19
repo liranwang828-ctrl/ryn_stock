@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NOW 研究报告（阅读版）</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --border: #d6deea;
+      --text: #182230;
+      --muted: #667085;
+      --primary: #175cd3;
+      --primary-soft: #eef4ff;
+      --success: #067647;
+      --warning: #b54708;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1180px; margin: 0 auto; padding: 28px 20px 56px; }
+    .hero,.section,.timeline-item,.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background: radial-gradient(circle at top right, rgba(23, 92, 211, 0.08), transparent 34%), var(--surface);
+    }
+    .eyebrow {
+      display: inline-flex; padding: 6px 10px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary);
+      font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    }
+    .hero h1 { margin: 12px 0 8px; font-size: 34px; line-height: 1.2; }
+    .hero .meta { color: var(--muted); font-size: 14px; }
+    .hero .summary { margin-top: 16px; font-size: 18px; line-height: 1.75; max-width: 940px; }
+    .hero .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .chip { display: inline-flex; align-items: center; min-height: 32px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); color: var(--text); font-size: 13px; }
+    .section { padding: 22px; margin-bottom: 18px; }
+    .section h2 { margin: 0 0 14px; font-size: 22px; }
+    .section-lead { margin: -4px 0 16px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .card { padding: 18px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card ul,.section ul { margin: 0; padding-left: 20px; }
+    .card li,.section li,.section p,.full-body p { line-height: 1.75; font-size: 15px; }
+    .anchor-table-wrap { overflow-x: auto; }
+    .anchor-table { width: 100%; border-collapse: collapse; min-width: 760px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .anchor-table th,.anchor-table td { padding: 14px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; line-height: 1.7; font-size: 14px; }
+    .anchor-table th { background: #f8fbff; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .anchor-table tr:last-child td { border-bottom: 0; }
+    .anchor-row-upgrade td:first-child { color: var(--success); font-weight: 700; }
+    .anchor-row-downgrade td:first-child { color: var(--danger); font-weight: 700; }
+    .timeline { display: flex; flex-direction: column; gap: 12px; }
+    .timeline-item { padding: 16px; }
+    .timeline-date { font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .timeline-grid { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
+    .timeline-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .timeline-tag { display: inline-flex; margin-top: 10px; padding: 3px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 12px; font-weight: 700; }
+    .coupling { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .coupling .section { margin-bottom: 0; height: 100%; }
+    .callout { border-left: 4px solid var(--primary); background: var(--primary-soft); padding: 14px 16px; border-radius: 12px; margin: 14px 0 0; line-height: 1.7; font-size: 15px; }
+    .full-body { line-height: 1.8; font-size: 15px; }
+    .full-body h3 { margin: 20px 0 10px; font-size: 18px; }
+    .full-body ul { padding-left: 20px; margin: 0; }
+    .source-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    @media (max-width: 900px) { .cards,.coupling,.timeline-grid { grid-template-columns: 1fr; } .hero h1 { font-size: 28px; } .hero .summary { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Commercialization Layer Reading Report</div>
+      <h1>NOW 研究报告（阅读版）</h1>
+      <div class="meta">ServiceNow | NOW | AI Commercialization Layer | 2026-07-19</div>
+      <div class="summary">
+        NOW 不是验证层故事股，而是 AI 商业化层里更成熟的高质量观察对象：这里最重要的不是“软件是不是看起来更强”，而是 NOW 的收入、RPO、利润率与现金流，是否真的在证明软件层开始承接 AI 利润迁移。
+      </div>
+      <div class="chips">
+        <span class="chip">Current stance：核心观察</span>
+        <span class="chip">Layer：Commercialization Leader</span>
+        <span class="chip">Focus：Now Assist / margin quality / software vs hardware narrative</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>市场在交易什么</h3>
+        <ul>
+          <li>市场在交易软件层是否开始承接 AI 利润迁移，而不仅仅是承接叙事迁移。</li>
+          <li>NOW 被当成成熟 enterprise software 中最值得观察的 AI 商业化对象之一。</li>
+          <li>当前争论点不是 NOW 有没有业务质量，而是 AI 商业化兑现速度是否足以支撑更高估值与更高利润迁移预期。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Confirmed</h3>
+        <ul>
+          <li>Q1 2026 subscription revenue 为 $3.671B，total revenue 为 $3.770B，说明平台业务质量依旧很强。</li>
+          <li>cRPO 为 $12.64B，RPO 为 $27.7B，非 GAAP operating margin 为 32%，free cash flow margin 为 44%。</li>
+          <li>Now Assist 年度合同价值超过 $1M 的客户数同比增长超过 130%，说明 AI 产品采用正在进入更实质的商业层。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Unconfirmed</h3>
+        <ul>
+          <li>NOW 的 AI 商业化是否已经足以代表“软件层全面承接利润迁移”，仍需要更多季度验证。</li>
+          <li>Now Assist 的强采用，是否能持续转化为长期高利润与估值支撑，仍未完全证明。</li>
+          <li>软件相对强势如果只是板块轮动或 Consensus 扩张，不应被直接写成 Reality 全面胜出。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>未来 1–2 季度验证重点</h3>
+        <ul>
+          <li>Q2 2026 财报（2026-07-22）是否继续维持高质量订阅收入、RPO 与利润率。</li>
+          <li>Now Assist 的采用增长是否继续转化为更高质量合同与商业化兑现。</li>
+          <li>市场对 NOW 的重估，是否来自 Reality 扩张，而不只是软件叙事偏好。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>关键价格与操作锚点</h2>
+      <div class="section-lead">基于最近有效美股交易日 2026-07-17 的真实日线数据：收盘价 103.24，20 日均线 102.41，50 日均线 103.34；2026-04-23 Q1 anchored VWAP 约 102.49，2026-07-17 recent anchored VWAP 约 103.90。更好的位置可能改善赔率，但不自动说明商业化 Reality 更强。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr><th>锚点</th><th>价格</th><th>为什么重要</th><th>主导证据层</th><th>动作含义</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前价格背景</td>
+              <td>103.24；贴近 20DMA 102.41、50DMA 103.34、Q1 anchored VWAP 102.49 与 recent anchored VWAP 103.90</td>
+              <td>NOW 当前更像商业化验证平衡区，而不是强趋势延伸或明显破坏区。</td>
+              <td>结构 + behavior</td>
+              <td>适合继续观察，不适合把当前位置误读成确定性突破。</td>
+            </tr>
+            <tr>
+              <td>观察区间</td>
+              <td>102–104</td>
+              <td>这一区间同时覆盖均线和 anchored VWAP，是当前最合理的平衡观察带。</td>
+              <td>结构 + behavior</td>
+              <td>先看价格是否维持平衡，再决定是否进入更高一级修复。</td>
+            </tr>
+            <tr>
+              <td>试探仓区间</td>
+              <td>100–102</td>
+              <td>100 是整数位与近端 put OI 争夺位，102 一带又接近当前支撑与均线下沿。</td>
+              <td>结构 + thesis</td>
+              <td>如果 Q2 前后 Reality 没坏而价格回踩不破，这里更适合小仓试探。</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis 升级区间</td>
+              <td>104–105 首次升级；108–110 才算更强确认</td>
+              <td>先重新站稳近端均线与 anchored VWAP，再挑战更强的上方 call 压力区。</td>
+              <td>behavior + thesis</td>
+              <td>只有价格与后续财报同时支持，才提升积极度。</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis 降级区间</td>
+              <td>< 100；更严格看 < 95</td>
+              <td>100 下方说明近端平衡区失守；95 下方意味着市场更明显下修软件商业化兑现速度。</td>
+              <td>structure + thesis</td>
+              <td>跌破后应从“商业化平衡观察”切换到“需要重新审视兑现节奏”的框架。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        NOW 这里最需要避免的误读是：软件相对强不自动等于 Reality 已全面胜出；价格回落也不代表赔率一定改善。更准确地说，NOW 当前更像“成熟商业化对象的验证平衡区”，只有在 Q2 财报继续证明质量的前提下，100–102 的回踩才可能带来更合理的赔率。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>近端期权墙观察</h2>
+      <div class="section-lead">短期增强层，数据基于最近一期可交易到期日 2026-07-24 的 NOW 期权链 open interest。它帮助解释 NOW 为什么可能在 100–105 区间反复拉扯，以及为什么 108–110 是更明显修复压力。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr><th>类型</th><th>价位</th><th>观察</th><th>数据特征</th><th>解释方式</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Near Call Pressure</td>
+              <td>105</td>
+              <td>最贴近现价的现实修复阻力</td>
+              <td>105 call OI 1,616</td>
+              <td>说明 NOW 若要继续上修，先要处理 105 一带的近端压力。</td>
+            </tr>
+            <tr>
+              <td>Primary Call Wall</td>
+              <td>108–110</td>
+              <td>更高一级的主要上方压力带</td>
+              <td>108 call OI 1,277；110 call OI 3,554</td>
+              <td>只有真正重新逼近这里，才算开始挑战更高一级重估。</td>
+            </tr>
+            <tr>
+              <td>Near Put Support</td>
+              <td>100</td>
+              <td>最现实的现价附近支撑 / 争夺位</td>
+              <td>100 put OI 1,335</td>
+              <td>100 是当前最重要的近端平衡支撑位之一。</td>
+            </tr>
+            <tr>
+              <td>Primary Put Wall</td>
+              <td>95</td>
+              <td>更深一层的防守位</td>
+              <td>95 put OI 1,733</td>
+              <td>如果价格继续下压，95 才是更需要严肃对待的深层支撑。</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>100–105 / 108–110 / 95</td>
+              <td>期权链显示 NOW 短期更像“100–105 平衡争夺，上有 108–110 压力，下有 95 深层支撑”</td>
+              <td>call OI 在 105 / 108 / 110，put OI 在 100 / 95</td>
+              <td>这支持先看平衡是否建立，再看财报是否推动更高一级修复。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        对 NOW 来说，期权墙主要帮助理解“财报前后价格会卡在哪里”，而不是直接告诉我们 AI 商业化是否已经被完全验证。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>事件 / 价格 / 解读时间线</h2>
+      <div class="section-lead">这一层把财报、Now Assist、软件商业化叙事与价格行为串起来，帮助区分 Reality、Consensus、Price 与 Odds。</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2026-04-22</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>ServiceNow 公布 Q1 2026 results：subscription revenue 3.671B、cRPO 12.64B、non-GAAP operating margin 32%。</div>
+            <div class="timeline-label">Price</div><div>市场继续把 NOW 当成软件商业化质量较高的代表对象。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Reality strengthened：NOW 用收入质量、RPO 和利润率证明它不只是叙事资产。</div>
+          </div>
+          <span class="timeline-tag">Reality Confirmed</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-04-22</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>公司披露 Now Assist 年度合同价值超过 1M 美元的客户数同比增长超过 130%。</div>
+            <div class="timeline-label">Price</div><div>AI 商业化叙事获得进一步支撑。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Commercialization Evidence strengthened，但仍不能直接跳到“软件利润迁移已经完全成立”。</div>
+          </div>
+          <span class="timeline-tag">Commercialization Evidence</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-01</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>公司宣布 Q2 2026 财报将在 2026-07-22 发布。</div>
+            <div class="timeline-label">Price</div><div>市场重新聚焦“软件 AI 商业化是否继续兑现”的下一次验证窗口。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Validation Window activated：接下来更重要的是事实延续，而不是情绪延续。</div>
+          </div>
+          <span class="timeline-tag">Validation Window</span>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-17</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div><div>收盘 103.24，价格贴近均线与 anchored VWAP 平衡区。</div>
+            <div class="timeline-label">Price</div><div>市场并未把 NOW 推入极端单边定价，而是围绕商业化兑现速度继续重估。</div>
+            <div class="timeline-label">Interpretation</div><div>这里首先是 Price / Odds 平衡：并非软件全面胜出，也不是商业化被证伪，而是等待 Q2 事实继续给出下一步答案。</div>
+          </div>
+          <span class="timeline-tag">Repricing / Wait</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <ul>
+          <li>NOW 是 AI 商业化层里更成熟的高质量观察对象，因为它已经能用收入、RPO、利润率和现金流说话。</li>
+          <li>它不是 NBIS 那种高弹性验证层，而是更接近成熟软件商业化领导层。</li>
+          <li>更适合用“商业化质量对照组”的思路来处理，而不是把它简单看成软件 beta 表达。</li>
+        </ul>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <ul>
+          <li>它属于 AI 商业化验证层，与 MSFT / ORCL 一起回答软件利润迁移是否真的开始发生。</li>
+          <li>这一层的关键问题不是“需求是否存在”，而是“需求能否转化为高质量利润与现金流”。</li>
+          <li>因此 NOW 更适合作为“软件商业化质量是否继续提升”的观测器。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>深读版研究正文</h2>
+      <div class="section-lead">这里保留慢读版结论，帮助把商业化 Reality、软件 Consensus 与当前赔率放在同一页里看。</div>
+      <div class="callout">
+        对 NOW 更合理的提问不是“软件是不是更强”，而是“NOW 的商业化质量，是否真的在证明软件层开始承接 AI 利润迁移”。这决定了它是 software consensus 代表，还是更接近 software reality 代表。
+      </div>
+      <div class="full-body">
+        <h3>当前投资看法</h3>
+        <p>如果拆开看四个维度，NOW 当前结论是：Reality 偏强，因为收入、RPO、利润率与现金流都很扎实；Consensus 也偏强，因为市场愿意把 NOW 当作软件商业化代表；Price 当前没有进入极端单边状态，而是围绕验证区平衡；Odds 是否改善，则要等 Q2 财报继续证明商业化兑现速度，不能只因为软件相对强就自动上调置信度。</p>
+
+        <h3>Upgrade Trigger</h3>
+        <ul>
+          <li>Q2 2026 财报继续维持高质量订阅收入、RPO 与利润率。</li>
+          <li>价格重新站回 104–105，并进一步修复到 108–110。</li>
+          <li>Now Assist 采用与合同扩张继续转化为更明确的利润迁移证据。</li>
+        </ul>
+
+        <h3>Downgrade Trigger</h3>
+        <ul>
+          <li>Q2 财报显示 AI 商业化兑现速度低于预期。</li>
+          <li>价格跌破 100，甚至进一步失守 95。</li>
+          <li>市场开始把当前软件强势重新解释为单纯叙事扩张，而不是事实兑现。</li>
+        </ul>
+
+        <h3>研究用途</h3>
+        <p>在认知系统里，NOW 最适合和 TSM / AMAT / MU 做横向对照：硬件链看 Reality 是否继续强，NOW 看软件商业化是否真的接近兑现。这样才能判断当前市场是在交易未来利润迁移，还是已经开始看到它。</p>
+
+        <div class="source-links">
+          <a href="../../wiki/companies/NOW.zh.md">打开 NOW 公司研究底稿</a>
+          <a href="../../wiki/industries/ai-commercialization-verification-layer.zh.md">打开 AI 商业化行业底稿</a>
+          <a href="https://investor.servicenow.com/news/news-details/2026/ServiceNow-Reports-First-Quarter-2026-Financial-Results/default.aspx">ServiceNow Q1 2026 Results</a>
+          <a href="https://newsroom.servicenow.com/press-releases/details/2026/ServiceNow-to-Announce-Second-Quarter-2026-Financial-Results-on-July-22/default.aspx">ServiceNow Q2 2026 Earnings Date</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
