@@ -405,6 +405,64 @@
     </section>
 
     <section class="section">
+      <h2>近端期权墙观察</h2>
+      <div class="section-lead">短期增强层，数据基于最近一期可交易到期日 2026-07-24 的 NBIS 期权链 open interest。它用于解释“为什么价格可能在某些位置卡住”，不替代上面的 thesis 价格框架。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>价位</th>
+              <th>观察</th>
+              <th>数据特征</th>
+              <th>解释方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Near Put Wall</td>
+              <td>170</td>
+              <td>最近一档最强 put 防守位</td>
+              <td>OI 35,274，为近端最突出的 put OI</td>
+              <td>如果价格向下靠近 170，短期容易出现“防守 / 磁吸 / 剧烈博弈”。</td>
+            </tr>
+            <tr>
+              <td>Secondary Put Wall</td>
+              <td>165</td>
+              <td>170 下方第二层防守区</td>
+              <td>OI 16,798，且成交量也高</td>
+              <td>如果 170 失守，165 会成为下一层短期观察位，也和我们结构试探仓区间重叠。</td>
+            </tr>
+            <tr>
+              <td>Near Call Pressure</td>
+              <td>190</td>
+              <td>最近一档更现实的上方 call 压力</td>
+              <td>OI 6,628，成交量 2,911</td>
+              <td>这比 220 更贴近现价，所以对下一周价格更有实际约束意义。</td>
+            </tr>
+            <tr>
+              <td>Primary Call Wall</td>
+              <td>220</td>
+              <td>中程最强 call wall</td>
+              <td>OI 12,798，为可见近端主 call wall</td>
+              <td>如果后面价格持续修复，220 会是重要的上方压制 / 目标观察位。</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>170 / 165 vs 190 / 220</td>
+              <td>下方防守比上方近端释放更集中</td>
+              <td>put OI 在 170-180 明显堆积，call OI 则主要分布在 190 和 220</td>
+              <td>说明短期更像“在 170 一带争夺底部稳定性”，而不是已经准备直接向 220 发起修复。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        期权墙这里是增强层，不是主结论来源。现在更合理的读法是：170 / 165 给了短期防守参考，190 是近端上方第一层真实压力，220 是更远的主 call wall。也就是说，期权链和我们上面给出的 176–185 观察区、164–170 试探仓区、185–194 升级区，方向上是相互印证的，而不是互相冲突的。
+      </div>
+    </section>
+
+    <section class="section">
       <h2>事件 / 价格 / 解读时间线</h2>
       <div class="section-lead">这一层不是罗列新闻，而是把关键事件、价格反应与 RCP 解读放到一条线里。</div>
       <div class="timeline">
