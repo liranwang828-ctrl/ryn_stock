@@ -152,6 +152,52 @@
       padding-left: 20px;
     }
 
+    .anchor-table-wrap {
+      overflow-x: auto;
+    }
+
+    .anchor-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .anchor-table th,
+    .anchor-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .anchor-table th {
+      background: #f8fbff;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .anchor-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .anchor-row-upgrade td:first-child {
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .anchor-row-downgrade td:first-child {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
     .timeline {
       display: flex;
       flex-direction: column;
@@ -279,6 +325,61 @@
           <li>Focus on earnings, margin, order, demand, and adoption triggers.</li>
         </ul>
       </article>
+    </section>
+
+    <section class="section">
+      <h2>Key Price Anchors</h2>
+      <div class="section-lead">Translate research into practical price levels by combining structure, behavior, positioning, and thesis judgment.</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>Anchor</th>
+              <th>Price</th>
+              <th>Why it matters</th>
+              <th>Main evidence layer</th>
+              <th>Action meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Current price context</td>
+              <td>Current zone / latest close</td>
+              <td>Describe where price currently sits relative to the most important event anchors.</td>
+              <td>Structure + behavior</td>
+              <td>Understand whether the stock is extended, neutral, or pulling back into interest.</td>
+            </tr>
+            <tr>
+              <td>Watch zone</td>
+              <td>$X–Y</td>
+              <td>Price returns to a structurally important support, gap, or anchored VWAP area.</td>
+              <td>Structure + behavior</td>
+              <td>Start active monitoring, not automatic buying.</td>
+            </tr>
+            <tr>
+              <td>Probe zone</td>
+              <td>$X–Y</td>
+              <td>Odds improve if the pullback holds and thesis is still intact.</td>
+              <td>Structure + thesis</td>
+              <td>Small test position only.</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis-upgrade zone</td>
+              <td>Above $X</td>
+              <td>Recovery or continued strength confirms demand and improves confidence.</td>
+              <td>Behavior + thesis</td>
+              <td>Raise conviction if evidence is also improving.</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis-downgrade zone</td>
+              <td>Below $X</td>
+              <td>Break of key support or event anchor weakens the original thesis.</td>
+              <td>Structure + thesis</td>
+              <td>Reduce, stop forcing, or reframe the idea.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="section">

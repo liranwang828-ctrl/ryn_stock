@@ -144,6 +144,52 @@
       padding-left: 20px;
     }
 
+    .anchor-table-wrap {
+      overflow-x: auto;
+    }
+
+    .anchor-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .anchor-table th,
+    .anchor-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .anchor-table th {
+      background: #f8fbff;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .anchor-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .anchor-row-upgrade td:first-child {
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .anchor-row-downgrade td:first-child {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
     .card li,
     .section li,
     .section p,
@@ -298,6 +344,64 @@
           <li>管理层是否给出更清晰的大客户、产能利用率、商业化路径与资本开支框架。</li>
         </ul>
       </article>
+    </section>
+
+    <section class="section">
+      <h2>关键价格与操作锚点</h2>
+      <div class="section-lead">第一版手工框架示例：先用市场结构、行为锚点和 thesis 翻译做决策支持；期权墙 / OI / gamma 只在有稳定当期数据时再叠加。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>锚点</th>
+              <th>价格</th>
+              <th>为什么重要</th>
+              <th>主导证据层</th>
+              <th>动作含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前价格背景</td>
+              <td>高弹性上行后的再定价区，需对照 2026-05 财报后抬升区间与 2026-07 修复区间观察</td>
+              <td>NBIS 现在不是典型“低位便宜股”，而是市场已经愿意提前给空间的高弹性验证层标的。</td>
+              <td>结构 + thesis</td>
+              <td>先判断价格是在追高区、正常波动区，还是回到值得重新研究的区间。</td>
+            </tr>
+            <tr>
+              <td>观察区间</td>
+              <td>回到上一轮财报后主升段中部与关键事件 anchored VWAP 附近时</td>
+              <td>如果价格回撤到重要事件平均持仓成本附近，但没有破坏增长叙事，观察价值最高。</td>
+              <td>结构 + behavior</td>
+              <td>开始重点跟踪，不代表立刻进场。</td>
+            </tr>
+            <tr>
+              <td>试探仓区间</td>
+              <td>跌回重要支撑区且仍守住 thesis，不再处于情绪性追高位置时</td>
+              <td>只有当价格让赔率改善，同时 Reality 没有明显恶化，NBIS 才适合小仓位试探。</td>
+              <td>结构 + thesis</td>
+              <td>只允许试探仓，不适合重仓。</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis 升级区间</td>
+              <td>重新站稳关键事件锚点上方，并在后续财报中继续确认利润质量时</td>
+              <td>价格强势本身不够，必须和新证据一起出现，才算从“高赔率观察对象”向“更高确信标的”升级。</td>
+              <td>behavior + thesis</td>
+              <td>只有价格与证据同步改善，才提高确信度。</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis 降级区间</td>
+              <td>跌破关键支撑并伴随增长 / 商业模式验证同时弱化时</td>
+              <td>如果价格失守核心结构位，且后续验证没有跟上，就说明市场之前交易的未来需要下修。</td>
+              <td>structure + thesis</td>
+              <td>减少强行解释，转入降级或继续观察。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        这一块是“研究到投资动作”的桥，不是自动执行信号。真正落到具体价格时，应先画出结构位，再叠加 20DMA / 50DMA / anchored VWAP；如果有可靠当期期权数据，再用期权墙或大 OI 行权价做短期增强，而不是反过来用期权位主导中期判断。
+      </div>
     </section>
 
     <section class="section">
