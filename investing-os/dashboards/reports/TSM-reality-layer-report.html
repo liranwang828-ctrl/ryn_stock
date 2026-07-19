@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TSM 研究报告（阅读版）</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbff;
+      --border: #d6deea;
+      --text: #182230;
+      --muted: #667085;
+      --primary: #175cd3;
+      --primary-soft: #eef4ff;
+      --success: #067647;
+      --warning: #b54708;
+      --danger: #b42318;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1180px; margin: 0 auto; padding: 28px 20px 56px; }
+    .hero,.section,.timeline-item,.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 30px;
+      margin-bottom: 18px;
+      background: radial-gradient(circle at top right, rgba(23, 92, 211, 0.08), transparent 34%), var(--surface);
+    }
+    .eyebrow {
+      display: inline-flex; padding: 6px 10px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary);
+      font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    }
+    .hero h1 { margin: 12px 0 8px; font-size: 34px; line-height: 1.2; }
+    .hero .meta { color: var(--muted); font-size: 14px; }
+    .hero .summary { margin-top: 16px; font-size: 18px; line-height: 1.75; max-width: 940px; }
+    .hero .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .chip {
+      display: inline-flex; align-items: center; min-height: 32px; padding: 5px 12px;
+      border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft);
+      color: var(--text); font-size: 13px;
+    }
+    .section { padding: 22px; margin-bottom: 18px; }
+    .section h2 { margin: 0 0 14px; font-size: 22px; }
+    .section-lead { margin: -4px 0 16px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .card { padding: 18px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card ul,.section ul { margin: 0; padding-left: 20px; }
+    .card li,.section li,.section p,.full-body p { line-height: 1.75; font-size: 15px; }
+    .anchor-table-wrap { overflow-x: auto; }
+    .anchor-table {
+      width: 100%; border-collapse: collapse; min-width: 760px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    }
+    .anchor-table th,.anchor-table td {
+      padding: 14px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top;
+      line-height: 1.7; font-size: 14px;
+    }
+    .anchor-table th {
+      background: #f8fbff; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .anchor-table tr:last-child td { border-bottom: 0; }
+    .anchor-row-upgrade td:first-child { color: var(--success); font-weight: 700; }
+    .anchor-row-downgrade td:first-child { color: var(--danger); font-weight: 700; }
+    .timeline { display: flex; flex-direction: column; gap: 12px; }
+    .timeline-item { padding: 16px; }
+    .timeline-date { font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .timeline-grid { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; }
+    .timeline-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .timeline-tag {
+      display: inline-flex; margin-top: 10px; padding: 3px 8px; border-radius: 999px;
+      background: var(--primary-soft); color: var(--primary); font-size: 12px; font-weight: 700;
+    }
+    .coupling { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .coupling .section { margin-bottom: 0; height: 100%; }
+    .callout {
+      border-left: 4px solid var(--primary); background: var(--primary-soft);
+      padding: 14px 16px; border-radius: 12px; margin: 14px 0 0; line-height: 1.7; font-size: 15px;
+    }
+    .full-body { line-height: 1.8; font-size: 15px; }
+    .full-body h3 { margin: 20px 0 10px; font-size: 18px; }
+    .full-body ul { padding-left: 20px; margin: 0; }
+    .source-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    @media (max-width: 900px) {
+      .cards,.coupling,.timeline-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+      .hero .summary { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Reality Indicator Reading Report</div>
+      <h1>TSM 研究报告（阅读版）</h1>
+      <div class="meta">Taiwan Semiconductor Manufacturing | TSM | 制造 Reality Layer | 2026-07-19</div>
+      <div class="summary">
+        TSM 不是在等待商业模式验证的故事股，而是 AI 制造链最核心的 Reality Indicator 之一：这里要分开看的不是“好公司 vs 坏公司”，而是 Reality 仍然很强、Price 是否透支过头、Behavior 是否受损、以及回撤后 Odds 是否开始改善。
+      </div>
+      <div class="chips">
+        <span class="chip">Current stance：核心观察</span>
+        <span class="chip">Layer：Reality Indicator</span>
+        <span class="chip">Focus：先进制程 / 2nm / post-earnings repricing</span>
+      </div>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h3>市场在交易什么</h3>
+        <ul>
+          <li>市场在交易 AI / HPC 是否继续推动先进制程、先进封装与 foundry 盈利能力上行。</li>
+          <li>TSM 被当成整个 AI 制造 Reality 的总锚，因为它连接了客户需求、工艺领先、价格能力与 capex 扩张。</li>
+          <li>当前争论点不是 Reality 是否存在，而是强事实之上，市场此前是否已经把持续性交易得太满。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Confirmed</h3>
+        <ul>
+          <li>2Q26 revenue 为 US$40.20B，gross margin 67.7%，operating margin 60.3%，说明制造 Reality 仍然极强。</li>
+          <li>3Q26 指引为 US$44.6B–45.8B，管理层继续强调 leading-edge process strong demand 与 2nm steep ramp-up。</li>
+          <li>2Q26 wafer revenue 中，7nm 及更先进制程占比达到 77%，说明先进节点已是财务现实，不是远期想象。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Reality Unconfirmed</h3>
+        <ul>
+          <li>高景气能持续多久，仍取决于客户 AI capex、先进制程需求与价格能力是否继续同步兑现。</li>
+          <li>市场对 TSM 的高质量认知早已很深，因此后续难点不是“证明它优秀”，而是“证明持续性值得更高定价”。</li>
+          <li>价格大幅回撤首先意味着 Behavior 与 Price 在压缩，不应被误写成 Reality 自动转弱。</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>未来 1–2 季度验证重点</h3>
+        <ul>
+          <li>2nm ramp 与 leading-edge mix 是否继续提升。</li>
+          <li>3Q 指引能否兑现，以及毛利率是否仍维持高位。</li>
+          <li>TSM 的强事实，能否继续传导验证 AMAT / MU / AMD / NVDA 等链上对象。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>关键价格与操作锚点</h2>
+      <div class="section-lead">基于最近有效美股交易日 2026-07-17 的真实日线数据：收盘价 398.37，20 日均线 437.37，50 日均线 425.67；2026-04-16 Q1 anchored VWAP 约 416.96，2026-07-16 Q2 anchored VWAP 约 403.62，2026-07-17 recent anchored VWAP 约 396.36。更好的位置可能改善赔率，但不自动说明 Reality 更强。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>锚点</th>
+              <th>价格</th>
+              <th>为什么重要</th>
+              <th>主导证据层</th>
+              <th>动作含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>当前价格背景</td>
+              <td>398.37；贴近 396.36 recent anchored VWAP 与 403.62 Q2 anchored VWAP，但低于 416.96 与 425.67</td>
+              <td>TSM 当前更像 earnings 后的再平衡区，而不是趋势已经重新完全修复的右侧状态。</td>
+              <td>结构 + behavior</td>
+              <td>适合重新评估，不适合把单日稳定误判成结构性转强。</td>
+            </tr>
+            <tr>
+              <td>观察区间</td>
+              <td>396–417</td>
+              <td>下沿接近 recent anchored VWAP，上沿接近 Q1 anchored VWAP；这是最合理的 post-earnings 观察带。</td>
+              <td>结构 + behavior</td>
+              <td>先看价格是否能在这里稳定，再判断是否进一步回到更高一级修复。</td>
+            </tr>
+            <tr>
+              <td>试探仓区间</td>
+              <td>385–400</td>
+              <td>覆盖 7/17 低点与 400 整数位争夺区，并与近端 385–400 put OI 结构相互印证。</td>
+              <td>结构 + thesis</td>
+              <td>如果 Reality 没坏而价格再次回踩不破，这里更适合小仓试探。</td>
+            </tr>
+            <tr class="anchor-row-upgrade">
+              <td>Thesis 升级区间</td>
+              <td>417–426 首次升级；437+ 才算更强确认</td>
+              <td>先收复 Q1 anchored VWAP 与 50DMA，再进一步挑战 20DMA；这代表 behavior 修复在增强。</td>
+              <td>behavior + thesis</td>
+              <td>只有价格重新回到这些区域，才说明市场开始重新给予更完整的定价确认。</td>
+            </tr>
+            <tr class="anchor-row-downgrade">
+              <td>Thesis 降级区间</td>
+              <td>< 385；更严格看 < 375</td>
+              <td>385 下方说明 post-earnings 平衡区失守；375 下方则意味着更强的短期定价下修。</td>
+              <td>structure + thesis</td>
+              <td>跌破后应从“赔率重估”切换到“需要重新审视价格行为与预期压缩”的框架。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        TSM 这里最需要避免的误读是：回落不等于公司更强，高点也不等于 Reality 更弱。更准确地说，高点代表 Price stretch 更严重；回落代表 Behavior 受损、但 Odds 可能改善。因此最关键的是看 396–417 是否建立平衡，以及 385–400 回踩时赔率是否比高位追价更合理。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>近端期权墙观察</h2>
+      <div class="section-lead">短期增强层，数据基于最近一期可交易到期日 2026-07-24 的 TSM 期权链 open interest。它帮助解释 400 一带为何反复争夺，以及 420–430 为什么容易成为第一轮修复压力。</div>
+      <div class="anchor-table-wrap">
+        <table class="anchor-table">
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>价位</th>
+              <th>观察</th>
+              <th>数据特征</th>
+              <th>解释方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Near Call Wall</td>
+              <td>400</td>
+              <td>最贴近现价且最强的近端 call wall</td>
+              <td>400 call OI 4,200</td>
+              <td>说明 400 不只是整数位，也是最现实的近端争夺与磁吸位置。</td>
+            </tr>
+            <tr>
+              <td>Upper Call Pressure</td>
+              <td>420–430</td>
+              <td>更高一级的明显上方压力带</td>
+              <td>420 call OI 2,054；425 call OI 1,450；430 call OI 3,123</td>
+              <td>如果 TSM 开始修复，这一带会是先遇到的阻力，而不是直接回到更高趋势状态。</td>
+            </tr>
+            <tr>
+              <td>Near Price Put Support</td>
+              <td>400–405</td>
+              <td>贴近现价的短期 put 争夺层</td>
+              <td>400 put OI 1,732；405 put OI 2,341</td>
+              <td>这是最贴近现价的博弈区，但不是最强的深层防守区。</td>
+            </tr>
+            <tr>
+              <td>Primary Put Wall</td>
+              <td>375–385</td>
+              <td>真正更强的下方 put 防守带</td>
+              <td>385 put OI 12,883；380 put OI 9,298；375 put OI 7,628</td>
+              <td>如果价格继续下压，这一带才是更关键的结构防守区。</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>400 vs 420–430 / 375–385</td>
+              <td>期权链显示短期更像“400 争夺、上有 420–430 压力、下有 375–385 深层支撑”</td>
+              <td>call OI 在 400 / 420 / 430，put OI 在 375–385 更密集</td>
+              <td>这支持“先看 post-earnings 平衡能否站住，再看是否有更高一级修复”的路径。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        对 TSM 来说，期权墙更多是短期节奏参考，而不是长期投资逻辑来源：400 是最现实的争夺位，420–430 是第一轮修复压力，375–385 是更深层的风险防守区。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>事件 / 价格 / 解读时间线</h2>
+      <div class="section-lead">这一层把财报、月营收、先进节点与价格行为串起来，帮助区分 Reality、Price、Behavior 与 Odds。</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">2026-04-16</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>1Q26 results 给出 2Q26 revenue guidance 39.0–40.2B。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场继续把 TSM 当作 AI 制造主锚之一。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这里首先是 Reality 延续：TSM 继续承担先进制程与 AI 制造需求的核心验证职责。</div>
+          </div>
+          <span class="timeline-tag">Reality Support</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-06-30</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>股价冲到 52 周高点 479。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场对先进制程持续高景气进行了更激进定价。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这里变化的首先是 Price stretch，而不是 Reality 变弱；高点代表赔率下降，不代表公司本身恶化。</div>
+          </div>
+          <span class="timeline-tag">Price Stretch</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-13</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>TSMC 公布 2026 年 6 月月营收，1–6 月累计同比增长 35.6%。</div>
+            <div class="timeline-label">Price</div>
+            <div>事实继续支持先进制程与 AI 制造需求，但市场未立即给出更高价格确认。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这里首先是 Reality 继续强，而不是 Price 自动修复。</div>
+          </div>
+          <span class="timeline-tag">Reality Confirmed</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-16</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>2Q26 results：US$40.20B revenue，67.7% gross margin，3Q guide 44.6–45.8B，强调 2nm steep ramp-up。</div>
+            <div class="timeline-label">Price</div>
+            <div>公司给出强事实，但股价没有同步进入全面趋势修复。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这里首先说明 Reality 很强，但市场对“持续性”与“已计价程度”的重新权衡仍在继续。</div>
+          </div>
+          <span class="timeline-tag">Reality + Duration</span>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-date">2026-07-17</div>
+          <div class="timeline-grid">
+            <div class="timeline-label">Event</div>
+            <div>收盘 398.37，价格围绕 earnings 后新平衡区波动。</div>
+            <div class="timeline-label">Price</div>
+            <div>市场开始寻找 post-earnings 的新 Price / Odds 平衡点。</div>
+            <div class="timeline-label">Interpretation</div>
+            <div>这里变化的首先是 Odds：回落后的价格开始更值得重新评估，但 Behavior 仍弱于高点，不能把 repricing 写成“公司更强”。</div>
+          </div>
+          <span class="timeline-tag">Repricing</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="coupling">
+      <article class="section">
+        <h2>Company Layer</h2>
+        <ul>
+          <li>TSM 是 AI 制造链里最核心的公司层 Reality Indicator 之一，因为它直接把先进节点需求、价格能力与客户 capex 兑现到财务结果里。</li>
+          <li>它不是纯高 beta 交易对象，而是整个制造层的主锚。</li>
+          <li>更适合用“制造 Reality 总闸门”的思路来处理，而不是只当成半导体强势股。</li>
+        </ul>
+      </article>
+      <article class="section">
+        <h2>Industry Layer</h2>
+        <ul>
+          <li>它属于先进制程 / 制造 Reality 层，与 AMAT、ASML、MU、AMD、NVDA 形成交叉验证。</li>
+          <li>这一层的关键问题不是商业模式成立与否，而是先进制程高利润与高需求是否继续持续。</li>
+          <li>因此 TSM 更适合作为“AI 制造 Reality 是否继续强”的核心观测器。</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="section">
+      <h2>深读版研究正文</h2>
+      <div class="section-lead">这里保留慢读版结论，帮助把强 Reality、受损 Behavior 与正在重估的 Odds 放在同一页看。</div>
+      <div class="callout">
+        对 TSM 更合理的提问不是“它好不好”，而是“制造 Reality 已经这么强，价格现在是不是重新回到了更值得讨论的位置”。这也是它和验证层、纯题材层资产最大的不同。
+      </div>
+      <div class="full-body">
+        <h3>当前投资看法</h3>
+        <p>如果拆开看四个维度，TSM 当前结论很清楚：Reality 依旧很强，因为 2Q26 财报、3Q 指引、先进节点占比与月营收都在支持；Price 已经从 6 月高点的激进定价状态回落；Behavior 仍弱于高点阶段，因为价格还在 20DMA 与 50DMA 下方；Odds 则比高点时期更值得重新评估，但这个赔率改善不等于公司更强，只代表在 Reality 没坏的前提下，价格重新进入可讨论区。</p>
+
+        <h3>Upgrade Trigger</h3>
+        <ul>
+          <li>后续财报继续维持先进节点高需求与高利润率。</li>
+          <li>价格重新站回 417–426，随后进一步修复到 437+。</li>
+          <li>TSM 的强事实继续向 AMAT / MU / AMD / NVDA 等链条对象外溢验证。</li>
+        </ul>
+
+        <h3>Downgrade Trigger</h3>
+        <ul>
+          <li>价格有效跌破 385，甚至进一步失守 375。</li>
+          <li>后续指引或客户需求表述明显转弱。</li>
+          <li>市场开始把当前回落从“Price / Odds 重估”重新解释为“制造持续性被下修”。</li>
+        </ul>
+
+        <h3>研究用途</h3>
+        <p>在认知系统里，TSM 最适合与 AMAT、MU 联动阅读：TSM 看制造 Reality，AMAT 看设备 Reality，MU 看需求 Reality。三者放在一起，才更容易判断 AI 硬件链条到底是 Reality 变了，还是 Price / Behavior 在做压缩。</p>
+
+        <div class="source-links">
+          <a href="../../wiki/companies/TSM.zh.md">打开 TSM 公司研究底稿</a>
+          <a href="https://investor.tsmc.com/english/quarterly-results/2026/q2">TSMC 2Q26 Quarterly Results</a>
+          <a href="https://investor.tsmc.com/english/monthly-revenue/2026">TSMC 2026 Monthly Revenue</a>
+          <a href="https://investor.tsmc.com/english/annual-reports">TSMC Annual Reports</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
