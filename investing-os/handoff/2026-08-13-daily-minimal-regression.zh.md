@@ -207,3 +207,26 @@ TDD 修复：
 - 完整相关回归：234 passed。
 
 本次仅运行并修复 freeze 路径。quick_review 和 full_review 仍只有历史测试证据，后续应分别补 runtime 场景。
+
+## 12. 正式 Runtime 盘前启动
+
+约 09:17 ET 启动 Dashboard 后，市场时钟正确返回 `2026-08-13 / premarket / calendar_status=verified`。正式 runtime 随即暴露新的真实阻塞：7 月 15 日观察会话停在 `STAGE0_READY`，因此今天被跨日恢复门阻断。
+
+根因不是市场尚未开盘，而是 H1 的“盘前中断可 freeze”语义没有覆盖状态机中的 `STAGE0_READY` 中间状态。新增 CLI 回归测试先稳定复现 `freeze is not legal from STAGE0_READY`，随后只增加：
+
+```text
+STAGE0_READY -> freeze -> CLOSED_UNREVIEWED
+```
+
+修复后：
+
+- 完整相关回归：235 passed；
+- 旧会话 `observation-2026-07-15` 已 freeze 并归档；
+- 今日会话 `observation-2026-08-13` 已创建；
+- DAILY-0 按 observation / `stale_unverified` 账户事实确认，不授予交易权限；
+- Stage 0 已推进到 `STAGE0_READY / DAILY-1 / waiting_user`；
+- Dashboard 回读当日 snapshot 为 present / valid / fresh；
+- QQQ snapshot 时间为约 09:21 ET，期货记录约 09:11 ET，来源为 `yfinance_1m_prepost` / `yfinance_1m_futures`，不是昨日收盘冒充盘前价格；
+- 产物继续标注 `observation_only / no_trading_permission`。
+
+开盘前可以启动会话和完成盘前数据链；不需要等待 09:30。尚未完成的是开盘后的盘中时间戳推进与 Dashboard 展示验收。

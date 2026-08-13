@@ -7,6 +7,7 @@ BEGIN_TRANSITIONS = {
     ("DAY_INITIALIZED", "start_stage0_observation"): "STAGE0_RUNNING",
     ("DAY_INITIALIZED", "freeze"): "CLOSED_UNREVIEWED",
     ("STAGE0_READY", "record_focus_confirmation"): "FOCUS_CONFIRMED",
+    ("STAGE0_READY", "freeze"): "CLOSED_UNREVIEWED",
     ("FOCUS_CONFIRMED", "start_stage1"): "STAGE1_RUNNING",
     ("FOCUS_CONFIRMED", "start_observation"): "OBSERVATION_ACTIVE",
     ("STAGE1_READY", "record_plan_approval"): "PLAN_APPROVED",

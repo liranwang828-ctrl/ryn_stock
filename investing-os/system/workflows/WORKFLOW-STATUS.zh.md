@@ -309,9 +309,18 @@ Stage 0 universe 第二阻塞修复：
 - 完整相关回归：234 passed；
 - quick_review / full_review 尚未做本轮 runtime 场景，不标记为已实测。
 
+正式 runtime 盘前启动补充：
+
+- 09:17 ET 启动 Dashboard，市场时钟正确识别 8 月 13 日盘前；
+- 7 月 15 日 `STAGE0_READY` 观察会话触发跨日阻断，证明正式入口没有静默跳过旧会话；
+- TDD 补齐 `STAGE0_READY -> freeze -> CLOSED_UNREVIEWED` 后，235 passed；
+- 旧会话完成 freeze + archive，今日 observation 会话创建并推进至 `STAGE0_READY / DAILY-1 / waiting_user`；
+- Dashboard 回读 snapshot 为 present / valid / fresh；QQQ 与期货均带 8 月 13 日盘前时间戳和明确来源；
+- 开盘后盘中实时价格验收仍待执行，DAILY 状态不升级为 stable。
+
 下一动作：
 
-1. 在开盘时段验证盘中实时价格、时间戳、来源和 Dashboard 展示；
+1. 09:30 ET 后刷新并验证盘中实时价格、时间戳、来源和 Dashboard 展示；
 2. 只修复该试跑遇到的下一个真实技术阻塞；
 3. 后续补做 quick_review / full_review 跨日 runtime 场景；
 4. DAILY 稳定后设计 Evidence 自动生产的下一最小切片。

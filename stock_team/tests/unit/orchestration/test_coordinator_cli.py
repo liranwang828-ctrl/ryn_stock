@@ -416,6 +416,36 @@ def test_init_day_recovery_freeze_from_day_initialized_archives_old_and_creates_
     assert json.loads(recovered.stdout.decode("utf-8", errors="replace"))["session_id"] == "observation-2026-08-13"
 
 
+def test_init_day_recovery_freeze_from_stage0_ready_archives_old_and_creates_today(tmp_path):
+    from stock_team.orchestration.models import new_trading_session
+    from stock_team.orchestration.store import SessionStore
+
+    sessions_dir = tmp_path / "sessions"
+    store = SessionStore(sessions_dir)
+    previous = new_trading_session(
+        "observation-2026-08-12",
+        "2026-08-12",
+        "2026-08-12T09:00:00-04:00",
+        session_type="observation",
+    )
+    previous["state"] = "STAGE0_READY"
+    previous["allowed_actions"] = ["record_focus_confirmation"]
+    store.create(previous)
+
+    recovered = subprocess.run(
+        [
+            sys.executable, "-m", "stock_team.coordinator_cli", "init-day",
+            "--date", "2026-08-13", "--session-type", "observation",
+            "--recovery", "freeze", "--runtime-dir", str(sessions_dir),
+        ],
+        capture_output=True,
+    )
+
+    assert recovered.returncode == 0, recovered.stderr.decode("utf-8", errors="replace")
+    assert store.load("observation-2026-08-12")["state"] == "DAY_ARCHIVED"
+    assert json.loads(recovered.stdout.decode("utf-8", errors="replace"))["session_id"] == "observation-2026-08-13"
+
+
 def test_init_day_no_recovery_needed_when_previous_is_archived(tmp_path):
     from stock_team.orchestration.models import new_trading_session
     from stock_team.orchestration.store import SessionStore
