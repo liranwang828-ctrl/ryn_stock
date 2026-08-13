@@ -297,13 +297,23 @@ Stage 0 universe 第二阻塞修复：
 - universe、snapshot、market context 均 present/valid/fresh；
 - Dashboard 到 `DAILY-1B / waiting_user`，coordinator 为 `STAGE0_READY`，`state_sync.needed=false`；
 - observation 权限保持 `no_trading_permission`；
-- 完整相关回归：233 passed。
+- Stage 0 universe 批次完整相关回归：233 passed。
+
+跨日 freeze runtime 复核：
+
+- 真实构造昨日 `DAY_INITIALIZED` observation session；无 recovery 时今天入口正确阻塞；
+- 首次 `--recovery freeze` 暴露 `freeze is not legal from DAY_INITIALIZED`；
+- H1 矩阵明确允许盘前中断 freeze，根因是 transitions 漏注册该路径，历史测试亦未覆盖；
+- 公开 CLI 测试先失败后，以单一 transition 修复；
+- 修复后旧会话进入 `DAY_ARCHIVED` 并生成交易日期分层 archive manifest，今日 observation session 正常创建；
+- 完整相关回归：234 passed；
+- quick_review / full_review 尚未做本轮 runtime 场景，不标记为已实测。
 
 下一动作：
 
-1. 用隔离 runtime 实际复核跨日恢复路径，而不只依赖测试；
-2. 在开盘时段验证盘中实时价格、时间戳、来源和 Dashboard 展示；
-3. 只修复上述试跑遇到的下一个真实技术阻塞；
+1. 在开盘时段验证盘中实时价格、时间戳、来源和 Dashboard 展示；
+2. 只修复该试跑遇到的下一个真实技术阻塞；
+3. 后续补做 quick_review / full_review 跨日 runtime 场景；
 4. DAILY 稳定后设计 Evidence 自动生产的下一最小切片。
 
 ## RESEARCH 投资研究
@@ -352,3 +362,4 @@ Stage 0 universe 第二阻塞修复：
 | 2026-08-13 | 建立系统总览和恢复基线；保留 `DAILY=partial`，等待隔离最小回归 | 以本次状态基线提交为准 |
 | 2026-08-13 | 完成隔离 DAILY 第一段；修复 DAILY-0 确认无正式写入入口；定位下一缺口 `stage0_universe` | 以 `confirm-daily0` 修复提交为准 |
 | 2026-08-13 | 提取共享 universe builder，增加 canonical CLI 入口；隔离 DAILY 到 DAILY-1B | 以 `prepare-stage0-universe` 修复提交为准 |
+| 2026-08-13 | 跨日 freeze runtime 复核；补齐 DAY_INITIALIZED freeze transition | 以跨日 freeze 修复提交为准 |

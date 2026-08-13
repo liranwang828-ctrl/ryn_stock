@@ -22,7 +22,7 @@
 - 系统不是从零开始；旧系统和本轮开发均已有大量可复用资产。
 - `investing-os` 是认知与决策主脑；`stock_team` 是数据与计算肌肉。
 - Operating Console 是 DAILY 状态和产物导航；Growth Dashboard 是独立认知系统界面。
-- DAILY 已完成 2026-08-13 两轮隔离回归：真实交易日期、当日盘前观察价格、canonical runtime 与 Dashboard 回读已验证；`daily0_confirmation` 正式入口和 `prepare-stage0-universe` 均已用 TDD 补通。当前主链已到 DAILY-1B 的正常焦点池用户确认点，但跨日 runtime 场景和开盘时段实时价格尚未完成，因此状态仍保持 `partial`。
+- DAILY 已完成 2026-08-13 两轮盘前隔离回归和一次跨日 freeze runtime 复核：真实交易日期、当日盘前观察价格、canonical runtime 与 Dashboard 回读已验证；`daily0_confirmation`、`prepare-stage0-universe` 和 `DAY_INITIALIZED` freeze 恢复缺口均已用 TDD 补通。主链已到 DAILY-1B，跨日 freeze 能归档旧日并创建今日会话；开盘时段实时价格以及 quick/full runtime 场景尚未完成，因此状态仍保持 `partial`。
 - Research Database V3 Alpha 已有 Question、Evidence、Hypothesis、Observation、Decision 模板，三大 Alpha Questions、Dashboard summary 和多份公司阅读报告。
 - 当前最大研究缺口不是报告数量，而是高质量 Evidence 的自动生产、更新与验证闭环。
 
@@ -101,7 +101,7 @@ Question
 2. 核验全部未推送提交的路径、敏感信息、提交完整性和远端差异；
 3. 安全后推送当前分支，避免成果继续只留在本机；
 4. 已在隔离 canonical runtime 中运行最小 DAILY observation；
-5. 已验证真实交易日期、盘前价格时间戳/来源和 Dashboard 同源回读；跨日恢复为 8 月回归测试覆盖，尚待下一次 runtime 场景复核；
+5. 已验证真实交易日期、盘前价格时间戳/来源和 Dashboard 同源回读；跨日 freeze 已完成隔离 runtime 复核，quick/full 仍待 runtime 复核；
 6. 首个真实阻塞已定位为 `daily0_confirmation` 只有 schema 和读取方、没有正式写入入口，并已按 TDD 增加 `confirm-daily0`；
 7. 第二个阻塞 `stage0_universe` 生成器只藏在 Dashboard 私有函数，现已提取为共享 builder 并增加 `prepare-stage0-universe`；隔离链已推进到 DAILY-1B，state sync 为 false；
 8. DAILY 稳定后，选择一个 Alpha Question 做 Evidence 自动生产的端到端最小切片。
@@ -133,4 +133,4 @@ Question
 
 本轮真实运行记录：[`2026-08-13-daily-minimal-regression.zh.md`](2026-08-13-daily-minimal-regression.zh.md)。
 
-当前唯一下一动作：用隔离 runtime 复核跨日恢复实际场景；随后等待/进入开盘时段验证盘中实时价格与 Dashboard。不要提前扩展到 Evidence 自动化。
+当前唯一下一动作：进入开盘时段验证盘中实时价格、时间戳、来源与 Dashboard；不要提前扩展到 Evidence 自动化。quick/full 跨日 runtime 场景保留为后续验证项。

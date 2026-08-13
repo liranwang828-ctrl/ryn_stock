@@ -20,7 +20,7 @@
 - `market_clock` 在 2026-08-13 08:35 ET 返回：`phase=premarket`、`trading_date=2026-08-13`、`last_trading_date=2026-08-12`、`next_trading_date=2026-08-14`、`calendar_status=verified`；
 - `python -m pytest stock_team/tests/unit/orchestration stock_team/tests/integration/test_daily_e2e.py -q`：168 passed；
 - 修复完成后的扩展回归：
-  `python -m pytest stock_team/tests/unit/orchestration stock_team/tests/integration/test_daily_e2e.py stock_team/tests/unit/core/test_dashboard_refresh_prices.py -q`：233 passed；
+  `python -m pytest stock_team/tests/unit/orchestration stock_team/tests/integration/test_daily_e2e.py stock_team/tests/unit/core/test_dashboard_refresh_prices.py -q`：234 passed；
 - 分支同步前审计未发现 runtime/account/trade-history 被纳入待推送提交，远端同步后 ahead/behind 为 `0/0`。
 
 跨日恢复在本轮达到 `test-covered`，没有在首个阻塞修复前继续构造第二个 runtime 场景。
@@ -170,7 +170,40 @@ init-day
 
 DAILY-0 到 DAILY-1B 的隔离主链已经连通，但 DAILY 整体仍保持 `partial`。下一轮应继续恢复计划中的未完成验证：
 
-1. 用 runtime 场景复核跨日恢复，而不只依赖自动测试；
-2. 在开盘时段验证实时/盘中价格与 Dashboard；
+1. 在开盘时段验证实时/盘中价格与 Dashboard；
+2. 后续补做 quick_review / full_review 跨日 runtime 场景，不把本次 freeze 成功扩大解释为全部恢复矩阵完成；
 3. 再处理试跑发现的下一个技术阻塞；
 4. DAILY 稳定后才开始 Evidence 自动生产切片。
+
+## 11. 跨日 Freeze Runtime 复核
+
+全新隔离 runtime：
+
+```text
+%TEMP%/investing-os-cross-day-runtime-fixed-20260813/investing-os
+```
+
+复现步骤：
+
+1. 创建 `observation-2026-08-12`，保持 `DAY_INITIALIZED`；
+2. 不带 recovery 启动 8 月 13 日，入口正确返回非零并提示处理旧会话；
+3. 执行 `--recovery freeze`。
+
+首次实测第 3 步失败：CLI 向用户承诺 freeze 可选，但状态机报 `freeze is not legal from DAY_INITIALIZED`。H1 高阶状态矩阵明确规定盘前中断的 `DAY_INITIALIZED` 允许 freeze；现有测试只覆盖 active 与 market closed，漏掉了该状态。
+
+TDD 修复：
+
+- 新增公开 CLI 回归测试，先稳定复现失败；
+- 最小增加 `DAY_INITIALIZED → freeze → CLOSED_UNREVIEWED`；
+- 不改变其他恢复状态语义。
+
+修复后真实结果：
+
+- 无 recovery：exit 1，昨日会话继续阻塞今天；
+- freeze recovery：exit 0；
+- 旧会话：`DAY_ARCHIVED`；
+- archive manifest：`archive/2026-08-12/observation-2026-08-12/archive_manifest.json`；
+- 今日会话：`observation-2026-08-13 / DAY_INITIALIZED`；
+- 完整相关回归：234 passed。
+
+本次仅运行并修复 freeze 路径。quick_review 和 full_review 仍只有历史测试证据，后续应分别补 runtime 场景。
