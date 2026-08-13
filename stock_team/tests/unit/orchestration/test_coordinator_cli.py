@@ -162,6 +162,59 @@ def test_confirm_daily0_rejects_activity_mode_that_differs_from_session_type(tmp
     assert "daily0_confirmation" not in session
 
 
+def test_prepare_stage0_universe_uses_same_isolated_runtime_without_changing_session(tmp_path):
+    sessions_dir = tmp_path / "runtime" / "sessions"
+    init = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "init-day",
+            "--date",
+            "2026-08-13",
+            "--session-type",
+            "observation",
+            "--runtime-dir",
+            str(sessions_dir),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert init.returncode == 0
+    initialized = json.loads(init.stdout)
+
+    prepared = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "prepare-stage0-universe",
+            "--session-id",
+            "observation-2026-08-13",
+            "--runtime-dir",
+            str(sessions_dir),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert prepared.returncode == 0, prepared.stderr
+    result = json.loads(prepared.stdout)
+    expected_path = tmp_path / "runtime" / "inputs" / "observation-2026-08-13-stage0-universe.json"
+    assert result["session_id"] == "observation-2026-08-13"
+    assert result["market_date"] == "2026-08-13"
+    assert result["universe_path"] == str(expected_path.resolve())
+    universe = json.loads(expected_path.read_text(encoding="utf-8"))
+    assert universe["date"] == "2026-08-13"
+
+    unchanged = json.loads((sessions_dir / "observation-2026-08-13.json").read_text(encoding="utf-8"))
+    assert unchanged["state"] == initialized["state"]
+    assert unchanged["state_version"] == initialized["state_version"]
+    assert "daily0_confirmation" not in unchanged
+
+
 def test_init_day_defaults_to_trading(tmp_path):
     result = subprocess.run(
         [

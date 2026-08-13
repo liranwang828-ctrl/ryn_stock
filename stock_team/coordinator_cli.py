@@ -10,6 +10,7 @@ from pathlib import Path
 from stock_team.orchestration.adapters import ExistingCliAdapter
 from stock_team.orchestration.coordinator import WorkflowCoordinator
 from stock_team.orchestration.models import IBKR_FACT_STATUSES, SESSION_TYPES
+from stock_team.orchestration.stage0_universe import build_stage0_universe_document
 from stock_team.orchestration.store import SessionConflictError, SessionStore
 from stock_team.utils.workspace_paths import investing_os_home
 
@@ -39,6 +40,10 @@ def build_parser() -> argparse.ArgumentParser:
     confirm_daily0.add_argument("--account-snapshot-ref", default="")
     confirm_daily0.add_argument("--analysis-scope-ref", default="")
     confirm_daily0.add_argument("--runtime-dir", default=str(default_runtime_dir()))
+
+    prepare_universe = sub.add_parser("prepare-stage0-universe")
+    prepare_universe.add_argument("--session-id", required=True)
+    prepare_universe.add_argument("--runtime-dir", default=str(default_runtime_dir()))
 
     run = sub.add_parser("run")
     run.add_argument("--action", required=True)
@@ -243,6 +248,23 @@ def main(argv: list[str] | None = None) -> int:
             state["updated_at"] = now
             store.save(state, expected_version=previous_version)
             print(json.dumps(state, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "prepare-stage0-universe":
+            store = SessionStore(args.runtime_dir)
+            state = store.load(args.session_id)
+            runtime_root = Path(args.runtime_dir).resolve().parent
+            universe_path, journal_path = build_stage0_universe_document(
+                base_dir=Path(__file__).resolve().parent,
+                runtime_root=runtime_root,
+                market_date=state["market_date"],
+                session_id=state["session_id"],
+            )
+            print(json.dumps({
+                "session_id": state["session_id"],
+                "market_date": state["market_date"],
+                "universe_path": str(universe_path.resolve()),
+                "journal_path": journal_path,
+            }, ensure_ascii=False, indent=2))
             return 0
         if args.command == "run":
             payload = json.loads(Path(args.action).read_text(encoding="utf-8-sig"))

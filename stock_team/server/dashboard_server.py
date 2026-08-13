@@ -29,6 +29,7 @@ from stock_team.utils.workspace_paths import investing_os_home
 from stock_team.utils.capsule_utils import get_current_nodes_path, get_latest_premarket_plan_path
 from stock_team.orchestration.adapters import ExistingCliAdapter
 from stock_team.orchestration.coordinator import WorkflowCoordinator
+from stock_team.orchestration.stage0_universe import build_stage0_universe_document
 from stock_team.orchestration.store import SessionConflictError, SessionStore
 
 # 插入工作区根目录以支持模块导入
@@ -103,42 +104,6 @@ def _load_json_any(path: str, default):
     except Exception:
         return default
     return value
-
-
-def _parse_symbol_list(raw_value) -> list[str]:
-    if isinstance(raw_value, list):
-        values = raw_value
-    elif isinstance(raw_value, str):
-        values = raw_value.split(",")
-    else:
-        values = []
-    result = []
-    seen = set()
-    for item in values:
-        symbol = str(item).upper().strip()
-        if not symbol or symbol in seen:
-            continue
-        seen.add(symbol)
-        result.append(symbol)
-    return result
-
-
-def _infer_position_theme(position: dict) -> str:
-    text = " ".join(str(position.get(key) or "") for key in ("position_type", "note", "thesis")).lower()
-    mapping = [
-        ("ai_power", "power"),
-        ("power", "power"),
-        ("memory", "memory"),
-        ("cloud", "cloud"),
-        ("optical", "optical"),
-        ("semiconductor", "semiconductors"),
-        ("gpu", "semiconductors"),
-        ("ai", "ai_infrastructure"),
-    ]
-    for token, theme in mapping:
-        if token in text:
-            return theme
-    return "user_focus"
 
 
 def _save_json(path: str, payload) -> str:
@@ -368,138 +333,15 @@ def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
     }
 
 
-def _latest_journal_path(base_dir: str) -> str:
-    journals_dir = os.path.join(investing_os_home(base_dir), "wiki", "journals")
-    if not os.path.isdir(journals_dir):
-        return ""
-    candidates = sorted(glob.glob(os.path.join(journals_dir, "*.md")), reverse=True)
-    return candidates[0] if candidates else ""
-
-
 def _build_stage0_universe_document(base_dir: str, market_date: str, session_id: str) -> tuple[str, str]:
-    inputs_dir = _coordinator_inputs_dir(base_dir)
-    os.makedirs(inputs_dir, exist_ok=True)
-    universe_path = os.path.join(inputs_dir, f"{session_id}-stage0-universe.json")
-    journal_path = _latest_journal_path(base_dir)
-    snapshot_path = os.path.join(inputs_dir, f"{session_id}-pre-market-snapshot.json")
-    snapshot = _load_json_any(snapshot_path, {})
-    snapshot_symbols = _parse_symbol_list(snapshot.get("focus_symbols"))
-    snapshot_themes = _parse_symbol_list(snapshot.get("themes"))
-    positions_payload = _load_json_any(os.path.join(base_dir, "config", "positions.json"), {})
-    current_positions = positions_payload.get("positions") if isinstance(positions_payload, dict) else {}
-    if not isinstance(current_positions, dict):
-        current_positions = {}
-
-    universe_rows = []
-    seen_symbols = set()
-    for symbol in snapshot_symbols:
-        position = current_positions.get(symbol) if isinstance(current_positions.get(symbol), dict) else {}
-        is_position = bool(position)
-        universe_rows.append({
-            "symbol": symbol,
-            "role": "current_position" if is_position else "watchlist",
-            "theme": _infer_position_theme(position) if is_position else (snapshot_themes[0].lower() if snapshot_themes else "user_focus"),
-            "research_status": str(position.get("thesis_status") or "pending").strip() if is_position else "pending",
-            "source": "current_positions+snapshot_focus" if is_position else "snapshot_focus_symbols",
-            "brain_note": "Imported from current holdings and explicit daily focus." if is_position else "Explicit daily focus symbol from pre-market snapshot.",
-        })
-        seen_symbols.add(symbol)
-
-    for symbol, position in current_positions.items():
-        symbol = str(symbol).upper().strip()
-        if not symbol or symbol in seen_symbols or not isinstance(position, dict):
-            continue
-        universe_rows.append({
-            "symbol": symbol,
-            "role": "current_position",
-            "theme": _infer_position_theme(position),
-            "research_status": str(position.get("thesis_status") or "needs_review").strip(),
-            "source": "current_positions",
-            "brain_note": "Live IBKR position added to the daily observation universe.",
-        })
-        seen_symbols.add(symbol)
-
-    universe_document = {
-        "artifact_type": "pre_market_universe",
-        "version": "1.0",
-        "date": market_date,
-        "created_by": "investing-os-dashboard",
-        "purpose": "Dashboard-generated minimum Stage 0 universe. This is not a trading permission list.",
-        "source_inputs": {
-            "positions": [
-                {
-                    "source": "ibkr_live_api" if current_positions else "dashboard_runtime_placeholder",
-                    "as_of_et": f"{market_date}T08:00:00-04:00",
-                    "symbols": sorted(seen_symbols),
-                    "notes": "Derived from local live-synced positions.json for Stage 0 dashboard bootstrap." if current_positions else "No live broker position snapshot was attached from the dashboard runtime.",
-                }
-            ],
-            "prior_review": {
-                "path": os.path.relpath(journal_path, investing_os_home(base_dir)).replace("\\", "/") if journal_path else "",
-                "status": "not_attached" if not journal_path else "reviewed_for_stage0_input",
-                "key_risks": [],
-            },
-            "cognition_state": {
-                "permission_basis": "normal",
-                "active_risks": [],
-            },
-        },
-        "permission_state_before_open": "Yellow",
-        "forbidden_actions": [
-            "new_short_term_trade_without_plan",
-            "new_leveraged_product_trade_without_explicit_brain_approval",
-            "loss_repair_reentry",
-        ],
-        "selection_policy": {
-            "allowed_sources": [
-                "current_positions",
-                "active_watchlist",
-                "researched_or_explicitly_approved_candidates",
-                "market_or_sector_proxies",
-            ],
-            "forbidden_interpretations": [
-                "focus_pool",
-                "trade_permission",
-                "buy_sell_hold_recommendation",
-                "symbol_selection_by_stock_team",
-            ],
-        },
-        "themes": snapshot_themes or [
-            "semiconductors",
-            "ai_infrastructure",
-            "memory",
-            "cloud",
-            "optical",
-        ],
-        "universe": universe_rows,
-        "proxies": [
-            {
-                "symbol": "QQQ",
-                "role": "market_proxy",
-                "theme": "market_context",
-                "research_status": "proxy",
-                "source": "proxy",
-                "brain_note": "Nasdaq growth proxy for Stage 0 market context.",
-            },
-            {
-                "symbol": "SPY",
-                "role": "market_proxy",
-                "theme": "market_context",
-                "research_status": "proxy",
-                "source": "proxy",
-                "brain_note": "Broad market proxy for Stage 0 market context.",
-            },
-        ],
-        "forbidden_sections_absent": [
-            "buy_sell_hold_recommendation",
-            "trading_permission_state",
-            "symbol_selection_recommendation",
-            "final_thesis_adoption",
-            "psychological_interpretation",
-        ],
-    }
-    _save_json(universe_path, universe_document)
-    return universe_path, journal_path
+    runtime_root = Path(investing_os_home(base_dir)) / "system" / "runtime"
+    universe_path, journal_path = build_stage0_universe_document(
+        base_dir=base_dir,
+        runtime_root=runtime_root,
+        market_date=market_date,
+        session_id=session_id,
+    )
+    return str(universe_path), journal_path
 
 
 def _default_stage0_action(base_dir: str, session: dict) -> dict:

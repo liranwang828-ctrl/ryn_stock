@@ -284,14 +284,26 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - [`../../handoff/2026-08-13-daily-minimal-regression.zh.md`](../../handoff/2026-08-13-daily-minimal-regression.zh.md)
 - 首个阻塞：`daily0_confirmation` 有 schema 和读取方但无正式写入入口；
 - 修复：新增 `coordinator_cli confirm-daily0`，只写确认事实，不推进 coordinator、不运行工具、不改变权限；
-- TDD 与相关回归：230 passed；
+- TDD 与相关回归：首个阻塞批次 230 passed；
 - 修复后 Dashboard 从 DAILY-0 前进到 DAILY-1A；当前明确缺口为 canonical `stage0_universe`。
+
+Stage 0 universe 第二阻塞修复：
+
+- 设计：[`../../docs/superpowers/specs/2026-08-13-stage0-universe-canonical-entry-design.zh.md`](../../docs/superpowers/specs/2026-08-13-stage0-universe-canonical-entry-design.zh.md)
+- 既有完整 builder 已从 Dashboard 提取到共享模块，Dashboard 只保留薄包装；
+- 新增 `coordinator_cli prepare-stage0-universe`，在 session 同一 runtime 的 inputs 目录生成 canonical universe；
+- 命令不改变 session state/version，不写确认，不运行行情 provider；
+- 第二次全新隔离试跑按 init → prepare → confirm → observation Stage 0 完成；
+- universe、snapshot、market context 均 present/valid/fresh；
+- Dashboard 到 `DAILY-1B / waiting_user`，coordinator 为 `STAGE0_READY`，`state_sync.needed=false`；
+- observation 权限保持 `no_trading_permission`；
+- 完整相关回归：233 passed。
 
 下一动作：
 
-1. 确认 `stage0_universe` 应由 DAILY-0 analysis scope 物化，还是由 observation Stage 0 生成；
-2. 以失败测试和最小实现修复这一 DAILY-1A 阻塞；
-3. 继续同一隔离 runtime 的跨日恢复和盘中实时价格验证；
+1. 用隔离 runtime 实际复核跨日恢复路径，而不只依赖测试；
+2. 在开盘时段验证盘中实时价格、时间戳、来源和 Dashboard 展示；
+3. 只修复上述试跑遇到的下一个真实技术阻塞；
 4. DAILY 稳定后设计 Evidence 自动生产的下一最小切片。
 
 ## RESEARCH 投资研究
@@ -339,3 +351,4 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 | 2026-07-16 | 建立 Research Database V3 Alpha 模板、runtime bootstrap、Dashboard summary 和三大问题主线 | `544e1b7`–`fcee080` |
 | 2026-08-13 | 建立系统总览和恢复基线；保留 `DAILY=partial`，等待隔离最小回归 | 以本次状态基线提交为准 |
 | 2026-08-13 | 完成隔离 DAILY 第一段；修复 DAILY-0 确认无正式写入入口；定位下一缺口 `stage0_universe` | 以 `confirm-daily0` 修复提交为准 |
+| 2026-08-13 | 提取共享 universe builder，增加 canonical CLI 入口；隔离 DAILY 到 DAILY-1B | 以 `prepare-stage0-universe` 修复提交为准 |

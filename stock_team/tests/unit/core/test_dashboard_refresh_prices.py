@@ -793,6 +793,16 @@ def test_coordinator_first_action_does_not_change_other_states():
     assert _coordinator_first_action("pre_market", "STAGE1_READY", None, formal_ready=True) == "record_plan_approval"
 
 
+def test_dashboard_stage0_universe_helper_is_a_thin_shared_builder_wrapper():
+    import inspect
+
+    from stock_team.server.dashboard_server import _build_stage0_universe_document
+
+    source = inspect.getsource(_build_stage0_universe_document)
+    assert "build_stage0_universe_document(" in source
+    assert "universe_document =" not in source
+
+
 def test_entry_state_payload_contains_five_core_fields():
     from stock_team.server.dashboard_server import _build_minimal_entry_state
 
