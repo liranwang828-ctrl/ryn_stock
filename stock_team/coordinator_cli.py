@@ -9,7 +9,7 @@ from pathlib import Path
 
 from stock_team.orchestration.adapters import ExistingCliAdapter
 from stock_team.orchestration.coordinator import WorkflowCoordinator
-from stock_team.orchestration.models import SESSION_TYPES
+from stock_team.orchestration.models import IBKR_FACT_STATUSES, SESSION_TYPES
 from stock_team.orchestration.store import SessionConflictError, SessionStore
 from stock_team.utils.workspace_paths import investing_os_home
 
@@ -31,6 +31,14 @@ def build_parser() -> argparse.ArgumentParser:
     show = sub.add_parser("show")
     show.add_argument("--session-id", required=True)
     show.add_argument("--runtime-dir", default=str(default_runtime_dir()))
+
+    confirm_daily0 = sub.add_parser("confirm-daily0")
+    confirm_daily0.add_argument("--session-id", required=True)
+    confirm_daily0.add_argument("--activity-mode", choices=sorted(SESSION_TYPES), required=True)
+    confirm_daily0.add_argument("--account-fact-status", choices=sorted(IBKR_FACT_STATUSES), required=True)
+    confirm_daily0.add_argument("--account-snapshot-ref", default="")
+    confirm_daily0.add_argument("--analysis-scope-ref", default="")
+    confirm_daily0.add_argument("--runtime-dir", default=str(default_runtime_dir()))
 
     run = sub.add_parser("run")
     run.add_argument("--action", required=True)
@@ -214,6 +222,26 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "show":
             state = SessionStore(args.runtime_dir).load(args.session_id)
+            print(json.dumps(state, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "confirm-daily0":
+            store = SessionStore(args.runtime_dir)
+            state = store.load(args.session_id)
+            if args.activity_mode != state["session_type"]:
+                raise ValueError("activity_mode must match session_type")
+            previous_version = state["state_version"]
+            now = datetime.now().astimezone().isoformat()
+            state["daily0_confirmation"] = {
+                "confirmed_at": now,
+                "activity_mode": args.activity_mode,
+                "account_fact_status": args.account_fact_status,
+                "account_snapshot_ref": args.account_snapshot_ref,
+                "analysis_scope_ref": args.analysis_scope_ref,
+                "user_confirmed": True,
+            }
+            state["state_version"] = previous_version + 1
+            state["updated_at"] = now
+            store.save(state, expected_version=previous_version)
             print(json.dumps(state, ensure_ascii=False, indent=2))
             return 0
         if args.command == "run":

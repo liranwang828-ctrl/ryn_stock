@@ -56,6 +56,112 @@ def test_coordinator_cli_initialize_and_show(tmp_path):
     assert shown["session_id"] == "trading-2026-06-15"
 
 
+def test_confirm_daily0_records_user_confirmation_without_advancing_coordinator_state(tmp_path):
+    init = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "init-day",
+            "--date",
+            "2026-08-13",
+            "--session-type",
+            "observation",
+            "--runtime-dir",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert init.returncode == 0
+    initialized = json.loads(init.stdout)
+
+    confirmation = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "confirm-daily0",
+            "--session-id",
+            "observation-2026-08-13",
+            "--activity-mode",
+            "observation",
+            "--account-fact-status",
+            "stale_unverified",
+            "--account-snapshot-ref",
+            "runtime/inputs/account.json",
+            "--analysis-scope-ref",
+            "runtime/inputs/universe.json",
+            "--runtime-dir",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert confirmation.returncode == 0, confirmation.stderr
+    confirmed = json.loads(confirmation.stdout)
+    assert confirmed["state"] == "DAY_INITIALIZED"
+    assert confirmed["state_version"] == initialized["state_version"] + 1
+    assert confirmed["daily0_confirmation"] == {
+        "confirmed_at": confirmed["updated_at"],
+        "activity_mode": "observation",
+        "account_fact_status": "stale_unverified",
+        "account_snapshot_ref": "runtime/inputs/account.json",
+        "analysis_scope_ref": "runtime/inputs/universe.json",
+        "user_confirmed": True,
+    }
+
+
+def test_confirm_daily0_rejects_activity_mode_that_differs_from_session_type(tmp_path):
+    init = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "init-day",
+            "--date",
+            "2026-08-13",
+            "--session-type",
+            "observation",
+            "--runtime-dir",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert init.returncode == 0
+
+    confirmation = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "stock_team.coordinator_cli",
+            "confirm-daily0",
+            "--session-id",
+            "observation-2026-08-13",
+            "--activity-mode",
+            "trading",
+            "--account-fact-status",
+            "verified",
+            "--runtime-dir",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert confirmation.returncode == 1
+    assert "must match session_type" in confirmation.stderr
+
+    session = json.loads((tmp_path / "observation-2026-08-13.json").read_text(encoding="utf-8"))
+    assert "daily0_confirmation" not in session
+
+
 def test_init_day_defaults_to_trading(tmp_path):
     result = subprocess.run(
         [

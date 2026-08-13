@@ -273,17 +273,25 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 恢复事实：
 
 - 当前分支为 `codex/repository-cleanup-20260630`，远端 `origin` 已配置；
-- 恢复开始前本地相对远端领先 55 个提交；新恢复文档继续增加独立提交，push 前重新核验准确数量；
+- 恢复开始前本地相对远端领先 55 个提交；连同 4 个恢复文档提交共 59 个提交已审计并推送，推送后 ahead/behind 为 `0/0`；
 - 工作区存在用户未提交的认知方法论、索引和运行时观察文件，不属于本轮同步内容；
-- 8 月只完成定向盘点，尚未运行最小 DAILY，因此所有运行状态保持谨慎口径；
+- 8 月已运行隔离 canonical DAILY observation 第一段；真实交易日期、盘前时间戳/来源、snapshot/context 产物和 Dashboard 同源回读已验证；
 - 最小回归固定验证：真实交易日期、跨日恢复、盘前/实时价格、Dashboard 对同一 session 和 artifact ledger 的展示；
 - 遇到首个阻塞后停止扩展，以根因调查和 TDD 修复，然后重跑同一回归。
 
+最小回归与修复记录：
+
+- [`../../handoff/2026-08-13-daily-minimal-regression.zh.md`](../../handoff/2026-08-13-daily-minimal-regression.zh.md)
+- 首个阻塞：`daily0_confirmation` 有 schema 和读取方但无正式写入入口；
+- 修复：新增 `coordinator_cli confirm-daily0`，只写确认事实，不推进 coordinator、不运行工具、不改变权限；
+- TDD 与相关回归：230 passed；
+- 修复后 Dashboard 从 DAILY-0 前进到 DAILY-1A；当前明确缺口为 canonical `stage0_universe`。
+
 下一动作：
 
-1. 核验并同步未推送提交；
-2. 使用隔离 runtime 跑最小 DAILY；
-3. 只修复实际试跑的第一个阻塞；
+1. 确认 `stage0_universe` 应由 DAILY-0 analysis scope 物化，还是由 observation Stage 0 生成；
+2. 以失败测试和最小实现修复这一 DAILY-1A 阻塞；
+3. 继续同一隔离 runtime 的跨日恢复和盘中实时价格验证；
 4. DAILY 稳定后设计 Evidence 自动生产的下一最小切片。
 
 ## RESEARCH 投资研究
@@ -330,3 +338,4 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 | 2026-07-11 | 完成 daily-status manifest、只读 Operating Console 投影和 yfinance observation 隔离试跑 | 见本页对应实施批次 |
 | 2026-07-16 | 建立 Research Database V3 Alpha 模板、runtime bootstrap、Dashboard summary 和三大问题主线 | `544e1b7`–`fcee080` |
 | 2026-08-13 | 建立系统总览和恢复基线；保留 `DAILY=partial`，等待隔离最小回归 | 以本次状态基线提交为准 |
+| 2026-08-13 | 完成隔离 DAILY 第一段；修复 DAILY-0 确认无正式写入入口；定位下一缺口 `stage0_universe` | 以 `confirm-daily0` 修复提交为准 |

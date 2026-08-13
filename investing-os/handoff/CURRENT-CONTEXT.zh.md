@@ -22,7 +22,7 @@
 - 系统不是从零开始；旧系统和本轮开发均已有大量可复用资产。
 - `investing-os` 是认知与决策主脑；`stock_team` 是数据与计算肌肉。
 - Operating Console 是 DAILY 状态和产物导航；Growth Dashboard 是独立认知系统界面。
-- DAILY 已有状态机、跨日恢复、盘前/观察、复盘归档、daily-status manifest 和 Dashboard 原型，但 2026 年 8 月尚未重新完成最小回归，因此状态保持 `partial`。
+- DAILY 已完成 2026-08-13 隔离最小回归的第一段：真实交易日期、当日盘前观察价格、canonical runtime 与 Dashboard 回读已验证；首个阻塞 `daily0_confirmation` 无正式写入入口已用 TDD 修复。当前停在 DAILY-1A 缺 `stage0_universe`，因此状态仍保持 `partial`。
 - Research Database V3 Alpha 已有 Question、Evidence、Hypothesis、Observation、Decision 模板，三大 Alpha Questions、Dashboard summary 和多份公司阅读报告。
 - 当前最大研究缺口不是报告数量，而是高质量 Evidence 的自动生产、更新与验证闭环。
 
@@ -88,7 +88,7 @@ Question
 - 顶层仓库：`C:\Users\rriww\Documents\STOCK`；两个子目录不是独立仓库。
 - 当前分支：`codex/repository-cleanup-20260630`。
 - 远端 `origin` 已配置为 GitHub 仓库。
-- 2026-08-13 恢复开始前，本地相对远端领先 55 个提交；本次恢复文档又增加了独立提交，push 前必须重新核验准确数量。
+- 2026-08-13 恢复开始前，本地相对远端领先 55 个提交；连同恢复文档共 59 个提交已完成路径、敏感信息和对象检查并推送，推送后 ahead/behind 为 `0/0`。
 - 未推送提交主要包括 Research Database、Dashboard、公司研究报告、关键价格和少量行情/观察链修复。
 - 工作区仍存在用户未提交的认知方法论、索引修改和运行时观察文件。不得清理、覆盖或顺手提交。
 - 运行时账户、成交、会话和真实观察文件默认保持本地，不得推送。
@@ -100,10 +100,10 @@ Question
 1. 更新本文件、系统总览和工作流状态台账，建立恢复基线；
 2. 核验全部未推送提交的路径、敏感信息、提交完整性和远端差异；
 3. 安全后推送当前分支，避免成果继续只留在本机；
-4. 在隔离 runtime 中运行一次最小 DAILY；
-5. 优先验证四项：真实交易日期、跨日恢复、盘前/实时价格、Dashboard 对同一状态的展示；
-6. 遇到首个真实阻塞立即停止扩展，先调查根因，再以失败测试和最小修复解决；
-7. 重跑最小 DAILY；
+4. 已在隔离 canonical runtime 中运行最小 DAILY observation；
+5. 已验证真实交易日期、盘前价格时间戳/来源和 Dashboard 同源回读；跨日恢复为 8 月回归测试覆盖，尚待下一次 runtime 场景复核；
+6. 首个真实阻塞已定位为 `daily0_confirmation` 只有 schema 和读取方、没有正式写入入口，并已按 TDD 增加 `confirm-daily0`；
+7. 修复后 Dashboard 已从 DAILY-0 前进到 DAILY-1A，下一阻塞为缺少 canonical `stage0_universe`；
 8. DAILY 稳定后，选择一个 Alpha Question 做 Evidence 自动生产的端到端最小切片。
 
 ## 当前完成定义
@@ -130,3 +130,7 @@ Question
 新任务只需说：
 
 > 读取 `investing-os/handoff/CURRENT-CONTEXT.zh.md`，从 2026 年 8 月恢复任务的下一项继续。不要重新扫描整个仓库，不要触碰未归属的脏文件。
+
+本轮真实运行记录：[`2026-08-13-daily-minimal-regression.zh.md`](2026-08-13-daily-minimal-regression.zh.md)。
+
+当前唯一下一动作：确认 `stage0_universe` 的 canonical 生产归属，并只修复这一 DAILY-1A 阻塞；不要扩展到焦点池、盘中或 Evidence 自动化。
