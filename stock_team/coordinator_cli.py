@@ -41,6 +41,11 @@ def build_parser() -> argparse.ArgumentParser:
     confirm_daily0.add_argument("--analysis-scope-ref", default="")
     confirm_daily0.add_argument("--runtime-dir", default=str(default_runtime_dir()))
 
+    invalidate_daily0 = sub.add_parser("invalidate-daily0")
+    invalidate_daily0.add_argument("--session-id", required=True)
+    invalidate_daily0.add_argument("--reason", required=True)
+    invalidate_daily0.add_argument("--runtime-dir", default=str(default_runtime_dir()))
+
     prepare_universe = sub.add_parser("prepare-stage0-universe")
     prepare_universe.add_argument("--session-id", required=True)
     prepare_universe.add_argument("--runtime-dir", default=str(default_runtime_dir()))
@@ -244,6 +249,28 @@ def main(argv: list[str] | None = None) -> int:
                 "analysis_scope_ref": args.analysis_scope_ref,
                 "user_confirmed": True,
             }
+            state["state_version"] = previous_version + 1
+            state["updated_at"] = now
+            store.save(state, expected_version=previous_version)
+            print(json.dumps(state, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "invalidate-daily0":
+            store = SessionStore(args.runtime_dir)
+            state = store.load(args.session_id)
+            reason = args.reason.strip()
+            if not reason:
+                raise ValueError("reason must not be empty")
+            previous_confirmation = state.get("daily0_confirmation")
+            if not isinstance(previous_confirmation, dict):
+                raise ValueError("daily0_confirmation is not present")
+            previous_version = state["state_version"]
+            now = datetime.now().astimezone().isoformat()
+            state.setdefault("daily0_confirmation_history", []).append({
+                "invalidated_at": now,
+                "invalidated_reason": reason,
+                "previous_confirmation": previous_confirmation,
+            })
+            state.pop("daily0_confirmation", None)
             state["state_version"] = previous_version + 1
             state["updated_at"] = now
             store.save(state, expected_version=previous_version)

@@ -85,7 +85,7 @@
           <article class="card"><h3>今日焦点与权限</h3><p id="todayFocus" class="empty">焦点池尚未由用户确认。</p></article>
           <article class="card warning"><h3>最高优先级提醒</h3><p id="topWarning" class="empty">正在检查缺口。</p></article>
         </div>
-        <article class="card"><h3>可阅读短报告</h3><div class="links"><a href="daily-brief-2026-07-13.html">打开 2026-07-13 开盘前短报告</a></div><p class="empty" style="margin-top:10px">这份报告会把今日结论、讨论沉淀、执行约束和观察顺序整理成可读版本。</p></article>
+        <article class="card"><h3>可阅读短报告</h3><div id="dailyBriefStatus" class="empty">今日短报告尚未生成；完成当日讨论前不会显示历史报告。</div><p class="empty" style="margin-top:10px">报告应来自今天的讨论、证据与执行约束，不跨交易日回退。</p></article>
       </section>
 
       <section class="page" id="pageEvidence" data-page="evidence">
@@ -155,6 +155,10 @@
       const decision = (status.artifacts || []).find(item => item.role === "stage1_decision_sheet");
       document.getElementById("todayFocus").textContent = decision?.confirmed ? "焦点池已确认；具体标的请在证据页查看 decision sheet。" : "焦点池尚未由用户确认。";
       document.getElementById("topWarning").textContent = warning;
+      const readableBrief = manifest.readable_brief || {};
+      document.getElementById("dailyBriefStatus").innerHTML = readableBrief.exists
+        ? `<div class="links"><a href="${html(readableBrief.href)}">打开 ${html(readableBrief.market_date)} 当日短报告</a></div>`
+        : "今日短报告尚未生成；完成当日讨论前不会显示历史报告。";
       if (kind === "not_started") {
         document.getElementById("todayTask").textContent = "今日尚未开始";
         document.getElementById("todayPrompt").textContent = manifest.entry_state?.next_action || "请在当前对话开始今日流程。";

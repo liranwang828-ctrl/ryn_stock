@@ -333,6 +333,18 @@ def _load_research_database_bundle(base_dir: str, session: dict) -> dict:
     }
 
 
+def _load_readable_brief(base_dir: str, session: dict) -> dict:
+    market_date = str(session.get("market_date") or "").strip()
+    filename = f"daily-brief-{market_date}.html" if market_date else ""
+    path = Path(investing_os_home(base_dir)) / "dashboards" / filename if filename else None
+    return {
+        "exists": bool(path and path.exists()),
+        "market_date": market_date,
+        "href": filename if path and path.exists() else "",
+        "path": str(path) if path else "",
+    }
+
+
 def _build_stage0_universe_document(base_dir: str, market_date: str, session_id: str) -> tuple[str, str]:
     runtime_root = Path(investing_os_home(base_dir)) / "system" / "runtime"
     universe_path, journal_path = build_stage0_universe_document(
@@ -991,6 +1003,7 @@ def _coordinator_summary_payload(
         "entry_state": entry_state,
         "daily_status": daily_status,
         "premarket_tape": premarket_tape,
+        "readable_brief": _load_readable_brief(base_dir, session),
         "research_database": _load_research_database_bundle(base_dir, session),
         "trading_date_context": trading_date_context or {},
         "session_kind": session_kind,

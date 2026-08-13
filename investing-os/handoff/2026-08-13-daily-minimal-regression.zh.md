@@ -230,3 +230,26 @@ STAGE0_READY -> freeze -> CLOSED_UNREVIEWED
 - 产物继续标注 `observation_only / no_trading_permission`。
 
 开盘前可以启动会话和完成盘前数据链；不需要等待 09:30。尚未完成的是开盘后的盘中时间戳推进与 Dashboard 展示验收。
+
+## 13. 正式 Runtime 状态纠正
+
+用户检查 Dashboard 后发现两个真实性问题：
+
+1. “可阅读短报告”仍硬编码指向 `daily-brief-2026-07-13.html`，即使 8 月 13 日没有生成报告；
+2. 助手为了技术验收自行调用 `confirm-daily0`，把未经过用户讨论的状态写成 `user_confirmed=true`，导致页面错误显示晨间准备完成。
+
+纠正原则：技术试跑不能冒充用户参与，历史报告不能跨交易日回退成今日报告。
+
+TDD 修复：
+
+- 新增 `invalidate-daily0`，撤销错误确认但保留 `daily0_confirmation_history` 审计记录；
+- Dashboard summary 新增只绑定当前 `market_date` 的 `readable_brief`；
+- 今日页移除 7 月 13 日硬编码链接；当日文件不存在时明确显示“今日短报告尚未生成”；
+- 两项回归测试均先失败后通过。
+
+正式 runtime 已撤销错误确认。当前诚实状态为：
+
+- `DAILY-0 / waiting_user`；
+- missing code：`daily0_confirmation_missing`；
+- 8 月 13 日 readable brief：不存在；
+- 已预采集的 Stage 0 行情产物保留，但不代表晨间讨论或用户确认完成。

@@ -61,7 +61,7 @@ SESSION_REQUIRED = {
     "processed_actions",
     "updated_at",
 }
-SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path", "daily4_review_path", "daily0_confirmation"}
+SESSION_OPTIONAL = {"market_date", "backlog_links", "last_error", "intraday_exceptions", "observation_exceptions", "archive_manifest_path", "daily4_review_path", "daily0_confirmation", "daily0_confirmation_history"}
 REVIEW_MODES = {"full_review", "quick_review", "freeze"}
 JUDGMENT_TYPES = {"thesis", "execution", "sizing", "emotion", "data_quality"}
 CONFIDENCE_LEVELS = {"low", "medium", "high"}
@@ -181,6 +181,8 @@ def validate_session(data: dict) -> dict:
             raise ValidationError("daily0_confirmation.analysis_scope_ref must be a string")
         if confirmation["user_confirmed"] is not True:
             raise ValidationError("daily0_confirmation.user_confirmed must be true")
+    if data.get("daily0_confirmation_history") is not None and not isinstance(data["daily0_confirmation_history"], list):
+        raise ValidationError("daily0_confirmation_history must be a list")
     _require_iso_datetime(data["updated_at"], "updated_at")
     return data
 

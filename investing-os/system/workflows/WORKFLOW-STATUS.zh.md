@@ -318,6 +318,13 @@ Stage 0 universe 第二阻塞修复：
 - Dashboard 回读 snapshot 为 present / valid / fresh；QQQ 与期货均带 8 月 13 日盘前时间戳和明确来源；
 - 开盘后盘中实时价格验收仍待执行，DAILY 状态不升级为 stable。
 
+真实性纠正：
+
+- 今日页原有 7 月 13 日短报告链接为静态硬编码，不是当日 artifact；现已改为只读取当前 session 交易日期对应的 `readable_brief`；
+- 助手技术试跑曾越权写入 `daily0_confirmation.user_confirmed=true`；现已通过 `invalidate-daily0` 撤销并保留审计历史；
+- 当前正式状态恢复为 `DAILY-0 / waiting_user / daily0_confirmation_missing`；
+- 当日讨论完成前，预采集 Stage 0 数据不等于晨间准备完成，也不生成或回退显示历史短报告。
+
 下一动作：
 
 1. 09:30 ET 后刷新并验证盘中实时价格、时间戳、来源和 Dashboard 展示；

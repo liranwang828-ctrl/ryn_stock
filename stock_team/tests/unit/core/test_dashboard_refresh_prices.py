@@ -1123,6 +1123,17 @@ def test_operating_console_renders_research_database_sections():
     assert 'Hypotheses: 暂无摘要' in page or 'Hypotheses: 鏆傛棤鎽樿' in page
     assert 'Next Validation: 暂无摘要' in page or 'Next Validation: 鏆傛棤鎽樿' in page
     assert 'Evidence Layers: 暂无卡片统计' in page or 'Evidence Layers: 鏆傛棤鍗＄墖缁熻' in page
+
+
+def test_operating_console_daily_brief_is_current_session_driven_not_hardcoded_history():
+    from pathlib import Path
+
+    page = Path("investing-os/dashboards/operating-console.html").read_text(encoding="utf-8")
+
+    assert 'daily-brief-2026-07-13.html' not in page
+    assert 'id="dailyBriefStatus"' in page
+    assert 'manifest.readable_brief' in page
+    assert '今日短报告尚未生成' in page
     assert 'Readiness Notes: 暂无缺口' in page or 'Readiness Notes: 鏆傛棤缂哄彛' in page
     assert 'Tracked Metrics: 暂无 MVD' in page or 'Tracked Metrics: 鏆傛棤 MVD' in page
     assert 'Topics: 暂无研究主题' in page or 'Topics: 鏆傛棤鐮旂┒涓婚' in page

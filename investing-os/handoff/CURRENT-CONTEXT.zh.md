@@ -22,7 +22,7 @@
 - 系统不是从零开始；旧系统和本轮开发均已有大量可复用资产。
 - `investing-os` 是认知与决策主脑；`stock_team` 是数据与计算肌肉。
 - Operating Console 是 DAILY 状态和产物导航；Growth Dashboard 是独立认知系统界面。
-- DAILY 已完成 2026-08-13 两轮盘前隔离回归、跨日 freeze 隔离复核和正式 runtime 盘前启动：真实交易日期、当日盘前观察价格、canonical runtime 与 Dashboard 回读已验证；`daily0_confirmation`、`prepare-stage0-universe`、`DAY_INITIALIZED` 和 `STAGE0_READY` freeze 恢复缺口均已用 TDD 补通。正式会话已到 `STAGE0_READY / DAILY-1 / waiting_user`，跨日 freeze 能归档旧日并创建今日会话；开盘时段实时价格以及 quick/full runtime 场景尚未完成，因此状态仍保持 `partial`。
+- DAILY 已完成 2026-08-13 两轮盘前隔离回归、跨日 freeze 隔离复核和正式 runtime 盘前启动：真实交易日期、当日盘前观察价格、canonical runtime 与 Dashboard 回读已验证；`daily0_confirmation`、`prepare-stage0-universe`、`DAY_INITIALIZED` 和 `STAGE0_READY` freeze 恢复缺口均已用 TDD 补通。正式试跑曾错误代替用户确认 DAILY-0，现已撤销并保留审计记录；当前诚实状态是 `DAILY-0 / waiting_user`，Stage 0 仅为预采集数据，不代表讨论完成。开盘时段实时价格以及 quick/full runtime 场景尚未完成，因此状态仍保持 `partial`。
 - Research Database V3 Alpha 已有 Question、Evidence、Hypothesis、Observation、Decision 模板，三大 Alpha Questions、Dashboard summary 和多份公司阅读报告。
 - 当前最大研究缺口不是报告数量，而是高质量 Evidence 的自动生产、更新与验证闭环。
 
@@ -105,7 +105,8 @@ Question
 6. 首个真实阻塞已定位为 `daily0_confirmation` 只有 schema 和读取方、没有正式写入入口，并已按 TDD 增加 `confirm-daily0`；
 7. 第二个阻塞 `stage0_universe` 生成器只藏在 Dashboard 私有函数，现已提取为共享 builder 并增加 `prepare-stage0-universe`；隔离链已推进到 DAILY-1B，state sync 为 false；
 8. 正式 runtime 的 7 月 15 日 `STAGE0_READY` 会话阻塞已按 H1 freeze 语义修复，旧会话已归档，今日 observation 已推进到 DAILY-1；
-9. 09:30 ET 后完成盘中时间戳与 Dashboard 展示验收；DAILY 稳定后再选择一个 Alpha Question 做 Evidence 自动生产的端到端最小切片。
+9. 已纠正两项真实性问题：撤销未经用户讨论的 DAILY-0 确认；短报告只绑定当前交易日期，不再回退显示 7 月 13 日历史报告；
+10. 从 DAILY-0 用户讨论重新继续，再完成盘中时间戳与 Dashboard 展示验收；DAILY 稳定后再选择一个 Alpha Question 做 Evidence 自动生产的端到端最小切片。
 
 ## 当前完成定义
 

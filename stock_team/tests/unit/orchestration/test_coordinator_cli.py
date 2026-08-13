@@ -162,6 +162,50 @@ def test_confirm_daily0_rejects_activity_mode_that_differs_from_session_type(tmp
     assert "daily0_confirmation" not in session
 
 
+def test_invalidate_daily0_removes_false_confirmation_and_preserves_audit_record(tmp_path):
+    from stock_team.orchestration.models import new_trading_session
+    from stock_team.orchestration.store import SessionStore
+
+    store = SessionStore(tmp_path)
+    session = new_trading_session(
+        "observation-2026-08-13",
+        "2026-08-13",
+        "2026-08-13T09:00:00-04:00",
+        session_type="observation",
+    )
+    session["state"] = "STAGE0_READY"
+    session["daily0_confirmation"] = {
+        "confirmed_at": "2026-08-13T09:05:00-04:00",
+        "activity_mode": "observation",
+        "account_fact_status": "stale_unverified",
+        "account_snapshot_ref": "",
+        "analysis_scope_ref": "automated without user discussion",
+        "user_confirmed": True,
+    }
+    store.create(session)
+
+    invalidation = subprocess.run(
+        [
+            sys.executable, "-m", "stock_team.coordinator_cli", "invalidate-daily0",
+            "--session-id", session["session_id"],
+            "--reason", "confirmation was recorded without user discussion",
+            "--runtime-dir", str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert invalidation.returncode == 0, invalidation.stderr
+    corrected = json.loads(invalidation.stdout)
+    assert "daily0_confirmation" not in corrected
+    assert corrected["state"] == "STAGE0_READY"
+    assert corrected["daily0_confirmation_history"][-1]["invalidated_reason"] == (
+        "confirmation was recorded without user discussion"
+    )
+    assert corrected["daily0_confirmation_history"][-1]["previous_confirmation"] == session["daily0_confirmation"]
+
+
 def test_prepare_stage0_universe_uses_same_isolated_runtime_without_changing_session(tmp_path):
     sessions_dir = tmp_path / "runtime" / "sessions"
     init = subprocess.run(
