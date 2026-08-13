@@ -1,6 +1,6 @@
 # 工作流实现状态台账
 
-更新日期：2026-07-09
+更新日期：2026-08-13
 状态口径来源：[`../../PROJECT-CHARTER.zh.md`](../../PROJECT-CHARTER.zh.md)
 实现计划：[`../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md`](../../../docs/superpowers/plans/2026-07-01-daily-contract-implementation.md)
 
@@ -15,12 +15,12 @@
 
 | 工作流 | 当前状态 | 最近核验 | 当前判断 |
 |---|---|---:|---|
-| `DAILY` 每日交易 | `partial` | 2026-07-01 | Q1–Q3 已获用户明确批准，171 tests passed；候选实现仍有归档、完整复盘、observation 动作和公开入口 E2E 阻断 |
-| `RESEARCH` 投资研究 | `documented` | 2026-06-30 | 公司、行业等流程与 Packet 文档存在；当前端到端运行状态未核验 |
-| `REVIEW` 周期复盘 | `documented` | 2026-06-30 | 周末、交易和论点复盘资料存在；统一周期复盘入口未核验 |
-| `LEARNING` 经验进化 | `documented` | 2026-06-30 | Packet absorption、journal promotion 和 approval 流程存在；运行闭环未核验 |
-| `VALIDATION` 策略验证 | `partial` | 2026-06-30 | 回测命令与契约存在，部分测试曾通过；与认知审核和候选队列的闭环未核验 |
-| `SYSTEM` 系统维护 | `partial` | 2026-06-30 | 多项检查、schema 和 runtime 机制存在；尚无统一维护工作流验收 |
+| `DAILY` 每日交易 | `partial` | 2026-07-16（历史证据）；2026-08-13（恢复盘点） | 已有跨日恢复、归档、观察模式、daily-status manifest、只读 Operating Console 和盘前/观察修复；8 月尚未重新跑通最小 DAILY |
+| `RESEARCH` 投资研究 | `partial` | 2026-07-16（历史测试）；2026-08-13（恢复盘点） | Research Database 模板、三大 Alpha Questions、Dashboard summary 和公司阅读报告已有原型；Evidence 自动生产未闭环 |
+| `REVIEW` 周期复盘 | `documented` | 2026-07-03（DAILY-4 历史测试）；2026-08-13（恢复盘点） | DAILY-4 结构化 review 与归档资产存在；统一周期复盘和真实交互闭环未核验 |
+| `LEARNING` 经验进化 | `documented` | 2026-07-22（候选记录）；2026-08-13（恢复盘点） | 候选原则、journal promotion、approval 和 Growth Dashboard 资产存在；完整批准/拒绝运行闭环未复验 |
+| `VALIDATION` 策略验证 | `partial` | 2026-07-19（关键价格历史产物）；2026-08-13（恢复盘点） | 回测、关键价格和可靠性检查资产存在；与 Hypothesis 更新和用户批准的闭环未核验 |
+| `SYSTEM` 系统维护 | `partial` | 2026-07-16（runtime 历史实现）；2026-08-13（恢复盘点） | 多项 schema、runtime、状态机和文件标签机制存在；尚无统一健康检查入口 |
 
 ## DAILY 每日交易
 
@@ -66,11 +66,11 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 
 ### DAILY 步骤状态
 |---|---|---|---|---|
-| `DAILY-0 晨间准备` | `partial` | session type、session listing 和 freeze 候选路径有测试；IBKR monitor 单元测试通过 | full_review 提前创建新会话；quick/full/REVIEW_REQUIRED/多旧会话/损坏会话未完整覆盖；IBKR 正式事实闸门未接线 | 修复跨日恢复语义并从公开入口补测试 |
-| `DAILY-1 盘前决策` | `partial` | confirm 校验、焦点池闸门和 canonical runtime 候选实现有测试 | 完整真实握手链和 IBKR 账户事实接线未验证 | 从公开入口完成 Stage 0 → 用户确认 → Stage 1 → 计划批准回归 |
-| `DAILY-2 开盘观察` | `partial` | `OBSERVATION_ACTIVE`、快照 adapter 和软时间提示已有候选实现 | allowed_actions 暴露 coordinator 无法执行的 `intraday-snapshot`；运行时 observation 路径未验收 | 统一动作契约并运行 observation E2E |
-| `DAILY-3 盘中管理` | `partial` | post_open_adj 移除、例外记录和 runtime manifest 候选实现有测试 | 单次刷新与循环仍是两套系统；IBKR 事实和 manifest 生产链未完整接线 | 统一盘中事实动作并验证完整 manifest 链 |
-| `DAILY-4 盘后复盘` | `partial` | review 状态和 archiver helper 有测试；stock_team 候选输出已收窄为事实 | archive_day 未调用 archiver；Step 3–6 对话和结构化产物未实现；full_review 语义错误 | 接线白名单归档、完成复盘交互，并由公开入口 E2E 验收 |
+| `DAILY-0 晨间准备` | `partial` | 跨日恢复状态矩阵、损坏/多旧会话阻断、归档日选择、exchange trading date 和 daily0 confirmation 均有历史实现与测试 | 2026 年 8 月尚未证明旧历史会话不会阻塞今天；IBKR 正式账户事实闸门未复验 | 在隔离 runtime 验证正确交易日期与跨日恢复 |
+| `DAILY-1 盘前决策` | `partial` | timestamped premarket evidence、焦点池闸门、Stage1 管线、`start_stage0_from_snapshot`、cross-asset tape 和计划模板已有实现 | 正式 provider / IBKR 的当前盘前价格链未复验；完整用户握手链尚无 8 月运行证据 | 验证来源、时间戳、市场时段、焦点确认和 Dashboard 报告一致性 |
+| `DAILY-2 开盘观察` | `partial` | `OBSERVATION_ACTIVE`、yfinance observation producer、market context、intraday snapshot 和交易日期修复已有历史测试 | 当前实时价格可靠性未复验；旧试跑曾发现非交易日仍可标为 verified | 验证交易日闸门、真实开盘价和 observation 合法动作 |
+| `DAILY-3 盘中管理` | `partial` | 快照、VWAP、关键位、例外记录、manifest 和价格刷新资产存在 | 单次刷新、循环、IBKR 与页面展示仍可能是不同链；8 月未运行 | 先验证一次事实刷新贯穿同一 session 与 Dashboard，不扩展循环功能 |
+| `DAILY-4 盘后复盘` | `partial` | full/quick/freeze review schema、review 文件、白名单归档、缺失文件阻断和 artifact ledger 均有历史实现与测试 | 尚未完成一次 8 月真实对话收尾；周期复盘与 Growth promotion bridge 未复验 | 用最小 DAILY 完成收尾、归档并验证次日恢复 |
 
 ### DAILY 审计证据汇总 (2026-06-30)
 
@@ -95,11 +95,11 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 
 相关设计：
 
-- [`../../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md`](../../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md)
+- [`../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md`](../../docs/superpowers/specs/2026-07-08-minimal-usable-entry-and-stage0-design.zh.md)
 
 相关计划：
 
-- [`../../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md`](../../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md)
+- [`../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md`](../../docs/superpowers/plans/2026-07-08-minimal-usable-entry-and-stage0-plan.zh.md)
 
 相关台账：
 
@@ -132,11 +132,11 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 
 相关设计：
 
-- [`../../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md`](../../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md)
+- [`../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md`](../../docs/superpowers/specs/2026-07-08-stage0-brain-preconditions-canonical-writeback-design.zh.md)
 
 相关计划：
 
-- [`../../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md`](../../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md)
+- [`../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md`](../../docs/superpowers/plans/2026-07-09-stage0-brain-preconditions-writeback-plan.zh.md)
 
 当前结果：
 
@@ -238,6 +238,54 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 - Playwright 验证 desktop/mobile，`#review` 与 `#diagnostics` 均只有一个 active page；唯一 console error 为 favicon.ico 404；
 - 当前页面仍读取旧会话 `2026-06-15`，不应解释为今日 session 已恢复。
 
+### Research Database V3 Alpha 实施批次（2026-07-16 至 2026-07-22）
+
+当前结果：
+
+- DAILY report 已要求挂接一至三个 Alpha Questions，避免每日分析彼此孤立；
+- 新增 Question、Evidence、Hypothesis、Observation 和 Decision Card 模板，以及 tracked metrics 最小索引；
+- coordinator summary 和 Operating Console 已能以安全默认值读取并展示 research database bundle；
+- runtime bootstrap 能生成 research topic、cards 和 tracked metrics 占位产物；
+- V3 Alpha 暂时只维护三个长期问题：AI 利润沉淀、Hyperscaler CapEx、Inference 第二轮硬件需求；
+- AMAT、MU、NBIS、TSM、NOW、NVDA 已有阅读报告原型，包含关键价格或 Reliability 检查；
+- 这些实现和测试均属于 7 月历史证据，2026 年 8 月尚未重新运行。
+
+历史证据：
+
+- `544e1b7`：Research Database daily templates；
+- `b1ae7ab` / `7192fbd` / `36485f7`：coordinator payload 与 Operating Console summary；
+- `c39c472` / `a69360d` / `fcee080`：runtime bootstrap、payload shape 和 MVP alignment；
+- `d1418d6`：研究报告可靠性闸门；
+- `421d974`：AI repair-day follow-through 认知候选。
+
+当前边界：
+
+- `RESEARCH` 从纯 `documented` 提升为 `partial` 原型状态；
+- 现有能力主要解决结构、展示和人工沉淀，尚未持续自动生产高质量 Evidence；
+- 下一步不是批量增加公司静态报告，而是在 DAILY 稳定后完成一个 Question 的 Evidence 端到端更新。
+
+### 2026 年 8 月恢复基线（2026-08-13）
+
+系统地图：
+
+- [`../../SYSTEM-OVERVIEW-AND-STATUS.zh.md`](../../SYSTEM-OVERVIEW-AND-STATUS.zh.md)
+
+恢复事实：
+
+- 当前分支为 `codex/repository-cleanup-20260630`，远端 `origin` 已配置；
+- 恢复开始前本地相对远端领先 55 个提交；新恢复文档继续增加独立提交，push 前重新核验准确数量；
+- 工作区存在用户未提交的认知方法论、索引和运行时观察文件，不属于本轮同步内容；
+- 8 月只完成定向盘点，尚未运行最小 DAILY，因此所有运行状态保持谨慎口径；
+- 最小回归固定验证：真实交易日期、跨日恢复、盘前/实时价格、Dashboard 对同一 session 和 artifact ledger 的展示；
+- 遇到首个阻塞后停止扩展，以根因调查和 TDD 修复，然后重跑同一回归。
+
+下一动作：
+
+1. 核验并同步未推送提交；
+2. 使用隔离 runtime 跑最小 DAILY；
+3. 只修复实际试跑的第一个阻塞；
+4. DAILY 稳定后设计 Evidence 自动生产的下一最小切片。
+
 ## RESEARCH 投资研究
 
 | 子工作流 | 状态 | 证据 | 下一动作 |
@@ -278,3 +326,7 @@ H4 低阶任务包：[`../../handoff/2026-07-01-daily-h4-task-packets.zh.md`](..
 | 2026-07-01 | 用户明确批准 DAILY Q1–Q3，全部选择 A；实现状态仍保持 `partial` | 以 `2026-07-01-daily-q1-q3-approval.md` 首次进入 Git 的提交为准 |
 | 2026-07-01 | 固化 H1/H2/H3 高阶修复纲领；生成 L1/L2/L3 低阶任务包，作为下一轮唯一实施入口 | 待本次提交 |
 | 2026-07-01 | 固化 DAILY-4 H4 高阶契约；生成 H4 低阶任务包，作为下一轮复盘实现入口 | 待本次提交 |
+| 2026-07-03 | 完成跨日恢复、白名单归档、observation 公共动作和 DAILY-4 review/归档闸门的历史实现与测试 | `cd69e75`–`e36b770` |
+| 2026-07-11 | 完成 daily-status manifest、只读 Operating Console 投影和 yfinance observation 隔离试跑 | 见本页对应实施批次 |
+| 2026-07-16 | 建立 Research Database V3 Alpha 模板、runtime bootstrap、Dashboard summary 和三大问题主线 | `544e1b7`–`fcee080` |
+| 2026-08-13 | 建立系统总览和恢复基线；保留 `DAILY=partial`，等待隔离最小回归 | 以本次状态基线提交为准 |

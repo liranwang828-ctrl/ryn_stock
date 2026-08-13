@@ -1,26 +1,43 @@
 # 当前唯一上下文
 
-更新时间：2026-06-30
+更新时间：2026-08-13
 
-本文件是新线程和低阶模型的唯一默认入口。除非任务单明确引用，不要读取完整聊天记录或旧 handoff。
+本文件是新任务和协作者的默认恢复入口。不要重新扫描整个仓库，也不要把聊天记录、文件名或历史测试自动解释为当前可运行状态。
 
-项目级名称、边界和行动方向以 [`../PROJECT-CHARTER.zh.md`](../PROJECT-CHARTER.zh.md) 为准。工作流实际实现状态见 [`../system/workflows/WORKFLOW-STATUS.zh.md`](../system/workflows/WORKFLOW-STATUS.zh.md)。
+开始工作前按顺序读取：
 
-用户与模型形成的项目结论必须写入对应仓库文件并 commit、push。未落盘的聊天内容不是项目事实，也不能作为后续模型的执行依据。
+1. [`../SYSTEM-OVERVIEW-AND-STATUS.zh.md`](../SYSTEM-OVERVIEW-AND-STATUS.zh.md)：系统全貌、流程图、当前成熟度和恢复路线；
+2. [`../PROJECT-CHARTER.zh.md`](../PROJECT-CHARTER.zh.md)：项目目标、边界、统一术语与行动原则；
+3. [`../system/workflows/WORKFLOW-STATUS.zh.md`](../system/workflows/WORKFLOW-STATUS.zh.md)：细粒度实现状态和证据；
+4. 当前任务明确引用的专项契约、计划或任务包。
+
+用户与模型形成、会影响后续工作的结论必须写入仓库文件并 commit、push。未落盘的聊天内容不是项目事实。
 
 ## 一句话目标
 
-把 `investing-os` 的认知与决策能力和 `stock_team` 的数据、计算、报告能力串成一个可日常使用、可中断恢复、由技能驱动的交易工作流。
+把 `investing-os` 的认知与决策能力和 `stock_team` 的数据、计算与报告能力，连接成一个可日常使用、可中断恢复、可核验事实、由用户最终决策的投资操作系统。
 
-## 系统边界
+## 当前系统判断
 
-- `investing-os`：认知、经验教训、长期研究、权限与风险边界、计划讨论、复盘和知识沉淀。
-- `stock_team`：行情与账户数据、计算、研究工具、市场环境证据包、焦点标的证据包、盘中事实和报告。
-- 主入口采用混合控制台；保留已有认知 Dashboard。
-- 主交易链严格推进；研究、讨论等旁路随时可用，但不得偷偷改变当日交易状态。
-- 系统辅助决策，不自动替用户作出交易决定。
+- 系统不是从零开始；旧系统和本轮开发均已有大量可复用资产。
+- `investing-os` 是认知与决策主脑；`stock_team` 是数据与计算肌肉。
+- Operating Console 是 DAILY 状态和产物导航；Growth Dashboard 是独立认知系统界面。
+- DAILY 已有状态机、跨日恢复、盘前/观察、复盘归档、daily-status manifest 和 Dashboard 原型，但 2026 年 8 月尚未重新完成最小回归，因此状态保持 `partial`。
+- Research Database V3 Alpha 已有 Question、Evidence、Hypothesis、Observation、Decision 模板，三大 Alpha Questions、Dashboard summary 和多份公司阅读报告。
+- 当前最大研究缺口不是报告数量，而是高质量 Evidence 的自动生产、更新与验证闭环。
 
-## 每日主链
+## 系统硬边界
+
+- 用户负责问题、意义、权限、计划批准、最终交易判断和长期经验吸收。
+- `investing-os` 负责认知、研究问题、Hypothesis、决策边界、计划、复盘和知识谱系。
+- `stock_team` 负责行情、账户、成交、计算、Evidence Packet、监控和事实报告。
+- Dashboard 只展示状态、缺失、产物和导航，不拥有第二套状态机或交易判断逻辑。
+- IBKR 是账户、持仓和成交的唯一正式来源；缓存只能只读展示并明确标注未验证。
+- 盘前和实时价格必须包含可验证时间戳、来源和市场时段；昨日收盘不得冒充盘前或实时价格。
+- 美股交易日期按交易所日历和纽约时区确定，不能直接使用北京时间自然日。
+- 研究、观察、休息、无操作和跳过某日都是合法路径，但不得偷偷改变 DAILY 主链状态。
+
+## DAILY 主链
 
 ```text
 DAILY-0 晨间准备
@@ -28,128 +45,88 @@ DAILY-0 晨间准备
 -> DAILY-2 开盘观察
 -> DAILY-3 盘中管理
 -> DAILY-4 盘后复盘
+-> 归档并供次日恢复
 ```
 
-`DAILY-1` 内部依次生成市场环境证据包（旧称 Evidence Stage 0）和焦点标的证据包（旧称 Evidence Stage 1），中间必须经过用户讨论并确认焦点池。
-
-硬规则：
-
-- 不得跳过 `stock_team` 或用模型臆测代替市场环境证据包。
-- 市场环境证据包必须是明确时点的真实盘前数据；昨日收盘数据不得伪装成盘前数据。
-- 焦点标的证据包必须晚于市场环境讨论，且只能覆盖用户确认的关注池。
-- Dashboard 盘中不得自动重算或改写两个盘前证据包。
-- 持仓与交易记录以 IBKR 获取结果为唯一正式来源；本地旧文件不能冒充正式来源。
-- 前一日未复盘时，次日提示用户选择“冻结收尾”或“快速复盘”；确认后再开启新交易日，不能永久卡住。
-- 没有交易、只讨论、跳过一天或只做部分流程都属于合法路径。
-
-## Skill 与固定产物
-
-需要用户和 Agent 共同完成的步骤，控制台应提示调用哪个 skill。不能自动编造，也不能靠无结构闲聊完成。
-
-每一步都应：
-
-1. 显示所需 skill、输入和缺失项。
-2. 产出固定路径、固定 schema 的文件。
-3. 验证产物后才解锁下一步。
-4. 旁路产物默认只读，不改变主链状态。
-
-## 模型协作
-
-### 高阶模型负责
-
-- 架构、优先级、跨 `investing-os` / `stock_team` 契约。
-- 把需求写成有边界、可验证的任务单。
-- 交易状态机、权限、风险、数据真实性和核心 schema 决策。
-- 审查低阶模型的 diff、测试和交付日志。
-- 决定接受、返工或丢弃实现。
-
-### 低阶模型负责
-
-- 按任务单实现代码、页面、API 接线、测试和文档。
-- 只修改任务单允许的文件。
-- 记录使用的输入、改动、测试、风险和阻塞。
-- 遇到歧义停止该局部，不自行改变系统边界或交易语义。
-
-### 低阶模型禁止自行决定
-
-- Stage 定义和交易状态转换。
-- `investing-os` / `stock_team` 边界。
-- 真实持仓、交易记录、API 密钥和资金状态。
-- 核心字段改名、数据迁移、删除旧功能。
-- 交易建议、风险阈值和自动执行规则。
-
-## 每个实现任务的必要文件
-
-任务单至少包含：
+`DAILY-1` 内部顺序固定为：
 
 ```text
-目标：
-允许读取：
-允许修改：
-禁止修改：
-输入契约：
-输出契约：
-验收命令：
-完成定义：
+市场环境证据包
+-> 用户与 investing-os 讨论市场环境
+-> 用户确认焦点池
+-> 焦点标的证据包
+-> investing-os 形成权限与计划
+-> 用户批准计划版本
 ```
 
-低阶模型交付日志至少包含：
+## Research Database V3 Alpha
+
+正式研究顺序：
 
 ```text
-任务编号：
-修改文件：
-实现摘要：
-验证命令与结果：
-未解决问题：
-建议高阶模型重点审核：
-Git commit：
-Git push：
+Question
+-> Evidence
+-> Hypothesis
+-> Reality Validation
+-> Consensus / Price / Behavior / Odds
+-> Investment Decision
+-> Review
+-> Learning Candidate
+-> 用户批准后进入长期认知
 ```
 
-## Git 纪律
+当前只维护三个主问题：
 
-- 顶层 Git 仓库是 `C:\Users\rriww\Documents\STOCK`，两个子项目不是独立仓库。
-- 每个任务使用独立、可审查的 commit；不得混入运行日志或其他任务的脏改动。
-- 高阶模型审核通过后才视为完成。
-- 每次完成都必须 push 到远端，并在日志记录 commit SHA 与 push 结果。
-- 当前仓库尚未配置 Git remote，因此现在只能本地 commit；配置远端前不得声称“已上传”。
-- 当前工作区已有大量未提交开发改动。任何模型都不得清理、覆盖或顺手提交不属于自己任务的文件。
+1. AI 利润最终沉淀在哪里？
+2. Hyperscaler CapEx 是否真正开始放缓？
+3. Inference 是否会创造第二轮 Hardware Demand？
 
-## 当前开发状态
+公司和新闻是这些问题下的 Evidence，不再作为孤立研究起点。
 
-工作区中已有一批尚未提交的协调器实现，主要涉及：
+## Git 与工作区事实
 
-- `investing-os` 的三个流程 Agent、session/action schema 和 runtime 目录。
-- `stock_team` 的 coordinator CLI、orchestration、IBKR/盘前逻辑及对应测试。
-- 两侧 Dashboard/控制台改动。
+- 顶层仓库：`C:\Users\rriww\Documents\STOCK`；两个子目录不是独立仓库。
+- 当前分支：`codex/repository-cleanup-20260630`。
+- 远端 `origin` 已配置为 GitHub 仓库。
+- 2026-08-13 恢复开始前，本地相对远端领先 55 个提交；本次恢复文档又增加了独立提交，push 前必须重新核验准确数量。
+- 未推送提交主要包括 Research Database、Dashboard、公司研究报告、关键价格和少量行情/观察链修复。
+- 工作区仍存在用户未提交的认知方法论、索引修改和运行时观察文件。不得清理、覆盖或顺手提交。
+- 运行时账户、成交、会话和真实观察文件默认保持本地，不得推送。
 
-这些改动可能就是上一轮未完成实现，必须先审计而不是重做或删除。
+## 2026 年 8 月恢复任务
 
-现有高低阶协作协议文件出现中文乱码，不能作为当前默认入口；本文件中的协作规则优先。
+按以下顺序推进，不并行扩张范围：
 
-## 下一批工作
+1. 更新本文件、系统总览和工作流状态台账，建立恢复基线；
+2. 核验全部未推送提交的路径、敏感信息、提交完整性和远端差异；
+3. 安全后推送当前分支，避免成果继续只留在本机；
+4. 在隔离 runtime 中运行一次最小 DAILY；
+5. 优先验证四项：真实交易日期、跨日恢复、盘前/实时价格、Dashboard 对同一状态的展示；
+6. 遇到首个真实阻塞立即停止扩展，先调查根因，再以失败测试和最小修复解决；
+7. 重跑最小 DAILY；
+8. DAILY 稳定后，选择一个 Alpha Question 做 Evidence 自动生产的端到端最小切片。
 
-当前只推进 `DAILY`。行动计划见：
+## 当前完成定义
 
-`docs/superpowers/plans/2026-06-30-daily-workflow-foundation.md`
+本轮不能因为文档更新或历史测试通过就宣布 DAILY 稳定。至少需要同一次隔离运行证明：
 
-1. 将 `DAILY-AUDIT-0` 至 `DAILY-AUDIT-4` 分发给低阶模型，在独立分支或 worktree 中完成。
-2. 每个低阶任务只生成自己的事实审计报告，不修改业务代码、schema 或共享状态台账。
-3. 五份审计报告已经完成；`DAILY-CONTRACT.zh.md` v2 已修复首次审核的 R1–R6。
-4. 用户已于 2026-07-01 明确批准 Q1–Q3，全部选择 A；批准记录为 `handoff/decisions/2026-07-01-daily-q1-q3-approval.md`。
-5. 候选实现 171 tests passed，但高阶审核未通过；见 `handoff/reviews/2026-07-01-daily-implementation-review.md`。
-6. 当前修复归档、完整复盘、observation 动作、异常跨日恢复、DAILY-4 交互和公开入口 E2E。
-7. DAILY 完整生产链验收前保持 `partial`，不得推进其他工作流或旧代码整理。
+- session 使用正确的纽约交易日期；
+- 旧归档日不会错误阻塞今天，未完成或损坏会话按契约处理；
+- 盘前/实时价格不是昨日收盘，且来源、新鲜度、市场时段明确；
+- Operating Console 读取同一 session 和 artifact ledger，缺失时显示缺失；
+- 首个阻塞的回归测试在修复前失败、修复后通过；
+- 运行证据和状态变化已写入 Git 文件。
 
-剩余工作分工见 `handoff/DAILY-REMAINING-WORK-ALLOCATION.zh.md`。高阶模型先定义跨日恢复、归档和 observation 动作契约；低阶模型按任务单实现；最终 E2E 和完成状态由高阶模型裁定。
-8. 2026-07-01 已新增 `handoff/2026-07-01-daily-h1-h3-repair-charter.zh.md`，作为 H1/H2/H3 的唯一高阶契约。
-9. 2026-07-01 已新增 `handoff/2026-07-01-daily-l1-l3-task-packets.zh.md`，作为目前唯一可直接发给低阶模型的任务包；没有包内授权，不得自行扩大修改范围。
-10. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-review-contract.zh.md`，作为 DAILY-4 对话问题、确认点和结构化产物边界的唯一高阶契约。
-11. 2026-07-01 已新增 `handoff/2026-07-01-daily-h4-task-packets.zh.md`，作为 H4 实现阶段可派发给低阶模型的唯一任务包。
-12. 2026-07-01 已新增 `handoff/LOW-TOKEN-REVIEW-TEMPLATE.zh.md`，作为以后高阶模型审查低阶交付时的默认低 token 交接格式。
+## 模型协作与 Git 纪律
+
+- 高阶模型负责架构、边界、优先级、状态机、数据真实性和高风险审核。
+- 低阶模型只执行边界明确的任务包，不自行决定交易语义、核心 schema 或长期认知吸收。
+- 每个任务使用独立可审查 commit，不混入其他脏改动或运行日志。
+- 每次完成必须报告验证命令、结果、commit SHA 和 push 结果。
+- 不得运行 `git clean`、hard reset 或递归删除来获得“干净工作区”。
 
 ## 默认启动方式
 
-新线程只需说：
+新任务只需说：
 
-> 读取 `investing-os/handoff/CURRENT-CONTEXT.zh.md`，检查 Git 状态，从“下一批工作”继续。不要重新探索整个项目，也不要跳过 stock_team。
+> 读取 `investing-os/handoff/CURRENT-CONTEXT.zh.md`，从 2026 年 8 月恢复任务的下一项继续。不要重新扫描整个仓库，不要触碰未归属的脏文件。
